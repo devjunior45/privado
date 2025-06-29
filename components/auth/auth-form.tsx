@@ -1,0 +1,413 @@
+"use client"
+
+import type React from "react"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Building, ArrowLeft, MapPin, Users, Eye } from "lucide-react"
+import type { UserType } from "@/types/profile"
+import { CitySelect } from "@/components/ui/city-select"
+
+type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
+
+export function AuthForm() {
+  const [currentStep, setCurrentStep] = useState<AuthStep>("welcome")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [username, setUsername] = useState("")
+  const [fullName, setFullName] = useState("")
+  const [companyName, setCompanyName] = useState("")
+  const [companyLocation, setCompanyLocation] = useState("")
+  const [userType, setUserType] = useState<UserType>("candidate")
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const type = searchParams.get("userType") as UserType | null
+    if (type && (type === "candidate" || type === "recruiter")) {
+      setUserType(type)
+      setCurrentStep("city-selection")
+    }
+  }, [searchParams])
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            full_name: fullName,
+            user_type: userType,
+            city_id: selectedCityId,
+            company_name: userType === "recruiter" ? companyName : null,
+            company_location: userType === "recruiter" ? companyLocation : null,
+          },
+        },
+      })
+
+      if (error) throw error
+
+      router.push("/feed")
+      router.refresh()
+    } catch (error: any) {
+      console.error("Erro no cadastro:", error)
+      setError(error.message || "Erro ao criar conta")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) throw error
+      router.push("/feed")
+      router.refresh()
+    } catch (error: any) {
+      console.error("Erro no login:", error)
+      setError(error.message || "Erro ao fazer login")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleUserTypeSelect = (type: UserType) => {
+    setUserType(type)
+    setCurrentStep("city-selection")
+  }
+
+  const handleCityNext = () => {
+    if (userType === "recruiter") {
+      setCurrentStep("company-info")
+    } else {
+      setCurrentStep("personal-info")
+    }
+  }
+
+  const renderWelcomeStep = () => (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Galeria de Empregos</CardTitle>
+        <CardDescription>Conectando talentos e oportunidades</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-medium mb-2">Bem-vindo!</h3>
+          <p className="text-muted-foreground">Como você gostaria de continuar?</p>
+        </div>
+
+        <Button onClick={() => setCurrentStep("login")} className="w-full h-12" variant="default">
+          Já tenho uma conta
+        </Button>
+
+        <Button onClick={() => setCurrentStep("user-type")} className="w-full h-12" variant="outline">
+          Quero criar uma conta
+        </Button>
+      </CardContent>
+    </Card>
+  )
+
+  const renderLoginStep = () => (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <CardTitle className="text-2xl">Entrar</CardTitle>
+        <CardDescription>Acesse sua conta</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <div>
+            <Label htmlFor="signin-email">Email</Label>
+            <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div>
+            <Label htmlFor="signin-password">Senha</Label>
+            <Input
+              id="signin-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Entrando..." : "Entrar"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+
+  const renderUserTypeStep = () => (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <CardTitle className="text-2xl">Criar Conta</CardTitle>
+        <CardDescription>O que você pretende fazer?</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Button
+          onClick={() => handleUserTypeSelect("candidate")}
+          className="w-full h-20 flex flex-col items-center justify-center gap-2"
+          variant="outline"
+        >
+          <Eye className="w-6 h-6" />
+          <div className="text-center">
+            <p className="font-medium">Ver vagas na minha cidade</p>
+            <p className="text-xs text-muted-foreground">Encontrar oportunidades de trabalho</p>
+          </div>
+        </Button>
+
+        <Button
+          onClick={() => handleUserTypeSelect("recruiter")}
+          className="w-full h-20 flex flex-col items-center justify-center gap-2"
+          variant="outline"
+        >
+          <Building className="w-6 h-6" />
+          <div className="text-center">
+            <p className="font-medium">Postar vagas</p>
+            <p className="text-xs text-muted-foreground">Divulgar oportunidades de trabalho</p>
+          </div>
+        </Button>
+      </CardContent>
+    </Card>
+  )
+
+  const renderCitySelectionStep = () => (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <Button variant="ghost" size="sm" onClick={() => setCurrentStep("user-type")} className="absolute left-4 top-4">
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <CardTitle className="text-2xl flex items-center justify-center gap-2">
+          <MapPin className="w-6 h-6" />
+          Sua Cidade
+        </CardTitle>
+        <CardDescription>
+          {userType === "candidate"
+            ? "Escolha sua cidade para ver vagas próximas"
+            : "Escolha sua cidade base para suas vagas"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="flex items-start gap-2">
+            <Users className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-900">Não se preocupe!</p>
+              <p className="text-xs text-blue-700 mt-1">
+                Você poderá {userType === "candidate" ? "ver vagas" : "postar vagas"} em outras cidades também. Esta é
+                apenas sua cidade principal.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="city-select">Selecione sua cidade</Label>
+          <CitySelect
+            value={selectedCityId}
+            onValueChange={setSelectedCityId}
+            placeholder="Escolha sua cidade"
+            className="w-full"
+          />
+        </div>
+
+        <Button onClick={handleCityNext} className="w-full" disabled={!selectedCityId}>
+          Continuar
+        </Button>
+      </CardContent>
+    </Card>
+  )
+
+  const renderPersonalInfoStep = () => (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCurrentStep("city-selection")}
+          className="absolute left-4 top-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <CardTitle className="text-2xl">Seus Dados</CardTitle>
+        <CardDescription>Finalize seu cadastro</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div>
+            <Label htmlFor="signup-fullName">Nome Completo</Label>
+            <Input id="signup-fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-username">Nome de Usuário</Label>
+            <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-email">Email</Label>
+            <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-password">Senha</Label>
+            <Input
+              id="signup-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Criando conta..." : "Criar conta"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+
+  const renderCompanyInfoStep = () => (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCurrentStep("city-selection")}
+          className="absolute left-4 top-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <CardTitle className="text-2xl">Dados da Empresa</CardTitle>
+        <CardDescription>Finalize seu cadastro</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div>
+            <Label htmlFor="signup-fullName">Nome do Responsável</Label>
+            <Input id="signup-fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-companyName">Nome da Empresa</Label>
+            <Input
+              id="signup-companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-companyLocation">Localização da Empresa</Label>
+            <Input
+              id="signup-companyLocation"
+              value={companyLocation}
+              onChange={(e) => setCompanyLocation(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-username">Nome de Usuário</Label>
+            <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-email">Email</Label>
+            <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+
+          <div>
+            <Label htmlFor="signup-password">Senha</Label>
+            <Input
+              id="signup-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Criando conta..." : "Criar conta"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case "welcome":
+        return renderWelcomeStep()
+      case "login":
+        return renderLoginStep()
+      case "user-type":
+        return renderUserTypeStep()
+      case "city-selection":
+        return renderCitySelectionStep()
+      case "personal-info":
+        return renderPersonalInfoStep()
+      case "company-info":
+        return renderCompanyInfoStep()
+      default:
+        return renderWelcomeStep()
+    }
+  }
+
+  return <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">{renderCurrentStep()}</div>
+}

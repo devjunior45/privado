@@ -1,0 +1,481 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+/* Modo escuro automático baseado na preferência do sistema */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
+    --card: 0 0% 0%;
+    --card-foreground: 210 40% 98%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+/* Cores específicas para componentes em modo escuro */
+@media (prefers-color-scheme: dark) {
+  body {
+    @apply bg-black text-gray-100;
+  }
+
+  /* Header e navegação */
+  .bg-white {
+    @apply bg-black;
+  }
+
+  .bg-gray-50 {
+    @apply bg-gray-800;
+  }
+
+  .bg-gray-100 {
+    @apply bg-gray-800;
+  }
+
+  .text-gray-900 {
+    @apply text-gray-100;
+  }
+
+  .text-gray-700 {
+    @apply text-gray-300;
+  }
+
+  .text-gray-600 {
+    @apply text-gray-400;
+  }
+
+  /* Bordas em modo escuro */
+  .border-gray-200 {
+    @apply border-gray-700;
+  }
+
+  .border-gray-300 {
+    @apply border-gray-600;
+  }
+
+  /* Cards e containers */
+  .bg-card {
+    @apply bg-black;
+  }
+
+  /* Inputs e forms */
+  input,
+  textarea,
+  select {
+    @apply bg-gray-700 border-gray-600 text-gray-100;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply border-blue-500 ring-blue-500/20;
+  }
+
+  /* Botões */
+
+  /* Skeleton loading em modo escuro */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  /* Comentários em modo escuro */
+  .comments-scrollable .bg-gray-50 {
+    @apply bg-gray-700;
+  }
+
+  /* Scrollbar em modo escuro */
+  .comments-scrollable::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .comments-scrollable::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Melhorias para comentários */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth scrolling para a aba de comentários */
+.comments-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Animação para novos comentários */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comment-enter {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Melhorar aparência do bottom sheet */
+.bottom-sheet-content {
+  backdrop-filter: blur(8px);
+}
+
+/* Feedback visual para salvamento */
+@keyframes pulse-save {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.save-feedback {
+  animation: pulse-save 0.3s ease-in-out;
+}
+
+/* Animações de loading melhoradas */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Animação de fade in para posts */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* Animação de pulse melhorada para skeleton */
+@keyframes pulse-enhanced {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse-enhanced 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Transições suaves para filtros */
+.filter-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effects melhorados */
+.hover-lift {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading states específicos */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Animação de destaque para vaga específica */
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0.3);
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    background-color: transparent;
+  }
+}
+
+.highlight-post {
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+/* Melhorias para mobile */
+@media (max-width: 768px) {
+  .animate-fadeInUp {
+    animation-duration: 0.4s;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* Scroll suave para toda a aplicação */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Melhorar destaque da vaga */
+.post-highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.post-highlight::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #3b82f6);
+  border-radius: 12px;
+  z-index: -1;
+  animation: highlight-border 3s ease-in-out;
+}
+
+@keyframes highlight-border {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Estilos para a aba de comentários estilo LinkedIn */
+.comments-sheet-container {
+  position: relative;
+  z-index: 100;
+}
+
+.comments-sheet {
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Área scrollável dos comentários - CORRIGIDO */
+.comments-scrollable {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Garantir que o scroll funcione */
+  height: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Garantir que o container dos comentários permita scroll */
+.comments-scrollable > div {
+  min-height: min-content;
+}
+
+.comment-input-container {
+  transition: transform 0.3s ease-out;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  bottom: 0;
+  background: white;
+  z-index: 10;
+}
+
+/* Ajustes para quando o teclado está visível */
+.bottom-sheet-open {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Estilo para comentários similar ao LinkedIn */
+.comments-scrollable .space-y-4 > div {
+  margin-bottom: 16px;
+}
+
+/* Ajustes para viewport em dispositivos móveis */
+@supports (-webkit-touch-callout: none) {
+  .comments-sheet {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .comment-input-container {
+    padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 8px);
+  }
+
+  /* Melhorar scroll em iOS */
+  .comments-scrollable {
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+  }
+}
+
+/* Melhorias para o textarea */
+.comment-input-container textarea {
+  border-radius: 20px;
+  padding-left: 12px;
+  padding-right: 40px;
+  line-height: 1.4;
+  min-height: 40px;
+  max-height: 120px;
+  transition: min-height 0.2s ease;
+}
+
+.comment-input-container textarea:focus {
+  min-height: 60px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+/* Estilo para os comentários */
+.comments-scrollable .bg-gray-50 {
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Garantir que o scroll funcione em todos os navegadores */
+.comments-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.comments-scrollable::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comments-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comments-scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.comments-scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
