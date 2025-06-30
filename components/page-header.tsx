@@ -16,7 +16,7 @@ interface PageHeaderProps {
   title?: string
   showSearch?: boolean
   showFilters?: boolean
-  enableStickyBehavior?: boolean
+  enableStickyBehavior?: boolean // Nova prop
   onSearchChange?: (search: string) => void
   selectedCityId?: number | null
   onCityChange?: (cityId: number | null) => void
@@ -29,7 +29,7 @@ export function PageHeader({
   title,
   showSearch = false,
   showFilters = false,
-  enableStickyBehavior = false,
+  enableStickyBehavior = false, // Valor padrão false
   onSearchChange,
   selectedCityId = null,
   onCityChange,
@@ -192,7 +192,7 @@ export function PageHeader({
         ${enableStickyBehavior && isVisible ? "translate-y-0 opacity-100" : enableStickyBehavior ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}
       `}
     >
-      {/* Container interno com padding */}
+      {/* Container interno com padding apenas no mobile */}
       <div className="w-full px-4 py-3 md:max-w-md md:mx-auto md:px-2 md:py-2">
         {/* Campo de Busca e Seletor de Cidade */}
         {showSearch && (

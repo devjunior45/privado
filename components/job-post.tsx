@@ -33,7 +33,7 @@ import { CommentsSheet } from "@/components/comments/comments-sheet"
 import { CityDisplay } from "@/components/ui/city-display"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
-import useMobile from "@/hooks/use-mobile"
+import useMobile from "@/hooks/use-mobile" // Import useMobile
 
 interface JobPostProps {
   jobPost: JobPostWithProfile & {
@@ -96,7 +96,7 @@ export function JobPostComponent({
   style,
   id,
 }: JobPostProps) {
-  const isMobile = useMobile()
+  const isMobile = useMobile() // Use the hook
   const [isLiked, setIsLiked] = useState(isLikedInitially || jobPost?.is_liked || false)
   const [isSaved, setIsSaved] = useState(isSavedInitially || jobPost?.is_saved || false)
   const [hasApplied, setHasApplied] = useState(hasAppliedInitially || jobPost?.has_applied || false)
@@ -126,6 +126,7 @@ export function JobPostComponent({
 
   useEffect(() => {
     if (jobPostId && jobPostTitle) {
+      // Add null checks for jobPost properties
       console.log("🔍 JobPost Debug:", {
         postId: jobPostId,
         title: jobPostTitle,
@@ -269,12 +270,12 @@ export function JobPostComponent({
   return (
     <>
       <Card
-        className={`w-full ${isMobile ? "rounded-none shadow-none border-0 mx-2" : "max-w-md mx-auto mb-6 border"} ${className || ""}`}
+        className={`w-full ${isMobile ? "rounded-none shadow-none border-0 mx-0.5" : "max-w-md mx-auto mb-6 border"} ${className || ""}`}
         ref={targetRef}
         id={id || `post-${jobPost.id}`}
         style={style}
       >
-        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-4 pt-3" : ""}`}>
+        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-4 pt-3 mx-0.5 bg-white" : ""}`}>
           <div className="relative">
             <Avatar className="w-10 h-10">
               <AvatarImage src={postProfile.avatar_url || "/placeholder.svg"} alt={postProfile.full_name || ""} />
@@ -308,7 +309,7 @@ export function JobPostComponent({
           </div>
         </CardHeader>
 
-        <CardContent className={`p-0 ${isMobile ? "-mx-2" : ""}`}>
+        <CardContent className={`p-0 ${isMobile ? "-mx-4" : ""}`}>
           {jobPost.image_url ? (
             <div className="relative w-full">
               <Image
@@ -337,7 +338,7 @@ export function JobPostComponent({
           )}
         </CardContent>
 
-        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-4 pb-3" : ""}`}>
+        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-4 pb-3 mx-0.5 bg-white" : ""}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
