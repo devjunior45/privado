@@ -63,9 +63,9 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
   const visibleJobPosts = isOwnProfile ? jobPosts : jobPosts.filter((post) => post.status === "active")
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header fixo com botão voltar */}
-      <div className="bg-white border-b sticky top-0 z-40 shadow-sm">
+      <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8 w-8 p-0">
             <ArrowLeft className="w-4 h-4" />
@@ -76,7 +76,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
 
       <div className="max-w-md mx-auto">
         {/* Seção do Perfil */}
-        <div className="bg-white p-6 space-y-4">
+        <div className="bg-white dark:bg-black p-6 space-y-4">
           {/* Avatar e Info Principal */}
           <div className="flex items-start gap-4">
             <Avatar className="w-20 h-20">
@@ -147,10 +147,10 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
         </div>
 
         {/* Divisor */}
-        <div className="h-2 bg-gray-100" />
+        <div className="h-2 bg-gray-100 dark:bg-gray-800" />
 
         {/* Header das Vagas */}
-        <div className="bg-white px-6 py-3 border-b">
+        <div className="bg-white dark:bg-black px-6 py-3 border-b">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold flex items-center gap-2">
               <Building className="w-4 h-4" />
@@ -187,7 +187,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
         </div>
 
         {/* Grid/Lista de Vagas */}
-        <div className="bg-white">
+        <div className="bg-white dark:bg-black">
           {visibleJobPosts.length === 0 ? (
             <div className="text-center py-12 px-6">
               <Building className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
@@ -268,7 +268,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
               {visibleJobPosts.map((post) => (
                 <div
                   key={post.id}
-                  className={`p-4 ${post.status !== "active" ? "opacity-75" : "hover:bg-gray-50"} transition-colors`}
+                  className={`p-4 ${post.status !== "active" ? "opacity-75" : "hover:bg-gray-50 dark:hover:bg-gray-800"} transition-colors`}
                 >
                   <div className="flex gap-3">
                     <div className="w-16 h-16 flex-shrink-0 relative">

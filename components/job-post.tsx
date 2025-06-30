@@ -431,12 +431,12 @@ export function JobPostComponent({
 
           <div className="w-full text-left min-w-0">
             <div className="space-y-2">
-              <div className="flex items-start gap-1">
-                <h3 className="font-bold text-base truncate flex-1">{jobPost.title}</h3>
+              <div className="flex items-center">
+                <h3 className="font-bold text-base">{jobPost.title}</h3>
                 {!showFullInfo && (
                   <button
                     onClick={() => setShowFullInfo(true)}
-                    className="text-sm text-gray-500 hover:text-gray-700 font-medium flex-shrink-0"
+                    className="text-sm text-gray-500 hover:text-gray-700 font-medium ml-1"
                   >
                     ...ver mais
                   </button>
