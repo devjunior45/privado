@@ -33,7 +33,7 @@ import { CommentsSheet } from "@/components/comments/comments-sheet"
 import { CityDisplay } from "@/components/ui/city-display"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
-import useMobile from "@/hooks/use-mobile" // Import useMobile
+import useMobile from "@/hooks/use-mobile"
 
 interface JobPostProps {
   jobPost: JobPostWithProfile & {
@@ -96,7 +96,7 @@ export function JobPostComponent({
   style,
   id,
 }: JobPostProps) {
-  const isMobile = useMobile() // Use the hook
+  const isMobile = useMobile()
   const [isLiked, setIsLiked] = useState(isLikedInitially || jobPost?.is_liked || false)
   const [isSaved, setIsSaved] = useState(isSavedInitially || jobPost?.is_saved || false)
   const [hasApplied, setHasApplied] = useState(hasAppliedInitially || jobPost?.has_applied || false)
@@ -126,7 +126,6 @@ export function JobPostComponent({
 
   useEffect(() => {
     if (jobPostId && jobPostTitle) {
-      // Add null checks for jobPost properties
       console.log("🔍 JobPost Debug:", {
         postId: jobPostId,
         title: jobPostTitle,
@@ -270,12 +269,12 @@ export function JobPostComponent({
   return (
     <>
       <Card
-        className={`w-full ${isMobile ? "rounded-none shadow-none border-0 mx-0.5" : "max-w-md mx-auto mb-6 border"} ${className || ""}`}
+        className={`w-full ${isMobile ? "rounded-none shadow-none border-0" : "max-w-md mx-auto mb-6 border"} ${className || ""}`}
         ref={targetRef}
         id={id || `post-${jobPost.id}`}
         style={style}
       >
-        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-4 pt-3 mx-0.5 bg-white" : ""}`}>
+        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-1 pt-3 bg-white" : ""}`}>
           <div className="relative">
             <Avatar className="w-10 h-10">
               <AvatarImage src={postProfile.avatar_url || "/placeholder.svg"} alt={postProfile.full_name || ""} />
@@ -291,34 +290,34 @@ export function JobPostComponent({
               </div>
             )}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Link href={`/profile/${postProfile.username}`} className="hover:underline">
               <div className="flex items-center gap-2">
-                <p className="font-semibold text-sm">
+                <p className="font-semibold text-sm truncate">
                   {postProfile.company_name || postProfile.full_name || postProfile.username}
                 </p>
                 {postProfile.is_verified && (
-                  <Badge className="bg-green-100 text-green-800 text-xs">
+                  <Badge className="bg-green-100 text-green-800 text-xs flex-shrink-0">
                     <ShieldCheck className="w-2 h-2 mr-1" />
                     Verificada
                   </Badge>
                 )}
               </div>
             </Link>
-            <p className="text-xs text-muted-foreground">@{postProfile.username}</p>
+            <p className="text-xs text-muted-foreground truncate">@{postProfile.username}</p>
           </div>
         </CardHeader>
 
-        <CardContent className={`p-0 ${isMobile ? "-mx-4" : ""}`}>
+        <CardContent className="p-0">
           {jobPost.image_url ? (
-            <div className="relative w-full">
+            <div className="relative w-full overflow-hidden">
               <Image
                 src={jobPost.image_url || "/placeholder.svg"}
                 alt={jobPost.title}
                 width={0}
                 height={0}
                 sizes="100vw"
-                className="w-full h-auto"
+                className="w-full h-auto max-w-full"
                 style={{ objectFit: "contain" }}
               />
             </div>
@@ -338,7 +337,7 @@ export function JobPostComponent({
           )}
         </CardContent>
 
-        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-4 pb-3 mx-0.5 bg-white" : ""}`}>
+        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-1 pb-3 bg-white" : ""}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
@@ -354,16 +353,16 @@ export function JobPostComponent({
                 <Share2 className="w-6 h-6" />
               </Button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="ghost" size="sm" onClick={handleSave} className="p-0 h-auto">
                 <Bookmark className={`w-6 h-6 ${isSaved ? "fill-blue-500 text-blue-500" : ""}`} />
               </Button>
               {(!isLoggedIn || (isLoggedIn && isCandidate)) && !isOwnPost && allowsPlatformApplications && (
                 <>
                   {hasApplied ? (
-                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full flex-shrink-0">
                       <CheckCircle className="w-4 h-4" />
-                      <span>
+                      <span className="whitespace-nowrap">
                         Candidatou-se
                         {applicationDate ? ` em ${new Date(applicationDate).toLocaleDateString("pt-BR")}` : ""}
                       </span>
@@ -371,7 +370,7 @@ export function JobPostComponent({
                   ) : (
                     <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm">
+                        <Button size="sm" className="flex-shrink-0">
                           <Send className="w-4 h-4 mr-2" />
                           Candidatar
                         </Button>
@@ -430,14 +429,14 @@ export function JobPostComponent({
             </div>
           </div>
 
-          <div className="w-full text-left">
+          <div className="w-full text-left min-w-0">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base">{jobPost.title}</h3>
+                <h3 className="font-bold text-base truncate flex-1">{jobPost.title}</h3>
                 {!showFullInfo && (
                   <button
                     onClick={() => setShowFullInfo(true)}
-                    className="text-sm text-white/80 hover:text-white font-medium"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
                   >
                     ...ver mais
                   </button>
@@ -446,17 +445,19 @@ export function JobPostComponent({
 
               {showFullInfo && (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{jobPost.description}</p>
-                  <p className="font-semibold text-blue-600">{jobPost.company}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      <CityDisplay cityId={jobPost.city_id} fallback={jobPost.location} />
+                  <p className="text-sm text-muted-foreground break-words">{jobPost.description}</p>
+                  <p className="font-semibold text-blue-600 truncate">{jobPost.company}</p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">
+                        <CityDisplay cityId={jobPost.city_id} fallback={jobPost.location} />
+                      </span>
                     </div>
                     {jobPost.salary && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
-                        <span>{jobPost.salary}</span>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <DollarSign className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{jobPost.salary}</span>
                       </div>
                     )}
                   </div>
