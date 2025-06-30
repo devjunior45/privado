@@ -16,6 +16,7 @@ interface PageHeaderProps {
   title?: string
   showSearch?: boolean
   showFilters?: boolean
+  enableStickyBehavior?: boolean // Nova prop
   onSearchChange?: (search: string) => void
   selectedCityId?: number | null
   onCityChange?: (cityId: number | null) => void
@@ -28,6 +29,7 @@ export function PageHeader({
   title,
   showSearch = false,
   showFilters = false,
+  enableStickyBehavior = false, // Valor padrão false
   onSearchChange,
   selectedCityId = null,
   onCityChange,
@@ -89,25 +91,27 @@ export function PageHeader({
     setCurrentSelectedCityId(selectedCityId)
   }, [selectedCityId])
 
-  // Controlar visibilidade e posição da barra
+  // Controlar visibilidade e posição da barra - apenas se enableStickyBehavior for true
   useEffect(() => {
+    if (!enableStickyBehavior) return
+
     const updateScrollBehavior = () => {
       const currentScrollY = window.scrollY
 
-      // Torna sticky após rolar 100px
-      if (currentScrollY > 100) {
+      // Só ativa o comportamento sticky após rolar 200px
+      if (currentScrollY > 200) {
         setIsSticky(true)
 
-        // Se rolou para baixo, esconder
-        if (currentScrollY > lastScrollYRef.current && currentScrollY > 150) {
+        // Se rolou para baixo, esconder imediatamente
+        if (currentScrollY > lastScrollYRef.current) {
           setIsVisible(false)
         }
-        // Se rolou para cima, mostrar
-        else if (currentScrollY < lastScrollYRef.current) {
+        // Se rolou para cima pelo menos 30px, mostrar
+        else if (currentScrollY < lastScrollYRef.current - 30) {
           setIsVisible(true)
         }
       } else {
-        // Antes de 100px, sempre visível e não sticky
+        // Antes de 200px, sempre visível e não sticky
         setIsSticky(false)
         setIsVisible(true)
       }
@@ -125,7 +129,7 @@ export function PageHeader({
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [enableStickyBehavior])
 
   // Encontrar cidade selecionada
   const selectedCity = cities.find((city) => city.id === currentSelectedCityId)
@@ -183,9 +187,9 @@ export function PageHeader({
     <div
       className={`
         bg-white transition-all duration-300 ease-out
-        md:sticky md:top-0
-        ${isSticky ? "fixed top-0 left-0 right-0 w-full z-50 border-b border-gray-200" : "relative"}
-        ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
+        ${enableStickyBehavior ? "md:sticky md:top-0" : ""}
+        ${enableStickyBehavior && isSticky ? "fixed top-0 left-0 right-0 w-full z-50 border-b border-gray-200" : "relative"}
+        ${enableStickyBehavior && isVisible ? "translate-y-0 opacity-100" : enableStickyBehavior ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}
       `}
     >
       {/* Container interno com padding apenas no mobile */}
@@ -227,7 +231,7 @@ export function PageHeader({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1 h-10 px-3 border-gray-300 hover:border-blue-500 rounded-lg"
+                  className="flex items-center gap-1 h-10 px-3 border-gray-300 hover:border-blue-500 rounded-lg bg-transparent"
                   disabled={isLoading}
                 >
                   <MapPin className="w-4 h-4 text-gray-500" />
@@ -277,7 +281,7 @@ export function PageHeader({
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm text-gray-900">Filtros</h3>
                   {hasActiveFilters && (
-                    <Button variant="outline" size="sm" onClick={clearFilters} className="h-7 text-xs">
+                    <Button variant="outline" size="sm" onClick={clearFilters} className="h-7 text-xs bg-transparent">
                       <X className="h-3 w-3 mr-1" />
                       Limpar
                     </Button>
@@ -289,7 +293,11 @@ export function PageHeader({
                   {cities.length > 0 && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="justify-between h-9 text-xs w-full">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="justify-between h-9 text-xs w-full bg-transparent"
+                        >
                           <span>Localização</span>
                           {selectedLocations.length > 0 && (
                             <span className="bg-blue-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center">
@@ -318,7 +326,11 @@ export function PageHeader({
                   {availableSalaryRanges.length > 0 && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="justify-between h-9 text-xs w-full">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="justify-between h-9 text-xs w-full bg-transparent"
+                        >
                           <span>Salário</span>
                           {selectedSalaryRanges.length > 0 && (
                             <span className="bg-blue-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center">

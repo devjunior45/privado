@@ -191,6 +191,7 @@ export default function FeedPage() {
           <PageHeader
             showSearch={true}
             showFilters={true}
+            enableStickyBehavior={true}
             onSearchChange={handleMobileSearchChange}
             selectedCityId={searchParams.get("city") ? Number.parseInt(searchParams.get("city")!) : null}
             onCityChange={handleMobileCityChange}
