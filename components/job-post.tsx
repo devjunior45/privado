@@ -274,7 +274,7 @@ export function JobPostComponent({
         id={id || `post-${jobPost.id}`}
         style={style}
       >
-        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-1 pt-3 bg-white" : ""}`}>
+        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-1.5 pt-3 bg-white" : ""}`}>
           <div className="relative">
             <Avatar className="w-10 h-10">
               <AvatarImage src={postProfile.avatar_url || "/placeholder.svg"} alt={postProfile.full_name || ""} />
@@ -337,7 +337,7 @@ export function JobPostComponent({
           )}
         </CardContent>
 
-        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-1 pb-3 bg-white" : ""}`}>
+        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-1.5 pb-3 bg-white" : ""}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
@@ -431,12 +431,12 @@ export function JobPostComponent({
 
           <div className="w-full text-left min-w-0">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-1">
                 <h3 className="font-bold text-base truncate flex-1">{jobPost.title}</h3>
                 {!showFullInfo && (
                   <button
                     onClick={() => setShowFullInfo(true)}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
+                    className="text-sm text-gray-500 hover:text-gray-700 font-medium flex-shrink-0"
                   >
                     ...ver mais
                   </button>

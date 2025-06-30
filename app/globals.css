@@ -129,7 +129,7 @@
     @apply bg-black;
   }
 
-  /* Inputs e forms */
+  /* Inputs e forms - removida borda azul, mantida cinza */
   input,
   textarea,
   select {
@@ -139,7 +139,7 @@
   input:focus,
   textarea:focus,
   select:focus {
-    @apply border-blue-500 ring-blue-500/20;
+    @apply border-gray-500 ring-gray-500/20;
   }
 
   /* Skeleton loading em modo escuro */
