@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Navigation } from "@/components/navigation"
 import { Header } from "@/components/header"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import ReactQueryProvider from "@/providers/react-query-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -68,22 +69,23 @@ export default async function RootLayout({
         {/* O Next.js gerencia as tags <link rel="manifest"> e <meta name="theme-color"> a partir dos exports `metadata` e `viewport` */}
       </head>
       <body className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
-        <Navigation isLoggedIn={!!authUser} userProfile={userProfileData} />
-        <main className="pb-20 md:pb-0 md:ml-64">
-          {authUser && userProfileData && (
-            <div className="hidden md:block sticky top-0 z-40 bg-background shadow-sm border-b">
-              <Header user={{ username: userProfileData.username, full_name: userProfileData.full_name }} />
-            </div>
-          )}
-          <div className="w-full">{children}</div>
-        </main>
-        <PWAInstallPrompt />
+        <ReactQueryProvider>
+          <Navigation isLoggedIn={!!authUser} userProfile={userProfileData} />
+          <main className="pb-20 md:pb-0 md:ml-64">
+            {authUser && userProfileData && (
+              <div className="hidden md:block sticky top-0 z-40 bg-background shadow-sm border-b">
+                <Header user={{ username: userProfileData.username, full_name: userProfileData.full_name }} />
+              </div>
+            )}
+            <div className="w-full">{children}</div>
+          </main>
+          <PWAInstallPrompt />
 
-        {/* SCRIPT DE REGISTRO DO SERVICE WORKER - ESSENCIAL PARA PWA */}
-        <script
-          id="service-worker-registration"
-          dangerouslySetInnerHTML={{
-            __html: `
+          {/* SCRIPT DE REGISTRO DO SERVICE WORKER - ESSENCIAL PARA PWA */}
+          <script
+            id="service-worker-registration"
+            dangerouslySetInnerHTML={{
+              __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js', { scope: '/' })
@@ -96,8 +98,9 @@ export default async function RootLayout({
                 });
               }
             `,
-          }}
-        />
+            }}
+          />
+        </ReactQueryProvider>
       </body>
     </html>
   )

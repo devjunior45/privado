@@ -258,11 +258,23 @@ function JobCard({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativa</Badge>
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-gray-800">
+            Ativa
+          </Badge>
+        )
       case "paused":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pausada</Badge>
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:hover:bg-gray-800">
+            Pausada
+          </Badge>
+        )
       case "closed":
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Encerrada</Badge>
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+            Encerrada
+          </Badge>
+        )
       default:
         return <Badge variant="secondary">{status}</Badge>
     }

@@ -55,7 +55,7 @@ const EDUCATION_LEVELS = [
   "Ensino Técnico",
   "Ensino Superior Incompleto",
   "Ensino Superior Completo",
-  "Pós-graduação",
+  "Pós-gradua��ão",
   "Mestrado",
   "Doutorado",
 ]

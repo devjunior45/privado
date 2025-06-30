@@ -63,7 +63,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
   const visibleJobPosts = isOwnProfile ? jobPosts : jobPosts.filter((post) => post.status === "active")
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
+    <div className="min-h-screen dark:bg-black bg-white">
       {/* Header fixo com botão voltar */}
       <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
@@ -76,7 +76,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
 
       <div className="max-w-md mx-auto">
         {/* Seção do Perfil */}
-        <div className="bg-white dark:bg-black p-6 space-y-4">
+        <div className="bg-white dark:bg-black dark:text-white p-6 space-y-4">
           {/* Avatar e Info Principal */}
           <div className="flex items-start gap-4">
             <Avatar className="w-20 h-20">
@@ -147,7 +147,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
         </div>
 
         {/* Divisor */}
-        <div className="h-2 bg-gray-100 dark:bg-gray-800" />
+        
 
         {/* Header das Vagas */}
         <div className="bg-white dark:bg-black px-6 py-3 border-b">
