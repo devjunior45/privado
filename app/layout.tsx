@@ -75,7 +75,7 @@ export default async function RootLayout({
               <Header user={{ username: userProfileData.username, full_name: userProfileData.full_name }} />
             </div>
           )}
-          <div className="w-full">{children}</div>
+          <div className="w-full px-3 md:px-4 md:max-w-lg md:mx-auto md:lg:px-6">{children}</div>
         </main>
         <PWAInstallPrompt />
 
