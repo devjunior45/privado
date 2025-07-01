@@ -34,6 +34,7 @@ import { CityDisplay } from "@/components/ui/city-display"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 import useMobile from "@/hooks/use-mobile"
+import { getRelativeDate } from "@/utils/date-utils"
 
 interface JobPostProps {
   jobPost: JobPostWithProfile & {
@@ -274,9 +275,9 @@ export function JobPostComponent({
         id={id || `post-${jobPost.id}`}
         style={style}
       >
-        <CardHeader className={`flex flex-row items-center gap-3 pb-3 ${isMobile ? "px-1.5 pt-3 bg-white" : ""}`}>
+        <CardHeader className={`flex flex-row items-center gap-2 pb-3 ${isMobile ? "px-1.5 pt-3 bg-white" : ""}`}>
           <div className="relative">
-            <Avatar className="w-10 h-10">
+            <Avatar className={`${isMobile ? "w-8 h-8" : "w-10 h-10"}`}>
               <AvatarImage src={postProfile.avatar_url || "/placeholder.svg"} alt={postProfile.full_name || ""} />
               <AvatarFallback>
                 {postProfile.company_name
@@ -286,25 +287,29 @@ export function JobPostComponent({
             </Avatar>
             {postProfile.is_verified && (
               <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                <ShieldCheck className="w-3 h-3 text-white" />
+                <ShieldCheck className={`${isMobile ? "w-2 h-2" : "w-3 h-3"} text-white`} />
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
             <Link href={`/profile/${postProfile.username}`} className="hover:underline">
               <div className="flex items-center gap-2">
-                <p className="font-semibold text-sm truncate">
+                <p className={`font-semibold truncate ${isMobile ? "text-xs" : "text-sm"}`}>
                   {postProfile.company_name || postProfile.full_name || postProfile.username}
                 </p>
                 {postProfile.is_verified && (
-                  <Badge className="bg-green-100 text-green-800 text-xs flex-shrink-0">
-                    <ShieldCheck className="w-2 h-2 mr-1" />
-                    Verificada
+                  <Badge
+                    className={`bg-green-100 text-green-800 flex-shrink-0 ${isMobile ? "text-xs px-1 py-0" : "text-xs"}`}
+                  >
+                    <ShieldCheck className={`${isMobile ? "w-2 h-2 mr-0.5" : "w-2 h-2 mr-1"}`} />
+                    {isMobile ? "✓" : "Verificada"}
                   </Badge>
                 )}
               </div>
             </Link>
-            <p className="text-xs text-muted-foreground truncate">@{postProfile.username}</p>
+            <p className={`text-muted-foreground truncate ${isMobile ? "text-xs" : "text-xs"}`}>
+              @{postProfile.username}
+            </p>
           </div>
         </CardHeader>
 
@@ -328,9 +333,9 @@ export function JobPostComponent({
               }`}
               style={{ backgroundColor: jobPost.background_color }}
             >
-              <h3 className="text-xl font-bold text-center mb-4">{jobPost.title}</h3>
-              <div className="flex items-center gap-1 text-lg">
-                <MapPin className="w-5 h-5" />
+              <h3 className={`font-bold text-center mb-4 ${isMobile ? "text-lg" : "text-xl"}`}>{jobPost.title}</h3>
+              <div className={`flex items-center gap-1 ${isMobile ? "text-base" : "text-lg"}`}>
+                <MapPin className={`${isMobile ? "w-4 h-4" : "w-5 h-5"}`} />
                 <CityDisplay cityId={jobPost.city_id} fallback={jobPost.location} />
               </div>
             </div>
@@ -342,20 +347,26 @@ export function JobPostComponent({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="sm" onClick={handleLike} className="p-0 h-auto">
-                  <Heart className={`w-6 h-6 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
+                  <Heart
+                    className={`${isMobile ? "w-7 h-7" : "w-6 h-6"} ${isLiked ? "fill-red-500 text-red-500" : ""} ${isMobile ? "stroke-2" : ""}`}
+                  />
                 </Button>
-                <span className="text-sm text-muted-foreground">{likesCount}</span>
+                <span className={`text-muted-foreground ${isMobile ? "text-sm font-medium" : "text-sm"}`}>
+                  {likesCount}
+                </span>
               </div>
               <Button variant="ghost" size="sm" onClick={handleComments} className="p-0 h-auto">
-                <MessageCircle className="w-6 h-6" />
+                <MessageCircle className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
               </Button>
               <Button variant="ghost" size="sm" onClick={handleShare} className="p-0 h-auto">
-                <Share2 className="w-6 h-6" />
+                <Share2 className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
               </Button>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="ghost" size="sm" onClick={handleSave} className="p-0 h-auto">
-                <Bookmark className={`w-6 h-6 ${isSaved ? "fill-blue-500 text-blue-500" : ""}`} />
+                <Bookmark
+                  className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"} ${isSaved ? "fill-blue-500 text-blue-500" : ""}`}
+                />
               </Button>
               {(!isLoggedIn || (isLoggedIn && isCandidate)) && !isOwnPost && allowsPlatformApplications && (
                 <>
@@ -432,7 +443,7 @@ export function JobPostComponent({
           <div className="w-full text-left min-w-0">
             <div className="space-y-2">
               <div className="flex items-center">
-                <h3 className="font-bold text-base">{jobPost.title}</h3>
+                <h3 className={`font-bold ${isMobile ? "text-sm" : "text-base"}`}>{jobPost.title}</h3>
                 {!showFullInfo && (
                   <button
                     onClick={() => setShowFullInfo(true)}
@@ -442,6 +453,11 @@ export function JobPostComponent({
                   </button>
                 )}
               </div>
+
+              {/* Data relativa */}
+              <p className={`text-muted-foreground ${isMobile ? "text-xs" : "text-xs"}`}>
+                {getRelativeDate(jobPost.created_at)}
+              </p>
 
               {showFullInfo && (
                 <div className="space-y-2">
@@ -461,9 +477,6 @@ export function JobPostComponent({
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(jobPost.created_at).toLocaleDateString("pt-BR")}
-                  </p>
                 </div>
               )}
             </div>

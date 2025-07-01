@@ -1,105 +1,59 @@
 import type React from "react"
-import type { Metadata, Viewport } from "next"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { createClient } from "@/lib/supabase/server"
 import { Navigation } from "@/components/navigation"
-import { Header } from "@/components/header"
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
-import ReactQueryProvider from "@/providers/react-query-provider"
+import { ReactQueryProvider } from "@/providers/react-query-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Galeria de Empregos",
-  description: "Encontre as melhores oportunidades de emprego na sua região.",
-  applicationName: "Galeria de Empregos",
+  description: "Encontre as melhores oportunidades de trabalho",
   manifest: "/manifest.json",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Galeria de Empregos",
   },
-  formatDetection: {
-    telephone: false,
-  },
   icons: {
-    icon: [{ url: "/favicon.ico", sizes: "any" }],
-    apple: [{ url: "/icon-192x192.png" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
     generator: 'v0.dev'
 }
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
-
-  let userProfileData = null
-  if (authUser) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("city_id, full_name, username, user_type")
-      .eq("id", authUser.id)
-      .single()
-    userProfileData = profile
-  }
-
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR">
       <head>
-        {/* O Next.js gerencia as tags <link rel="manifest"> e <meta name="theme-color"> a partir dos exports `metadata` e `viewport` */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Galeria de Empregos" />
       </head>
-      <body className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
+      <body className={inter.className}>
         <ReactQueryProvider>
-          <Navigation isLoggedIn={!!authUser} userProfile={userProfileData} />
-          <main className="pb-20 md:pb-0 md:ml-64">
-            {authUser && userProfileData && (
-              <div className="hidden md:block sticky top-0 z-40 bg-background shadow-sm border-b">
-                <Header user={{ username: userProfileData.username, full_name: userProfileData.full_name }} />
-              </div>
-            )}
-            <div className="w-full">{children}</div>
-          </main>
-          <PWAInstallPrompt />
-
-          {/* SCRIPT DE REGISTRO DO SERVICE WORKER - ESSENCIAL PARA PWA */}
-          <script
-            id="service-worker-registration"
-            dangerouslySetInnerHTML={{
-              __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(registration) {
-                      console.log('Service Worker registrado com sucesso. Escopo: ', registration.scope);
-                    })
-                    .catch(function(error) {
-                      console.error('Falha ao registrar o Service Worker: ', error);
-                    });
-                });
-              }
-            `,
-            }}
-          />
+          <div className="w-full">
+            <main className="w-full">{children}</main>
+            <Navigation />
+          </div>
         </ReactQueryProvider>
       </body>
     </html>
