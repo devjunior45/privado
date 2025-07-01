@@ -11,10 +11,6 @@ export function getRelativeDate(dateString: string): string {
   } else if (diffInDays === 2) {
     return "a 2 dias"
   } else {
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
+    return date.toLocaleDateString("pt-BR")
   }
 }
