@@ -20,7 +20,9 @@ export default async function NotificationsPage() {
 
   return (
     <PageContainer header={<PageHeader title="Notificações" userProfile={userProfile} />}>
-      <NotificationsList userId={user.id} />
+      <div className="mx-4">
+        <NotificationsList userId={user.id} />
+      </div>
     </PageContainer>
   )
 }

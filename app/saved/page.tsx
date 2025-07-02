@@ -151,7 +151,7 @@ export default async function SavedJobsPage() {
   return (
     <PageContainer header={<PageHeader title="Vagas Salvas" userProfile={userProfile} />}>
       {!savedJobs || savedJobs.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 mx-4">
           <Bookmark className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground mb-2">Você ainda não salvou nenhuma vaga.</p>
           <p className="text-sm text-muted-foreground mb-4">
@@ -162,7 +162,7 @@ export default async function SavedJobsPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 mx-4">
           {savedJobs.map((savedJob) => (
             <Card
               key={savedJob.id}
@@ -222,7 +222,7 @@ export default async function SavedJobsPage() {
                   <div className="flex gap-2 pt-2">
                     {savedJob.job_posts.status === "active" ? (
                       <>
-                        <Button variant="outline" size="sm" asChild className="flex-1">
+                        <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
                           <Link href={`/post/${savedJob.job_posts.id}`}>Ver Vaga</Link>
                         </Button>
                         {!savedJob.has_applied ? (
@@ -237,7 +237,7 @@ export default async function SavedJobsPage() {
                       </>
                     ) : (
                       <>
-                        <Button variant="outline" size="sm" disabled className="flex-1">
+                        <Button variant="outline" size="sm" disabled className="flex-1 bg-transparent">
                           Ver Vaga
                         </Button>
                         <Button size="sm" disabled className="flex-1">

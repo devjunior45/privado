@@ -28,11 +28,13 @@ export default async function ProfilePage() {
     <PageContainer
       header={<PageHeader title={isRecruiter ? "Perfil da Empresa" : "Meu Perfil"} userProfile={profile} />}
     >
-      {isRecruiter ? (
-        <RecruiterProfile profile={profile} isOwnProfile={true} />
-      ) : (
-        <ProfileView profile={profile} isOwnProfile={true} />
-      )}
+      <div className="mx-4">
+        {isRecruiter ? (
+          <RecruiterProfile profile={profile} isOwnProfile={true} />
+        ) : (
+          <ProfileView profile={profile} isOwnProfile={true} />
+        )}
+      </div>
     </PageContainer>
   )
 }

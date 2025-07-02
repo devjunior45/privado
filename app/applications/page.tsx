@@ -68,14 +68,14 @@ export default async function ApplicationsPage() {
   return (
     <PageContainer header={<PageHeader title="Minhas Candidaturas" userProfile={userProfile} />}>
       {!applications || applications.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 mx-4">
           <p className="text-muted-foreground">Você ainda não se candidatou a nenhuma vaga.</p>
           <Button asChild className="mt-4">
             <Link href="/feed">Ver Vagas Disponíveis</Link>
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 mx-4">
           {applications.map((application) => (
             <Card key={application.id} className={`${application.job_posts.status !== "active" ? "opacity-75" : ""}`}>
               <CardHeader className="pb-2">
