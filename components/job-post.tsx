@@ -84,7 +84,7 @@ interface JobPostProps {
   id?: string
 }
 
-export function JobPostComponent({
+export function JobPost({
   jobPost,
   profile,
   userProfile,
@@ -495,5 +495,6 @@ export function JobPostComponent({
   )
 }
 
-export default JobPostComponent
-export { JobPostComponent as JobPost }
+// Export both named and default
+export default JobPost
+export { JobPost as JobPostComponent }

@@ -1,39 +1,20 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
-import { Suspense } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
-
-function NotFoundContent() {
-  const searchParams = useSearchParams()
-  const from = searchParams.get("from")
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
-        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Página não encontrada</h2>
-        <p className="text-gray-600 mb-8">A página que você está procurando não existe ou foi movida.</p>
-        <div className="space-x-4">
-          <Button asChild>
-            <Link href="/">Voltar ao início</Link>
-          </Button>
-          {from && (
-            <Button variant="outline" asChild>
-              <Link href={from}>Voltar</Link>
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
+import { useRouter } from "next/navigation"
 
 export default function NotFoundPage() {
+  const router = useRouter()
+
   return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NotFoundContent />
-    </Suspense>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold text-foreground">404</h1>
+        <p className="text-muted-foreground">Página não encontrada</p>
+        <Button onClick={() => router.push("/")} variant="default">
+          Voltar ao início
+        </Button>
+      </div>
+    </div>
   )
 }
