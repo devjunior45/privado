@@ -4,6 +4,7 @@ import { ProfileView } from "@/components/profile/profile-view"
 import { Button } from "@/components/ui/button"
 import { User, FileText, Briefcase } from "lucide-react"
 import Link from "next/link"
+import { RecruiterProfile } from "@/components/profile/recruiter-profile"
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -28,7 +29,7 @@ export default async function ProfilePage() {
                 trabalho.
               </p>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3 mb-8 flex flex-col items-center">
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <FileText className="w-4 h-4 text-primary" />
                   <span>Currículo automático em PDF</span>
@@ -55,11 +56,17 @@ export default async function ProfilePage() {
     )
   }
 
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+
   return (
     <div className="min-h-screen bg-background">
       <Header title="Perfil" showSettings={true} isLoggedIn={true} />
       <div className="mx-4 md:mx-0">
-        <ProfileView />
+        {profile.user_type === "recruiter" ? (
+          <RecruiterProfile profile={profile} isOwnProfile={true} />
+        ) : (
+          <ProfileView profile={profile} isOwnProfile={true} />
+        )}
       </div>
     </div>
   )

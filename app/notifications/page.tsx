@@ -27,7 +27,7 @@ export default async function NotificationsPage() {
                 Seja o primeiro a saber sobre vagas que combinam com seu perfil e nunca perca uma oportunidade.
               </p>
 
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3 mb-8 flex flex-col items-center">
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <Zap className="w-4 h-4 text-primary" />
                   <span>Alertas instantâneos de novas vagas</span>
