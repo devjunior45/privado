@@ -1,117 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { JobPost } from "@/components/job-post"
-import { PageContainer } from "@/components/page-container"
-import { LoginPrompt } from "@/components/auth/login-prompt"
+import { Button } from "@/components/ui/button"
+import { Bookmark, Heart, Search } from "lucide-react"
+import Link from "next/link"
 
-async function getSavedJobsWithApplications() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return []
-  }
-
-  // Buscar vagas salvas com informações de candidatura
-  const { data: savedJobs, error } = await supabase
-    .from("saved_jobs")
-    .select(
-      `
-      *,
-      job_posts (
-        id,
-        title,
-        company,
-        location,
-        city_id,
-        salary,
-        description,
-        image_url,
-        background_color,
-        created_at,
-        likes_count,
-        status,
-        profiles (
-          full_name,
-          username,
-          user_type
-        )
-      )
-    `,
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Erro ao buscar vagas salvas:", error)
-    return []
-  }
-
-  if (!savedJobs || savedJobs.length === 0) {
-    return []
-  }
-
-  // Buscar candidaturas do usuário para essas vagas
-  const jobIds = savedJobs.map((job) => job.job_posts.id)
-
-  let applications = []
-  try {
-    // Tentar diferentes estruturas de tabela
-    const queries = [
-      // Estrutura padrão: job_id + user_id
-      supabase
-        .from("job_applications")
-        .select("job_id, created_at")
-        .eq("user_id", user.id)
-        .in("job_id", jobIds),
-
-      // Estrutura alternativa: post_id + user_id
-      supabase
-        .from("job_applications")
-        .select("post_id, created_at")
-        .eq("user_id", user.id)
-        .in("post_id", jobIds),
-
-      // Estrutura legado: job_id + candidate_id
-      supabase
-        .from("job_applications")
-        .select("job_id, created_at")
-        .eq("candidate_id", user.id)
-        .in("job_id", jobIds),
-    ]
-
-    for (const query of queries) {
-      const { data, error } = await query
-      if (!error && data) {
-        applications = data
-        console.log("✅ Candidaturas encontradas:", applications.length)
-        break
-      }
-    }
-  } catch (error) {
-    console.error("❌ Erro ao buscar candidaturas:", error)
-  }
-
-  // Mapear candidaturas para as vagas salvas
-  const savedJobsWithApplications = savedJobs.map((savedJob) => {
-    const application = applications.find(
-      (app) => app.job_id === savedJob.job_posts.id || app.post_id === savedJob.job_posts.id,
-    )
-
-    return {
-      ...savedJob,
-      has_applied: !!application,
-      application_date: application?.created_at || null,
-    }
-  })
-
-  return savedJobsWithApplications
-}
-
-export default async function SavedJobsPage() {
+export default async function SavedPage() {
   const supabase = await createClient()
 
   const {
@@ -120,55 +14,97 @@ export default async function SavedJobsPage() {
 
   if (!user) {
     return (
-      <PageContainer>
-        <div className="md:hidden">
-          <Header title="Vagas Salvas" isLoggedIn={false} />
-        </div>
-        <div className="mx-4 md:mx-0 py-8">
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 bg-muted rounded-full mx-auto flex items-center justify-center">
-              <span className="text-2xl">🔖</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Salve suas vagas favoritas</h2>
-              <p className="text-muted-foreground mb-4">
-                Faça login para salvar vagas interessantes e acessá-las rapidamente depois
+      <div className="min-h-screen bg-background">
+        <Header title="Salvos" showSettings={false} isLoggedIn={false} />
+        <div className="mx-4 md:mx-0">
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-center px-4">
+            <div className="mb-8">
+              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <Bookmark className="w-12 h-12 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Salve suas vagas favoritas</h2>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                Organize e acompanhe as oportunidades que mais te interessam. Nunca mais perca uma vaga importante!
               </p>
+
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Heart className="w-4 h-4 text-primary" />
+                  <span>Salve vagas com um toque</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Search className="w-4 h-4 text-primary" />
+                  <span>Acesse rapidamente suas favoritas</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Bookmark className="w-4 h-4 text-primary" />
+                  <span>Organize por categorias</span>
+                </div>
+              </div>
             </div>
-            <LoginPrompt />
+
+            <Link href="/login">
+              <Button size="lg" className="w-full max-w-sm">
+                Criar Conta ou Entrar
+              </Button>
+            </Link>
           </div>
         </div>
-      </PageContainer>
+      </div>
     )
   }
 
-  const savedJobs = await getSavedJobsWithApplications()
-  const jobs = savedJobs?.map((saved) => saved.job_posts).filter(Boolean) || []
+  // Buscar vagas salvas do usuário
+  const { data: savedJobs } = await supabase
+    .from("saved_jobs")
+    .select(`
+      job_posts (
+        id,
+        title,
+        company,
+        location,
+        salary_min,
+        salary_max,
+        job_type,
+        description,
+        requirements,
+        benefits,
+        created_at,
+        profiles (
+          username,
+          full_name,
+          company_name
+        )
+      )
+    `)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
 
   return (
-    <PageContainer>
-      <div className="md:hidden">
-        <Header title="Vagas Salvas" isLoggedIn={true} />
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header title="Vagas Salvas" showSettings={false} isLoggedIn={true} />
       <div className="mx-4 md:mx-0">
-        {jobs.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 bg-muted rounded-full mx-auto flex items-center justify-center mb-4">
-              <span className="text-2xl">🔖</span>
+        <div className="py-4 space-y-4">
+          {savedJobs && savedJobs.length > 0 ? (
+            savedJobs.map((savedJob: any) => (
+              <JobPost key={savedJob.job_posts.id} post={savedJob.job_posts} currentUserId={user.id} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Bookmark className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">Nenhuma vaga salva</h3>
+              <p className="text-muted-foreground mb-4">
+                Comece a salvar vagas que te interessam para acessá-las rapidamente
+              </p>
+              <Link href="/feed">
+                <Button>Ver Vagas Disponíveis</Button>
+              </Link>
             </div>
-            <p className="text-muted-foreground mb-2">Você ainda não salvou nenhuma vaga.</p>
-            <p className="text-sm text-muted-foreground">
-              Salve vagas interessantes para acessá-las rapidamente depois.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {jobs.map((job: any) => (
-              <JobPost key={job.id} post={job} />
-            ))}
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </PageContainer>
+    </div>
   )
 }
