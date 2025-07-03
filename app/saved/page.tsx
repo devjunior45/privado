@@ -1,13 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Bookmark, Heart, Pause, X, CheckCircle } from "lucide-react"
-import Link from "next/link"
+import { Header } from "@/components/header"
+import { JobPost } from "@/components/job-post"
 import { PageContainer } from "@/components/page-container"
-import { PageHeader } from "@/components/page-header"
-import { CityDisplay } from "@/components/ui/city-display"
+import { LoginPrompt } from "@/components/auth/login-prompt"
 
 async function getSavedJobsWithApplications() {
   const supabase = await createClient()
@@ -38,7 +33,12 @@ async function getSavedJobsWithApplications() {
         background_color,
         created_at,
         likes_count,
-        status
+        status,
+        profiles (
+          full_name,
+          username,
+          user_type
+        )
       )
     `,
     )
@@ -119,139 +119,56 @@ export default async function SavedJobsPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/login")
+    return (
+      <PageContainer>
+        <div className="md:hidden">
+          <Header title="Vagas Salvas" isLoggedIn={false} />
+        </div>
+        <div className="mx-4 md:mx-0 py-8">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 bg-muted rounded-full mx-auto flex items-center justify-center">
+              <span className="text-2xl">🔖</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Salve suas vagas favoritas</h2>
+              <p className="text-muted-foreground mb-4">
+                Faça login para salvar vagas interessantes e acessá-las rapidamente depois
+              </p>
+            </div>
+            <LoginPrompt />
+          </div>
+        </div>
+      </PageContainer>
+    )
   }
-
-  // Buscar perfil do usuário para cidade padrão
-  const { data: userProfile } = await supabase.from("profiles").select("city_id").eq("id", user.id).single()
 
   const savedJobs = await getSavedJobsWithApplications()
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "paused":
-        return (
-          <Badge variant="secondary" className="text-yellow-700 bg-yellow-100">
-            <Pause className="w-3 h-3 mr-1" />
-            Pausada
-          </Badge>
-        )
-      case "closed":
-        return (
-          <Badge variant="secondary" className="text-red-700 bg-red-100">
-            <X className="w-3 h-3 mr-1" />
-            Encerrada
-          </Badge>
-        )
-      default:
-        return null
-    }
-  }
+  const jobs = savedJobs?.map((saved) => saved.job_posts).filter(Boolean) || []
 
   return (
-    <PageContainer header={<PageHeader title="Vagas Salvas" userProfile={userProfile} />}>
-      {!savedJobs || savedJobs.length === 0 ? (
-        <div className="text-center py-12 mx-4">
-          <Bookmark className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground mb-2">Você ainda não salvou nenhuma vaga.</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Salve vagas interessantes para acessá-las rapidamente depois.
-          </p>
-          <Button asChild>
-            <Link href="/feed">Explorar Vagas</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-4 mx-4">
-          {savedJobs.map((savedJob) => (
-            <Card
-              key={savedJob.id}
-              className={`hover:shadow-md transition-shadow ${savedJob.job_posts.status !== "active" ? "opacity-75" : ""}`}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-lg">{savedJob.job_posts.title}</CardTitle>
-                      {getStatusBadge(savedJob.job_posts.status)}
-                    </div>
-                    <p className="text-blue-600 font-medium">{savedJob.job_posts.company}</p>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Heart className="w-4 h-4" />
-                    <span>{savedJob.job_posts.likes_count || 0}</span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <CityDisplay cityId={savedJob.job_posts.city_id} fallback={savedJob.job_posts.location} />
-                  </div>
-
-                  {savedJob.job_posts.salary && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="font-medium">Salário:</span>
-                      <span>{savedJob.job_posts.salary}</span>
-                    </div>
-                  )}
-
-                  {savedJob.job_posts.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{savedJob.job_posts.description}</p>
-                  )}
-
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>Salva em {new Date(savedJob.created_at).toLocaleDateString("pt-BR")}</span>
-                  </div>
-
-                  {/* Mostrar status de candidatura se aplicável */}
-                  {savedJob.has_applied && (
-                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full w-fit">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>
-                        Candidatou-se
-                        {savedJob.application_date
-                          ? ` em ${new Date(savedJob.application_date).toLocaleDateString("pt-BR")}`
-                          : ""}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    {savedJob.job_posts.status === "active" ? (
-                      <>
-                        <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
-                          <Link href={`/post/${savedJob.job_posts.id}`}>Ver Vaga</Link>
-                        </Button>
-                        {!savedJob.has_applied ? (
-                          <Button size="sm" asChild className="flex-1">
-                            <Link href={`/post/${savedJob.job_posts.id}`}>Candidatar-se</Link>
-                          </Button>
-                        ) : (
-                          <Button size="sm" disabled className="flex-1">
-                            Já Candidatado
-                          </Button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="outline" size="sm" disabled className="flex-1 bg-transparent">
-                          Ver Vaga
-                        </Button>
-                        <Button size="sm" disabled className="flex-1">
-                          {savedJob.job_posts.status === "paused" ? "Vaga Pausada" : "Vaga Encerrada"}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+    <PageContainer>
+      <div className="md:hidden">
+        <Header title="Vagas Salvas" isLoggedIn={true} />
+      </div>
+      <div className="mx-4 md:mx-0">
+        {jobs.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-muted rounded-full mx-auto flex items-center justify-center mb-4">
+              <span className="text-2xl">🔖</span>
+            </div>
+            <p className="text-muted-foreground mb-2">Você ainda não salvou nenhuma vaga.</p>
+            <p className="text-sm text-muted-foreground">
+              Salve vagas interessantes para acessá-las rapidamente depois.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {jobs.map((job: any) => (
+              <JobPost key={job.id} post={job} />
+            ))}
+          </div>
+        )}
+      </div>
     </PageContainer>
   )
 }
