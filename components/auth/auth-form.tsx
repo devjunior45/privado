@@ -6,12 +6,12 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Building, ArrowLeft, MapPin, Users, Eye } from "lucide-react"
 import type { UserType } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
-import Image from "next/image"
 
 type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
 
@@ -111,15 +111,12 @@ export function AuthForm() {
   }
 
   const renderWelcomeStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
-        </div>
-        <p className="text-muted-foreground">Conectando talentos e oportunidades</p>
-      </div>
-
-      <div className="space-y-4">
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Galeria de Empregos</CardTitle>
+        <CardDescription>Conectando talentos e oportunidades</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="text-center mb-6">
           <h3 className="text-lg font-medium mb-2">Bem-vindo!</h3>
           <p className="text-muted-foreground">Como você gostaria de continuar?</p>
@@ -132,65 +129,59 @@ export function AuthForm() {
         <Button onClick={() => setCurrentStep("user-type")} className="w-full h-12" variant="outline">
           Quero criar uma conta
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 
   const renderLoginStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
-        </div>
-        <h2 className="text-2xl font-bold">Entrar</h2>
-        <p className="text-muted-foreground">Acesse sua conta</p>
-      </div>
+        <CardTitle className="text-2xl">Entrar</CardTitle>
+        <CardDescription>Acesse sua conta</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {error && (
-        <Alert className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <form onSubmit={handleSignIn} className="space-y-4">
-        <div>
-          <Label htmlFor="signin-email">Email</Label>
-          <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div>
-          <Label htmlFor="signin-password">Senha</Label>
-          <Input
-            id="signin-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Entrando..." : "Entrar"}
-        </Button>
-      </form>
-    </div>
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <div>
+            <Label htmlFor="signin-email">Email</Label>
+            <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div>
+            <Label htmlFor="signin-password">Senha</Label>
+            <Input
+              id="signin-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Entrando..." : "Entrar"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 
   const renderUserTypeStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
-        </div>
-        <h2 className="text-2xl font-bold">Criar Conta</h2>
-        <p className="text-muted-foreground">O que você pretende fazer?</p>
-      </div>
-
-      <div className="space-y-4">
+        <CardTitle className="text-2xl">Criar Conta</CardTitle>
+        <CardDescription>O que você pretende fazer?</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <Button
           onClick={() => handleUserTypeSelect("candidate")}
           className="w-full h-20 flex flex-col items-center justify-center gap-2"
@@ -214,37 +205,33 @@ export function AuthForm() {
             <p className="text-xs text-muted-foreground">Divulgar oportunidades de trabalho</p>
           </div>
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 
   const renderCitySelectionStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("user-type")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
-        </div>
-        <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
+        <CardTitle className="text-2xl flex items-center justify-center gap-2">
           <MapPin className="w-6 h-6" />
           Sua Cidade
-        </h2>
-        <p className="text-muted-foreground">
+        </CardTitle>
+        <CardDescription>
           {userType === "candidate"
             ? "Escolha sua cidade para ver vagas próximas"
             : "Escolha sua cidade base para suas vagas"}
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <div className="flex items-start gap-2">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <Users className="w-5 h-5 text-blue-600 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Não se preocupe!</p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+              <p className="text-sm font-medium text-blue-900">Não se preocupe!</p>
+              <p className="text-xs text-blue-700 mt-1">
                 Você poderá {userType === "candidate" ? "ver vagas" : "postar vagas"} em outras cidades também. Esta é
                 apenas sua cidade principal.
               </p>
@@ -265,13 +252,13 @@ export function AuthForm() {
         <Button onClick={handleCityNext} className="w-full" disabled={!selectedCityId}>
           Continuar
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 
   const renderPersonalInfoStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
         <Button
           variant="ghost"
           size="sm"
@@ -280,57 +267,55 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
-        </div>
-        <h2 className="text-2xl font-bold">Seus Dados</h2>
-        <p className="text-muted-foreground">Finalize seu cadastro</p>
-      </div>
+        <CardTitle className="text-2xl">Seus Dados</CardTitle>
+        <CardDescription>Finalize seu cadastro</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {error && (
-        <Alert className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div>
+            <Label htmlFor="signup-fullName">Nome Completo</Label>
+            <Input id="signup-fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          </div>
 
-      <form onSubmit={handleSignUp} className="space-y-4">
-        <div>
-          <Label htmlFor="signup-fullName">Nome Completo</Label>
-          <Input id="signup-fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        </div>
+          <div>
+            <Label htmlFor="signup-username">Nome de Usuário</Label>
+            <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-username">Nome de Usuário</Label>
-          <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </div>
+          <div>
+            <Label htmlFor="signup-email">Email</Label>
+            <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-email">Email</Label>
-          <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
+          <div>
+            <Label htmlFor="signup-password">Senha</Label>
+            <Input
+              id="signup-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-password">Senha</Label>
-          <Input
-            id="signup-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Criando conta..." : "Criar conta"}
-        </Button>
-      </form>
-    </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Criando conta..." : "Criar conta"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 
   const renderCompanyInfoStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
         <Button
           variant="ghost"
           size="sm"
@@ -339,72 +324,70 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
-        </div>
-        <h2 className="text-2xl font-bold">Dados da Empresa</h2>
-        <p className="text-muted-foreground">Finalize seu cadastro</p>
-      </div>
+        <CardTitle className="text-2xl">Dados da Empresa</CardTitle>
+        <CardDescription>Finalize seu cadastro</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {error && (
-        <Alert className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div>
+            <Label htmlFor="signup-fullName">Nome do Responsável</Label>
+            <Input id="signup-fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          </div>
 
-      <form onSubmit={handleSignUp} className="space-y-4">
-        <div>
-          <Label htmlFor="signup-fullName">Nome do Responsável</Label>
-          <Input id="signup-fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        </div>
+          <div>
+            <Label htmlFor="signup-companyName">Nome da Empresa</Label>
+            <Input
+              id="signup-companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              required
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-companyName">Nome da Empresa</Label>
-          <Input
-            id="signup-companyName"
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            required
-          />
-        </div>
+          <div>
+            <Label htmlFor="signup-companyLocation">Localização da Empresa</Label>
+            <Input
+              id="signup-companyLocation"
+              value={companyLocation}
+              onChange={(e) => setCompanyLocation(e.target.value)}
+              required
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-companyLocation">Localização da Empresa</Label>
-          <Input
-            id="signup-companyLocation"
-            value={companyLocation}
-            onChange={(e) => setCompanyLocation(e.target.value)}
-            required
-          />
-        </div>
+          <div>
+            <Label htmlFor="signup-username">Nome de Usuário</Label>
+            <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-username">Nome de Usuário</Label>
-          <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </div>
+          <div>
+            <Label htmlFor="signup-email">Email</Label>
+            <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-email">Email</Label>
-          <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
+          <div>
+            <Label htmlFor="signup-password">Senha</Label>
+            <Input
+              id="signup-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="signup-password">Senha</Label>
-          <Input
-            id="signup-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Criando conta..." : "Criar conta"}
-        </Button>
-      </form>
-    </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Criando conta..." : "Criar conta"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 
   const renderCurrentStep = () => {
@@ -426,9 +409,5 @@ export function AuthForm() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 relative">
-      {renderCurrentStep()}
-    </div>
-  )
+  return <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">{renderCurrentStep()}</div>
 }

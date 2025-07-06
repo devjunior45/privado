@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import React from "react"
 
 import { Input } from "@/components/ui/input"
-import { Search, User, Briefcase, LayoutDashboard, Bookmark, Bell, MapPin } from "lucide-react"
+import { Search, User, Briefcase, LogIn, LayoutDashboard, Bookmark, Bell, MapPin } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useTransition, useState, useEffect, useCallback } from "react"
 import { UserTypeDialog } from "./auth/user-type-dialog"
@@ -13,7 +13,6 @@ import useMobile from "@/hooks/use-mobile"
 import { CityModal } from "@/components/ui/city-modal"
 import { useCities } from "@/hooks/use-cities"
 import { formatCityDisplay } from "@/utils/city-utils"
-import { SettingsDropdown } from "@/components/ui/settings-dropdown"
 
 interface NavigationProps {
   isLoggedIn: boolean
@@ -85,34 +84,26 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
   }, [pathname, isOwnProfile])
 
   const tabs = React.useMemo(() => {
-    const baseTabs = [
-      { id: "opportunities", label: "Vagas", icon: Search, path: "/feed" },
-      { id: "saved", label: "Salvos", icon: Bookmark, path: "/saved" },
-    ]
+    const baseTabs = [{ id: "opportunities", label: "Vagas", icon: Search, path: "/feed" }]
 
     if (isLoggedIn) {
+      const loggedInTabs = [...baseTabs, { id: "saved", label: "Salvos", icon: Bookmark, path: "/saved" }]
       if (userProfile?.user_type === "candidate") {
-        baseTabs.push(
+        loggedInTabs.push(
           { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
           { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications", badge: displayUnreadCount },
         )
       } else if (userProfile?.user_type === "recruiter") {
-        baseTabs.push(
+        loggedInTabs.push(
           { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
           { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications", badge: displayUnreadCount },
         )
       }
-      baseTabs.push({ id: "profile", label: "Perfil", icon: User, path: "/profile" })
+      loggedInTabs.push({ id: "profile", label: "Perfil", icon: User, path: "/profile" })
+      return loggedInTabs
     } else {
-      // Para usuários não logados, mostrar todas as opções
-      baseTabs.push(
-        { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
-        { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
-        { id: "profile", label: "Perfil", icon: User, path: "/profile" },
-      )
+      return [...baseTabs, { id: "login", label: "Entrar", icon: LogIn, path: "/login" }]
     }
-
-    return baseTabs
   }, [isLoggedIn, userProfile?.user_type, displayUnreadCount])
 
   useEffect(() => {
@@ -127,6 +118,11 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
       setClickedButton(tab.id)
       setTimeout(() => setClickedButton(null), 150)
 
+      if (!isLoggedIn && ["profile", "applications", "dashboard", "saved", "notifications"].includes(tab.id)) {
+        setIsUserTypeDialogOpen(true)
+        return
+      }
+
       // Para desktop, se clicar em "Vagas", abrir a caixa de pesquisa também
       if (!isMobile && tab.id === "opportunities") {
         setIsSearchExpanded(true)
@@ -139,7 +135,7 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
         router.push(tab.path)
       })
     },
-    [activeTab, pathname, router, isMobile],
+    [isLoggedIn, activeTab, pathname, router, isMobile],
   )
 
   const handleSidebarCityChange = (cityId: number | null) => {
@@ -292,13 +288,6 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
             )
           })}
         </div>
-
-        {/* Settings - Only show when logged in */}
-        {isLoggedIn && (
-          <div className="p-4 border-t border-border">
-            <SettingsDropdown />
-          </div>
-        )}
       </nav>
 
       {/* City Modal */}

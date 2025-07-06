@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Bookmark, Heart, Pause, X, CheckCircle, Search } from "lucide-react"
+import { Calendar, MapPin, Bookmark, Heart, Pause, X, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { PageContainer } from "@/components/page-container"
 import { PageHeader } from "@/components/page-header"
@@ -118,47 +119,7 @@ export default async function SavedJobsPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="md:hidden">
-          <PageHeader title="Salvos" />
-        </div>
-        <div className="mx-4 md:mx-0">
-          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-center px-4">
-            <div className="mb-8">
-              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
-                <Bookmark className="w-12 h-12 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Salve suas vagas favoritas</h2>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                Organize e acompanhe as oportunidades que mais te interessam. Nunca mais perca uma vaga importante!
-              </p>
-
-              <div className="space-y-3 mb-8 flex flex-col items-center">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <Heart className="w-4 h-4 text-primary" />
-                  <span>Salve vagas com um toque</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <Search className="w-4 h-4 text-primary" />
-                  <span>Acesse rapidamente suas favoritas</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <Bookmark className="w-4 h-4 text-primary" />
-                  <span>Organize por categorias</span>
-                </div>
-              </div>
-            </div>
-
-            <Link href="/login">
-              <Button size="lg" className="w-full max-w-sm">
-                Criar Conta ou Entrar
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
+    redirect("/login")
   }
 
   // Buscar perfil do usuário para cidade padrão
@@ -190,7 +151,7 @@ export default async function SavedJobsPage() {
   return (
     <PageContainer header={<PageHeader title="Vagas Salvas" userProfile={userProfile} />}>
       {!savedJobs || savedJobs.length === 0 ? (
-        <div className="text-center py-12 mx-4">
+        <div className="text-center py-12">
           <Bookmark className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground mb-2">Você ainda não salvou nenhuma vaga.</p>
           <p className="text-sm text-muted-foreground mb-4">
@@ -201,7 +162,7 @@ export default async function SavedJobsPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4 mx-4">
+        <div className="space-y-4">
           {savedJobs.map((savedJob) => (
             <Card
               key={savedJob.id}
@@ -261,7 +222,7 @@ export default async function SavedJobsPage() {
                   <div className="flex gap-2 pt-2">
                     {savedJob.job_posts.status === "active" ? (
                       <>
-                        <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
+                        <Button variant="outline" size="sm" asChild className="flex-1">
                           <Link href={`/post/${savedJob.job_posts.id}`}>Ver Vaga</Link>
                         </Button>
                         {!savedJob.has_applied ? (
@@ -276,7 +237,7 @@ export default async function SavedJobsPage() {
                       </>
                     ) : (
                       <>
-                        <Button variant="outline" size="sm" disabled className="flex-1 bg-transparent">
+                        <Button variant="outline" size="sm" disabled className="flex-1">
                           Ver Vaga
                         </Button>
                         <Button size="sm" disabled className="flex-1">
