@@ -13,7 +13,6 @@ export function RecruiterDashboard({ recruiterId }: RecruiterDashboardProps) {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Gerencie suas vagas de emprego</p>
         </div>
         <Button asChild>
@@ -25,7 +24,9 @@ export function RecruiterDashboard({ recruiterId }: RecruiterDashboardProps) {
       </div>
 
       {/* Gestão de Vagas */}
-      <JobsManagement recruiterId={recruiterId} />
+      <div className="space-y-4">
+        <JobsManagement recruiterId={recruiterId} />
+      </div>
     </div>
   )
 }

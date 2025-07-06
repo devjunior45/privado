@@ -103,22 +103,24 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
 
   if (isLoading) {
     return (
-      <div className="space-y-4 p-4">
-        <Skeleton className="h-16" />
-        <Skeleton className="h-12" />
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
+      <div className="min-h-screen bg-gray-50 dark:bg-black">
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-16" />
+          <Skeleton className="h-12" />
+          <div className="space-y-3 mx-4 md:mx-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header Fixo */}
-      <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
+      <div className="sticky top-0 z-10 bg-white dark:bg-black border-b shadow-sm dark:border-gray-800">
         <div className="p-4">
           <div className="flex items-center gap-3 mb-3">
             <Button variant="ghost" size="sm" asChild className="p-2">
@@ -131,7 +133,7 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
               <p className="text-sm text-muted-foreground truncate">{jobCompany}</p>
             </div>
             {applications.length > 0 && (
-              <Button onClick={exportAllResumes} size="sm" variant="outline" className="text-xs">
+              <Button onClick={exportAllResumes} size="sm" variant="outline" className="text-xs bg-transparent">
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline ml-1">CVs</span>
               </Button>
@@ -158,129 +160,133 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
 
       {/* Lista de Candidatos */}
       <div className="p-4 space-y-3">
-        {filteredApplications.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground text-sm">
-                {applications.length === 0 ? "Ainda não há candidatos para esta vaga." : "Nenhum candidato encontrado."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredApplications.map((application) => {
-            const profile = application.profiles
-            const latestExperience = profile?.experiences?.[0]
+        <div className="mx-4 md:mx-0 space-y-3">
+          {filteredApplications.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground text-sm">
+                  {applications.length === 0
+                    ? "Ainda não há candidatos para esta vaga."
+                    : "Nenhum candidato encontrado."}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredApplications.map((application) => {
+              const profile = application.profiles
+              const latestExperience = profile?.experiences?.[0]
 
-            return (
-              <Card key={application.id} className="shadow-sm">
-                <CardContent className="p-4">
-                  {/* Header do Card */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <Avatar className="w-12 h-12 flex-shrink-0">
-                      <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback className="text-sm">
-                        {profile?.full_name?.charAt(0) || profile?.username?.charAt(0) || "?"}
-                      </AvatarFallback>
-                    </Avatar>
+              return (
+                <Card key={application.id} className="shadow-sm">
+                  <CardContent className="p-4">
+                    {/* Header do Card */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <Avatar className="w-12 h-12 flex-shrink-0">
+                        <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
+                        <AvatarFallback className="text-sm">
+                          {profile?.full_name?.charAt(0) || profile?.username?.charAt(0) || "?"}
+                        </AvatarFallback>
+                      </Avatar>
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm truncate">
-                        {profile?.full_name || profile?.username || "Nome não informado"}
-                      </h3>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span>@{profile?.username}</span>
-                        {application.application_type === "external" && (
-                          <Badge variant="secondary" className="text-xs px-1 py-0">
-                            Externa
-                          </Badge>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">
+                          {profile?.full_name || profile?.username || "Nome não informado"}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <span>@{profile?.username}</span>
+                          {application.application_type === "external" && (
+                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                              Externa
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Informações Principais */}
-                  <div className="space-y-2 mb-3">
-                    {/* Localização e Data */}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {profile?.city_id && (
+                    {/* Informações Principais */}
+                    <div className="space-y-2 mb-3">
+                      {/* Localização e Data */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        {profile?.city_id && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <CityDisplay cityId={profile.city_id} fallback={profile?.city} />
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          <CityDisplay cityId={profile.city_id} fallback={profile?.city} />
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(application.created_at).toLocaleDateString("pt-BR")}</span>
+                        </div>
+                      </div>
+
+                      {/* Experiência Atual */}
+                      {latestExperience && (
+                        <div className="flex items-start gap-1 text-xs">
+                          <Briefcase className="w-3 h-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+                          <div className="min-w-0">
+                            <span className="font-medium">{latestExperience.position}</span>
+                            {latestExperience.company && (
+                              <span className="text-muted-foreground"> • {latestExperience.company}</span>
+                            )}
+                          </div>
                         </div>
                       )}
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>{new Date(application.created_at).toLocaleDateString("pt-BR")}</span>
-                      </div>
                     </div>
 
-                    {/* Experiência Atual */}
-                    {latestExperience && (
-                      <div className="flex items-start gap-1 text-xs">
-                        <Briefcase className="w-3 h-3 mt-0.5 text-muted-foreground flex-shrink-0" />
-                        <div className="min-w-0">
-                          <span className="font-medium">{latestExperience.position}</span>
-                          {latestExperience.company && (
-                            <span className="text-muted-foreground"> • {latestExperience.company}</span>
+                    {/* Habilidades */}
+                    {profile?.skills && profile.skills.length > 0 && (
+                      <div className="mb-3">
+                        <div className="flex flex-wrap gap-1">
+                          {profile.skills.slice(0, 6).map((skill: string, index: number) => (
+                            <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
+                              {skill}
+                            </Badge>
+                          ))}
+                          {profile.skills.length > 6 && (
+                            <Badge variant="outline" className="text-xs px-2 py-0.5">
+                              +{profile.skills.length - 6}
+                            </Badge>
                           )}
                         </div>
                       </div>
                     )}
-                  </div>
 
-                  {/* Habilidades */}
-                  {profile?.skills && profile.skills.length > 0 && (
-                    <div className="mb-3">
-                      <div className="flex flex-wrap gap-1">
-                        {profile.skills.slice(0, 6).map((skill: string, index: number) => (
-                          <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {profile.skills.length > 6 && (
-                          <Badge variant="outline" className="text-xs px-2 py-0.5">
-                            +{profile.skills.length - 6}
-                          </Badge>
-                        )}
-                      </div>
+                    {/* Ações */}
+                    <div className="flex gap-2">
+                      {application.resume_pdf_url && (
+                        <Button variant="outline" size="sm" className="flex-1 h-9 bg-transparent" asChild>
+                          <a href={application.resume_pdf_url} target="_blank" rel="noreferrer">
+                            <FileText className="w-4 h-4 mr-1" />
+                            <span className="text-xs">Currículo</span>
+                          </a>
+                        </Button>
+                      )}
+
+                      {profile?.whatsapp && (
+                        <Button size="sm" className="flex-1 h-9" asChild>
+                          <a
+                            href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Phone className="w-4 h-4 mr-1" />
+                            <span className="text-xs">WhatsApp</span>
+                          </a>
+                        </Button>
+                      )}
+
+                      <Button variant="ghost" size="sm" className="px-3 h-9" asChild>
+                        <Link href={`/profile/${profile?.username}`}>
+                          <span className="text-xs">Ver Perfil</span>
+                        </Link>
+                      </Button>
                     </div>
-                  )}
-
-                  {/* Ações */}
-                  <div className="flex gap-2">
-                    {application.resume_pdf_url && (
-                      <Button variant="outline" size="sm" className="flex-1 h-9" asChild>
-                        <a href={application.resume_pdf_url} target="_blank" rel="noreferrer">
-                          <FileText className="w-4 h-4 mr-1" />
-                          <span className="text-xs">Currículo</span>
-                        </a>
-                      </Button>
-                    )}
-
-                    {profile?.whatsapp && (
-                      <Button size="sm" className="flex-1 h-9" asChild>
-                        <a
-                          href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <Phone className="w-4 h-4 mr-1" />
-                          <span className="text-xs">WhatsApp</span>
-                        </a>
-                      </Button>
-                    )}
-
-                    <Button variant="ghost" size="sm" className="px-3 h-9" asChild>
-                      <Link href={`/profile/${profile?.username}`}>
-                        <span className="text-xs">Ver Perfil</span>
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })
-        )}
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
+        </div>
       </div>
     </div>
   )

@@ -27,8 +27,10 @@ export default async function DashboardPage() {
   }
 
   return (
-    <PageContainer header={<PageHeader title="Dashboard" userProfile={profile} />}>
-      <RecruiterDashboard recruiterId={user.id} />
-    </PageContainer>
+    <div className="mx-4 md:mx-0">
+      <PageContainer header={<PageHeader title="Dashboard" userProfile={profile} />}>
+        <RecruiterDashboard recruiterId={user.id} />
+      </PageContainer>
+    </div>
   )
 }
