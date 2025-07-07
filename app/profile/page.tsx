@@ -4,7 +4,7 @@ import { ProfileView } from "@/components/profile/profile-view"
 import { Button } from "@/components/ui/button"
 import { User, FileText, Briefcase } from "lucide-react"
 import Link from "next/link"
-import { RecruiterOwnProfile } from "@/components/profile/recruiter-own-profile"
+import { RecruiterPublicView } from "@/components/profile/recruiter-public-view"
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -71,7 +71,7 @@ export default async function ProfilePage() {
     )
   }
 
-  // Se for recrutador, buscar suas vagas para mostrar na visualização própria
+  // Se for recrutador, buscar suas vagas para mostrar na visualização pública
   if (profile.user_type === "recruiter") {
     const { data: jobPosts } = await supabase
       .from("job_posts")
@@ -90,7 +90,7 @@ export default async function ProfilePage() {
       .eq("author_id", profile.id)
       .order("created_at", { ascending: false })
 
-    return <RecruiterOwnProfile profile={profile} jobPosts={jobPosts || []} />
+    return <RecruiterPublicView profile={profile} jobPosts={jobPosts || []} isLoggedIn={true} isOwnProfile={true} />
   }
 
   return (

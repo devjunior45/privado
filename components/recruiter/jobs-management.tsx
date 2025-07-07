@@ -189,16 +189,18 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
         </Select>
       </div>
 
-      {/* Lista de Vagas */}
-      <div className="space-y-4">
+      {/* Lista de Vagas - Grid no desktop, lista no mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {filteredJobs.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">
-                {jobs.length === 0 ? "Nenhuma vaga encontrada." : "Nenhuma vaga corresponde aos filtros aplicados."}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="col-span-full">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">
+                  {jobs.length === 0 ? "Nenhuma vaga encontrada." : "Nenhuma vaga corresponde aos filtros aplicados."}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           filteredJobs.map((job) => (
             <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} onConfirmAction={openConfirmDialog} />
@@ -281,43 +283,16 @@ function JobCard({
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-lg font-semibold">{job.title}</h3>
-              {getStatusBadge(job.status)}
-            </div>
+    <Card className="h-full">
+      <CardContent className="p-4 h-full flex flex-col">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {getStatusBadge(job.status)}
 
-            <div className="text-muted-foreground mb-3">
-              <p className="font-medium">{job.company}</p>
-              <CityDisplay cityId={job.city_id} fallback={job.location} />
-              <p className="text-sm">Criada em {new Date(job.created_at).toLocaleDateString("pt-BR")}</p>
-            </div>
-
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Eye className="w-4 h-4" />
-                {job.views_count || 0} visualizações
-              </span>
-              <span className="flex items-center gap-1">👥 {job.applications_count || 0} candidaturas</span>
-              <span className="flex items-center gap-1">❤️ {job.likes_count || 0} curtidas</span>
-            </div>
-
-            {job.applications_count > 0 && (
-              <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                <span>📄 {job.platform_applications_count || 0} pela plataforma</span>
-                <span>💬 {job.external_applications_count || 0} externas</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
             {/* Menu de Ações */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -330,7 +305,6 @@ function JobCard({
                   </Link>
                 </DropdownMenuItem>
 
-                {/* Ver Candidatos - SEMPRE VISÍVEL */}
                 <DropdownMenuItem asChild>
                   <Link href={`/job-candidates/${job.id}`}>
                     <Users className="w-4 h-4 mr-2" />
@@ -373,6 +347,34 @@ function JobCard({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+
+        <div className="flex-1 space-y-2">
+          <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{job.title}</h3>
+
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p className="font-medium truncate">{job.company}</p>
+            <CityDisplay cityId={job.city_id} fallback={job.location} className="text-xs" />
+            <p>Criada em {new Date(job.created_at).toLocaleDateString("pt-BR")}</p>
+          </div>
+        </div>
+
+        <div className="mt-3 pt-3 border-t space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {job.views_count || 0}
+            </span>
+            <span className="flex items-center gap-1">👥 {job.applications_count || 0}</span>
+            <span className="flex items-center gap-1">❤️ {job.likes_count || 0}</span>
+          </div>
+
+          {job.applications_count > 0 && (
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>📄 {job.platform_applications_count || 0}</span>
+              <span>💬 {job.external_applications_count || 0}</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

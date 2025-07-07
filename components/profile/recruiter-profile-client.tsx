@@ -161,8 +161,9 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setIsEditOpen(true)} className="h-8 w-8 p-0">
-        <Edit className="w-4 h-4" />
+      <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)} className="flex-1">
+        <Edit className="w-4 h-4 mr-2" />
+        Editar Perfil
       </Button>
 
       {/* Dialog para Editar Perfil */}

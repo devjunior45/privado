@@ -84,6 +84,20 @@ interface JobPostProps {
   id?: string
 }
 
+// Função para renderizar markdown/HTML simples
+const renderFormattedText = (text: string) => {
+  return text
+    .replace(/## (.*)/g, '<h2 class="text-lg font-bold mt-4 mb-2 text-white">$1</h2>')
+    .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-3 mb-2 text-white">$1</h3>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+    .replace(
+      /• (.*)/g,
+      '<div class="flex items-start gap-2 ml-4 mb-1"><span class="text-white mt-1">•</span><span class="text-white">$1</span></div>',
+    )
+    .replace(/\n\n/g, '<div class="mb-3"></div>')
+    .replace(/\n/g, "<br>")
+}
+
 export function JobPost({
   jobPost,
   profile,
@@ -461,7 +475,12 @@ export function JobPost({
 
               {showFullInfo && (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground break-words">{jobPost.description}</p>
+                  <div
+                    className="text-sm text-muted-foreground break-words prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: renderFormattedText(jobPost.description),
+                    }}
+                  />
                   <p className="font-semibold text-blue-600 truncate">{jobPost.company}</p>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                     <div className="flex items-center gap-1 min-w-0">

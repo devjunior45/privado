@@ -4,13 +4,27 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Building, Calendar, Heart, MessageCircle, ArrowLeft, Phone, Mail, Pause, X } from "lucide-react"
+import {
+  MapPin,
+  Building,
+  Calendar,
+  Heart,
+  MessageCircle,
+  ArrowLeft,
+  Phone,
+  Mail,
+  Pause,
+  X,
+  Share,
+  Shield,
+} from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import type { JobPostWithProfile } from "@/types/database"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { CityDisplay } from "@/components/ui/city-display"
+import { RecruiterProfileClient } from "@/components/profile/recruiter-profile-client"
 
 interface RecruiterPublicViewProps {
   profile: UserProfile
@@ -52,6 +66,28 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
     }
   }
 
+  const handleShareProfile = async () => {
+    const profileUrl = `${window.location.origin}/profile/${profile.username}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profile.company_name || profile.full_name} - Nortão Empregos`,
+          text: `Confira o perfil de ${profile.company_name || profile.full_name} na Nortão Empregos`,
+          url: profileUrl,
+        })
+      } catch (error) {
+        // Fallback para clipboard se o share nativo falhar
+        await navigator.clipboard.writeText(profileUrl)
+        // Aqui você pode adicionar um toast de sucesso
+      }
+    } else {
+      // Fallback para clipboard
+      await navigator.clipboard.writeText(profileUrl)
+      // Aqui você pode adicionar um toast de sucesso
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -64,13 +100,19 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
 
   return (
     <div className="min-h-screen dark:bg-black bg-white">
-      {/* Header fixo com botão voltar */}
+      {/* Header fixo */}
       <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8 w-8 p-0">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="font-semibold text-lg truncate">@{profile.username}</h1>
+          {isOwnProfile ? (
+            <h1 className="font-semibold text-lg">Perfil</h1>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8 w-8 p-0">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <h1 className="font-semibold text-lg truncate">@{profile.username}</h1>
+            </>
+          )}
         </div>
       </div>
 
@@ -88,24 +130,18 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
 
             <div className="flex-1 space-y-2">
               <div>
-                <h2 className="text-xl font-bold">{profile.company_name || profile.full_name || profile.username}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold">{profile.company_name || profile.full_name || profile.username}</h2>
+                  {profile.is_verified && (
+                    <Badge variant="secondary" className="text-blue-700 bg-blue-100">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Verificado
+                    </Badge>
+                  )}
+                </div>
                 {profile.company_name && profile.full_name && (
                   <p className="text-sm text-muted-foreground">Responsável: {profile.full_name}</p>
                 )}
-              </div>
-
-              {/* Estatísticas */}
-              <div className="flex gap-6 text-sm">
-                <div className="text-center">
-                  <p className="font-semibold">{visibleJobPosts.length}</p>
-                  <p className="text-muted-foreground">vagas</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold">
-                    {visibleJobPosts.reduce((sum, post) => sum + (post.likes_count || 0), 0)}
-                  </p>
-                  <p className="text-muted-foreground">curtidas</p>
-                </div>
               </div>
             </div>
           </div>
@@ -125,8 +161,22 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
             </div>
           )}
 
-          {/* Botões de Ação - Só aparecem se não for o próprio perfil */}
-          {!isOwnProfile && (
+          {/* Botões de Ação */}
+          {isOwnProfile ? (
+            <div className="space-y-2">
+              {/* Botões principais */}
+              <div className="flex gap-2">
+                <RecruiterProfileClient profile={profile} />
+                <Button variant="outline" onClick={handleShareProfile} className="flex-1 bg-transparent" size="sm">
+                  <Share className="w-4 h-4 mr-2" />
+                  Compartilhar
+                </Button>
+              </div>
+
+              {/* Botão de verificação se não estiver verificado */}
+              {!profile.is_verified && <RecruiterProfileClient profile={profile} showVerificationButton={true} />}
+            </div>
+          ) : (
             <div className="flex gap-2">
               {profile.whatsapp && (
                 <Button onClick={handleWhatsAppContact} className="flex-1" size="sm">
@@ -145,9 +195,6 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
             </div>
           )}
         </div>
-
-        {/* Divisor */}
-        
 
         {/* Header das Vagas */}
         <div className="bg-white dark:bg-black px-6 py-3 border-b">

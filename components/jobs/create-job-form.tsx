@@ -2,48 +2,101 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Upload, X, Info, Building } from "lucide-react"
+import { Loader2, Upload, X, ImageIcon, Bold, List, Plus } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
 import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
 import { useToast } from "@/components/ui/toast"
+import { createClient } from "@/lib/supabase/client"
 
-const JOB_TYPES = ["Tempo Integral", "Meio Período", "Contrato", "Temporário", "Estágio", "Freelancer", "Aprendiz"]
-
-const EXPERIENCE_LEVELS = ["Sem experiência", "Até 1 ano", "1-3 anos", "3-5 anos", "5-10 anos", "Mais de 10 anos"]
-
-const EDUCATION_LEVELS = [
-  "Ensino Fundamental",
-  "Ensino Médio",
-  "Ensino Técnico",
-  "Ensino Superior",
-  "Pós-graduação",
-  "Mestrado",
-  "Doutorado",
+const DARK_COLORS = [
+  { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
+  { name: "Azul Escuro", value: "#1E3A8A", class: "bg-blue-900" },
+  { name: "Verde Escuro", value: "#064E3B", class: "bg-emerald-900" },
+  { name: "Roxo Escuro", value: "#581C87", class: "bg-purple-900" },
+  { name: "Vermelho Escuro", value: "#7F1D1D", class: "bg-red-900" },
+  { name: "Índigo Escuro", value: "#312E81", class: "bg-indigo-900" },
+  { name: "Rosa Escuro", value: "#831843", class: "bg-pink-900" },
+  { name: "Laranja Escuro", value: "#9A3412", class: "bg-orange-900" },
 ]
+
+const TEMPLATE_BLOCKS = {
+  requisitos: `
+## 📋 Requisitos
+
+• **Escolaridade:** Ensino médio completo
+• **Experiência:** Mínimo 1 ano na área
+• **Conhecimentos:** 
+  - Conhecimento em sistemas básicos
+  - Boa comunicação
+  - Proatividade
+• **Diferenciais:**
+  - Curso técnico na área
+  - Conhecimento em Excel
+
+`,
+  atividades: `
+## 🎯 Principais Atividades
+
+• **Atendimento:** Atender clientes presenciais e por telefone
+• **Vendas:** Apresentar produtos e serviços
+• **Organização:** Manter o ambiente de trabalho organizado
+• **Relatórios:** Elaborar relatórios diários de atividades
+• **Suporte:** Auxiliar a equipe em demandas diversas
+
+`,
+  beneficios: `
+## 🎁 Benefícios Oferecidos
+
+• **Salário:** Compatível com o mercado
+• **Vale Transporte:** Fornecido pela empresa
+• **Vale Alimentação:** R$ 25,00/dia
+• **Plano de Saúde:** Após período de experiência
+• **Ambiente:** Clima organizacional positivo
+• **Crescimento:** Oportunidades de desenvolvimento
+
+`,
+}
 
 export function CreateJobForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
-  const [allowPlatformApplications, setAllowPlatformApplications] = useState(true)
-  const [requirements, setRequirements] = useState<string[]>([])
-  const [benefits, setBenefits] = useState<string[]>([])
-  const [newRequirement, setNewRequirement] = useState("")
-  const [newBenefit, setNewBenefit] = useState("")
+  const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
+  const [companyName, setCompanyName] = useState("")
+  const [description, setDescription] = useState("")
   const router = useRouter()
   const { showToast, ToastContainer } = useToast()
+
+  // Buscar dados do perfil para preencher empresa
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("company_name, full_name")
+          .eq("id", user.id)
+          .single()
+
+        if (profile) {
+          setCompanyName(profile.company_name || profile.full_name || "")
+        }
+      }
+    }
+
+    fetchProfile()
+  }, [])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -62,26 +115,56 @@ export function CreateJobForm() {
     setImagePreview(null)
   }
 
-  const addRequirement = () => {
-    if (newRequirement.trim() && !requirements.includes(newRequirement.trim())) {
-      setRequirements([...requirements, newRequirement.trim()])
-      setNewRequirement("")
+  // Função para inserir blocos de template
+  const insertTemplateBlock = (blockType: keyof typeof TEMPLATE_BLOCKS) => {
+    const textarea = document.getElementById("description") as HTMLTextAreaElement
+    const start = textarea.selectionStart
+    const template = TEMPLATE_BLOCKS[blockType]
+
+    const newText = description.substring(0, start) + template + description.substring(start)
+    setDescription(newText)
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + template.length, start + template.length)
+    }, 0)
+  }
+
+  // Funções de formatação de texto
+  const insertText = (before: string, after = "") => {
+    const textarea = document.getElementById("description") as HTMLTextAreaElement
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = description.substring(start, end)
+    const newText = description.substring(0, start) + before + selectedText + after + description.substring(end)
+    setDescription(newText)
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
+    }, 0)
+  }
+
+  const insertList = (type: "bullet" | "numbered") => {
+    const textarea = document.getElementById("description") as HTMLTextAreaElement
+    const start = textarea.selectionStart
+    const lines = description.substring(0, start).split("\n")
+    const currentLine = lines[lines.length - 1]
+
+    let listItem = ""
+    if (type === "bullet") {
+      listItem = currentLine.trim() === "" ? "• " : "\n• "
+    } else {
+      listItem = currentLine.trim() === "" ? "1. " : "\n1. "
     }
-  }
 
-  const removeRequirement = (requirement: string) => {
-    setRequirements(requirements.filter((r) => r !== requirement))
-  }
+    const newText = description.substring(0, start) + listItem + description.substring(start)
+    setDescription(newText)
 
-  const addBenefit = () => {
-    if (newBenefit.trim() && !benefits.includes(newBenefit.trim())) {
-      setBenefits([...benefits, newBenefit.trim()])
-      setNewBenefit("")
-    }
-  }
-
-  const removeBenefit = (benefit: string) => {
-    setBenefits(benefits.filter((b) => b !== benefit))
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + listItem.length, start + listItem.length)
+    }, 0)
   }
 
   const handleSubmit = async (formData: FormData) => {
@@ -95,18 +178,18 @@ export function CreateJobForm() {
         formData.append("cityId", selectedCityId.toString())
       }
 
-      formData.append("allowPlatformApplications", allowPlatformApplications.toString())
-      formData.append("requirements", JSON.stringify(requirements))
-      formData.append("benefits", JSON.stringify(benefits))
-
-      const result = await createJobPost(formData)
-
-      if (result.success) {
-        showToast("Vaga publicada com sucesso!", "success")
-        router.push("/dashboard")
-      } else {
-        showToast(result.error || "Erro ao publicar vaga", "error")
+      // Só adiciona cor se não houver imagem
+      if (!selectedImage) {
+        formData.append("postColor", selectedColor)
       }
+
+      formData.append("company", companyName)
+      formData.append("description", description)
+      formData.append("allowPlatformApplications", "true")
+
+      await createJobPost(formData)
+      showToast("Vaga publicada com sucesso!", "success")
+      router.push("/dashboard")
     } catch (error) {
       console.error("Erro ao criar vaga:", error)
       showToast("Erro inesperado ao publicar vaga", "error")
@@ -118,23 +201,79 @@ export function CreateJobForm() {
   return (
     <div className="space-y-6">
       <form action={handleSubmit} className="space-y-6">
-        {/* Informações Básicas */}
+        {/* Upload de Imagem */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Building className="w-5 h-5" />
-              Informações Básicas
+              <ImageIcon className="w-5 h-5" />
+              Imagem da Vaga (Opcional)
             </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {!imagePreview ? (
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <div className="space-y-2">
+                    <Label htmlFor="image" className="cursor-pointer">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        <Upload className="w-4 h-4" />
+                        Escolher Imagem
+                      </div>
+                    </Label>
+                    <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                    <p className="text-sm text-muted-foreground">PNG, JPG até 5MB - Torna sua vaga mais atrativa</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={imagePreview || "/placeholder.svg"}
+                    alt="Preview da vaga"
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={removeImage}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Informações Básicas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações da Vaga</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="title">Título da Vaga *</Label>
-              <Input id="title" name="title" placeholder="Ex: Atendente de Loja" required />
+              <Input
+                id="title"
+                name="title"
+                placeholder="Ex: Desenvolvedor Frontend"
+                required
+                className="text-lg font-medium"
+              />
             </div>
 
             <div>
               <Label htmlFor="company">Nome da Empresa *</Label>
-              <Input id="company" name="company" placeholder="Nome da sua empresa" required />
+              <Input
+                id="company"
+                name="company"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Nome da empresa"
+                required
+              />
             </div>
 
             <div>
@@ -147,238 +286,196 @@ export function CreateJobForm() {
                 required
               />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="jobType">Tipo de Contrato</Label>
-                <Select name="jobType">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {JOB_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="salary">Salário</Label>
-                <Input id="salary" name="salary" placeholder="Ex: R$ 1.500,00" />
-              </div>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Descrição */}
+        {/* Descrição com Editor */}
         <Card>
           <CardHeader>
-            <CardTitle>Descrição da Vaga</CardTitle>
+            <CardTitle>Descrição da Vaga *</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Botões de Templates */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Blocos Prontos:</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => insertTemplateBlock("requisitos")}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />📋 Requisitos
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => insertTemplateBlock("atividades")}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />🎯 Atividades
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => insertTemplateBlock("beneficios")}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />🎁 Benefícios
+                </Button>
+              </div>
+            </div>
+
+            {/* Barra de Ferramentas de Formatação */}
+            <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-md">
+              <Button type="button" variant="ghost" size="sm" onClick={() => insertText("**", "**")} title="Negrito">
+                <Bold className="w-4 h-4" />
+              </Button>
+
+              <div className="w-px bg-border mx-1" />
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertList("bullet")}
+                title="Lista com marcadores"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertList("numbered")}
+                title="Lista numerada"
+              >
+                <span className="text-sm font-mono">1.</span>
+              </Button>
+
+              <div className="w-px bg-border mx-1" />
+
+              <Button type="button" variant="ghost" size="sm" onClick={() => insertText("## ")} title="Título">
+                <span className="text-xs font-bold">H2</span>
+              </Button>
+
+              <Button type="button" variant="ghost" size="sm" onClick={() => insertText("### ")} title="Subtítulo">
+                <span className="text-xs font-bold">H3</span>
+              </Button>
+            </div>
+
             <div>
-              <Label htmlFor="description">Descrição Completa *</Label>
-              <Textarea
+              <textarea
                 id="description"
                 name="description"
-                placeholder="Descreva as responsabilidades, atividades e o que a pessoa fará no dia a dia..."
-                rows={6}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descreva a vaga ou use os blocos prontos acima...
+
+Exemplo de estrutura:
+
+## 📝 Sobre a Vaga
+Descrição geral da posição e responsabilidades principais.
+
+## 📋 Requisitos
+• **Escolaridade:** Ensino médio completo
+• **Experiência:** Mínimo 1 ano na área
+
+## 🎯 Principais Atividades  
+• Atender clientes
+• Organizar documentos
+• Elaborar relatórios
+
+## 🎁 Benefícios
+• Vale transporte
+• Vale alimentação
+• Plano de saúde"
+                rows={16}
                 required
+                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono"
               />
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Requisitos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Requisitos e Qualificações</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="experienceLevel">Nível de Experiência</Label>
-                <Select name="experienceLevel">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o nível" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXPERIENCE_LEVELS.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="educationLevel">Escolaridade</Label>
-                <Select name="educationLevel">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a escolaridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EDUCATION_LEVELS.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Requisitos Específicos */}
-            <div>
-              <Label>Requisitos Específicos</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  value={newRequirement}
-                  onChange={(e) => setNewRequirement(e.target.value)}
-                  placeholder="Ex: CNH categoria B"
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRequirement())}
+            {/* Preview da Formatação */}
+            {description && (
+              <div className="border rounded-md p-4 bg-muted/30">
+                <Label className="text-sm font-medium mb-2 block">Preview da Formatação:</Label>
+                <div
+                  className="prose prose-sm max-w-none text-sm"
+                  dangerouslySetInnerHTML={{
+                    __html: description
+                      .replace(/## (.*)/g, '<h2 class="text-lg font-bold mt-4 mb-2">$1</h2>')
+                      .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-3 mb-2">$1</h3>')
+                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                      .replace(/• (.*)/g, '<li style="margin-left: 1rem;">$1</li>')
+                      .replace(/\n/g, "<br>"),
+                  }}
                 />
-                <Button type="button" onClick={addRequirement} variant="outline">
-                  Adicionar
-                </Button>
               </div>
-              {requirements.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {requirements.map((req) => (
-                    <Badge key={req} variant="secondary" className="flex items-center gap-1">
-                      {req}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => removeRequirement(req)} />
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Benefícios */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Benefícios</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Benefícios Oferecidos</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  value={newBenefit}
-                  onChange={(e) => setNewBenefit(e.target.value)}
-                  placeholder="Ex: Vale transporte"
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addBenefit())}
-                />
-                <Button type="button" onClick={addBenefit} variant="outline">
-                  Adicionar
-                </Button>
-              </div>
-              {benefits.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {benefits.map((benefit) => (
-                    <Badge key={benefit} variant="secondary" className="flex items-center gap-1">
-                      {benefit}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => removeBenefit(benefit)} />
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Imagem */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Imagem da Vaga (Opcional)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="image">Adicionar Imagem</Label>
-                <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Adicione uma imagem atrativa para sua vaga (PNG, JPG até 5MB)
-                </p>
-              </div>
-
-              {imagePreview && (
-                <div className="relative inline-block">
-                  <img
-                    src={imagePreview || "/placeholder.svg"}
-                    alt="Preview"
-                    className="w-32 h-32 object-cover rounded-md"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                    onClick={removeImage}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Configurações de Candidatura */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configurações de Candidatura</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="allowPlatformApplications"
-                checked={allowPlatformApplications}
-                onCheckedChange={setAllowPlatformApplications}
-              />
-              <Label htmlFor="allowPlatformApplications">Permitir candidaturas pela plataforma</Label>
-            </div>
-
-            {allowPlatformApplications && (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Candidatos poderão se candidatar diretamente pela plataforma. Você receberá notificações e poderá
-                  gerenciar as candidaturas no seu dashboard.
-                </AlertDescription>
-              </Alert>
             )}
 
-            <div>
-              <Label htmlFor="applicationInstructions">Instruções para Candidatura</Label>
-              <Textarea
-                id="applicationInstructions"
-                name="applicationInstructions"
-                placeholder="Ex: Envie seu currículo para email@empresa.com ou candidate-se pela plataforma"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="contactEmail">Email para Contato (Opcional)</Label>
-              <Input id="contactEmail" name="contactEmail" type="email" placeholder="contato@empresa.com" />
-            </div>
-
-            <div>
-              <Label htmlFor="contactPhone">Telefone para Contato (Opcional)</Label>
-              <Input id="contactPhone" name="contactPhone" placeholder="(11) 99999-9999" />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>
+                <strong>Dicas de Formatação:</strong>
+              </p>
+              <p>
+                • Use <code>## Título</code> para seções principais
+              </p>
+              <p>
+                • Use <code>**texto**</code> para negrito
+              </p>
+              <p>
+                • Use <code>• item</code> para listas
+              </p>
+              <p>• Use emojis para destacar seções (📋 🎯 🎁)</p>
             </div>
           </CardContent>
         </Card>
+
+        {/* Seletor de Cor - Só aparece se não houver imagem */}
+        {!selectedImage && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Cor do Post</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Escolha uma cor escura para destacar sua vaga no feed</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {DARK_COLORS.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setSelectedColor(color.value)}
+                      className={`
+                        relative w-12 h-12 rounded-full border-2 transition-all
+                        ${
+                          selectedColor === color.value
+                            ? "border-primary ring-2 ring-primary/20 scale-110"
+                            : "border-border hover:border-primary/50 hover:scale-105"
+                        }
+                        ${color.class}
+                      `}
+                    >
+                      {selectedColor === color.value && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-3 h-3 bg-white rounded-full" />
+                        </div>
+                      )}
+                      <span className="sr-only">{color.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Botões */}
         <div className="flex gap-4">
