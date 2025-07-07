@@ -46,7 +46,7 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
   const [jobs, setJobs] = useState<Job[]>([])
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("active")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean
