@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { JobPost } from "@/components/job-post"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { PostPageClientHeader } from "@/components/post/post-page-header"
 
 interface PageProps {
   params: {
@@ -64,17 +62,8 @@ export default async function PostPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Barra de navegação */}
-      <div className="bg-white border-b sticky top-0 z-50 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild className="p-2">
-            <Link href="/feed">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </Button>
-          <h1 className="font-semibold text-lg">Vaga</h1>
-        </div>
-      </div>
+      {/* Cabeçalho dinâmico com lógica de voltar */}
+      <PostPageClientHeader />
 
       {/* Postagem */}
       <div className="max-w-md mx-auto">

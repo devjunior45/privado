@@ -86,13 +86,14 @@ interface JobPostProps {
 
 // Função para renderizar markdown/HTML simples
 const renderFormattedText = (text: string) => {
+  if (!text) return ""
   return text
-    .replace(/## (.*)/g, '<h2 class="text-lg font-bold mt-4 mb-2 text-white">$1</h2>')
-    .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-3 mb-2 text-white">$1</h3>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+    .replace(/## (.*)/g, '<h2 class="text-base font-bold mt-4 mb-2 text-foreground">$1</h2>')
+    .replace(/### (.*)/g, '<h3 class="text-sm font-semibold mt-3 mb-2 text-foreground">$1</h3>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
     .replace(
       /• (.*)/g,
-      '<div class="flex items-start gap-2 ml-4 mb-1"><span class="text-white mt-1">•</span><span class="text-white">$1</span></div>',
+      '<div class="flex items-start gap-2 ml-4 mb-1"><span class="text-foreground mt-1">•</span><span class="text-foreground">$1</span></div>',
     )
     .replace(/\n\n/g, '<div class="mb-3"></div>')
     .replace(/\n/g, "<br>")

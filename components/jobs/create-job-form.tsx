@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Upload, X, ImageIcon, Bold, List, Plus } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Loader2, Upload, X, ImageIcon, Bold, List } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
 import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
@@ -25,52 +26,22 @@ const DARK_COLORS = [
   { name: "Laranja Escuro", value: "#9A3412", class: "bg-orange-900" },
 ]
 
-const TEMPLATE_BLOCKS = {
-  requisitos: `
-## 📋 Requisitos
-
-• **Escolaridade:** Ensino médio completo
-• **Experiência:** Mínimo 1 ano na área
-• **Conhecimentos:** 
-  - Conhecimento em sistemas básicos
-  - Boa comunicação
-  - Proatividade
-• **Diferenciais:**
-  - Curso técnico na área
-  - Conhecimento em Excel
-
-`,
-  atividades: `
-## 🎯 Principais Atividades
-
-• **Atendimento:** Atender clientes presenciais e por telefone
-• **Vendas:** Apresentar produtos e serviços
-• **Organização:** Manter o ambiente de trabalho organizado
-• **Relatórios:** Elaborar relatórios diários de atividades
-• **Suporte:** Auxiliar a equipe em demandas diversas
-
-`,
-  beneficios: `
-## 🎁 Benefícios Oferecidos
-
-• **Salário:** Compatível com o mercado
-• **Vale Transporte:** Fornecido pela empresa
-• **Vale Alimentação:** R$ 25,00/dia
-• **Plano de Saúde:** Após período de experiência
-• **Ambiente:** Clima organizacional positivo
-• **Crescimento:** Oportunidades de desenvolvimento
-
-`,
-}
-
 export function CreateJobForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
+  const [title, setTitle] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [description, setDescription] = useState("")
+  const [allowPlatformApplications, setAllowPlatformApplications] = useState(true)
+  const [errors, setErrors] = useState<{
+    title?: string
+    company?: string
+    cityId?: string
+    description?: string
+  }>({})
   const router = useRouter()
   const { showToast, ToastContainer } = useToast()
 
@@ -115,21 +86,6 @@ export function CreateJobForm() {
     setImagePreview(null)
   }
 
-  // Função para inserir blocos de template
-  const insertTemplateBlock = (blockType: keyof typeof TEMPLATE_BLOCKS) => {
-    const textarea = document.getElementById("description") as HTMLTextAreaElement
-    const start = textarea.selectionStart
-    const template = TEMPLATE_BLOCKS[blockType]
-
-    const newText = description.substring(0, start) + template + description.substring(start)
-    setDescription(newText)
-
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + template.length, start + template.length)
-    }, 0)
-  }
-
   // Funções de formatação de texto
   const insertText = (before: string, after = "") => {
     const textarea = document.getElementById("description") as HTMLTextAreaElement
@@ -167,32 +123,48 @@ export function CreateJobForm() {
     }, 0)
   }
 
-  const handleSubmit = async (formData: FormData) => {
+  const validateForm = () => {
+    const newErrors: typeof errors = {}
+    if (!title.trim()) newErrors.title = "O título da vaga é obrigatório."
+    if (!companyName.trim()) newErrors.company = "O nome da empresa é obrigatório."
+    if (!selectedCityId) newErrors.cityId = "A localização é obrigatória."
+    if (!selectedImage && !description.trim()) {
+      newErrors.description = "A descrição é obrigatória se não houver imagem."
+    }
+    return newErrors
+  }
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const validationErrors = validateForm()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+
+    setErrors({})
     setIsLoading(true)
+
+    const formData = new FormData()
+    formData.append("title", title)
+    formData.append("company", companyName)
+    formData.append("description", description)
+    formData.append("allowPlatformApplications", allowPlatformApplications.toString())
+    if (selectedCityId) formData.append("cityId", selectedCityId.toString())
+
+    if (selectedImage) {
+      formData.append("image", selectedImage)
+    } else {
+      formData.append("postColor", selectedColor)
+    }
+
     try {
-      if (selectedImage) {
-        formData.append("image", selectedImage)
-      }
-
-      if (selectedCityId) {
-        formData.append("cityId", selectedCityId.toString())
-      }
-
-      // Só adiciona cor se não houver imagem
-      if (!selectedImage) {
-        formData.append("postColor", selectedColor)
-      }
-
-      formData.append("company", companyName)
-      formData.append("description", description)
-      formData.append("allowPlatformApplications", "true")
-
       await createJobPost(formData)
       showToast("Vaga publicada com sucesso!", "success")
       router.push("/dashboard")
     } catch (error) {
       console.error("Erro ao criar vaga:", error)
-      showToast("Erro inesperado ao publicar vaga", "error")
+      showToast(error instanceof Error ? error.message : "Erro inesperado ao publicar vaga", "error")
     } finally {
       setIsLoading(false)
     }
@@ -200,7 +172,7 @@ export function CreateJobForm() {
 
   return (
     <div className="space-y-6">
-      <form action={handleSubmit} className="space-y-6">
+      <form onSubmit={handleFormSubmit} noValidate>
         {/* Upload de Imagem */}
         <Card>
           <CardHeader>
@@ -254,37 +226,48 @@ export function CreateJobForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="title">Título da Vaga *</Label>
+              <Label htmlFor="title">Título da Vaga</Label>
               <Input
                 id="title"
                 name="title"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value)
+                  if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
+                }}
                 placeholder="Ex: Desenvolvedor Frontend"
-                required
                 className="text-lg font-medium"
               />
+              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
             </div>
 
             <div>
-              <Label htmlFor="company">Nome da Empresa *</Label>
+              <Label htmlFor="company">Nome da Empresa</Label>
               <Input
                 id="company"
                 name="company"
                 value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
+                onChange={(e) => {
+                  setCompanyName(e.target.value)
+                  if (errors.company) setErrors((prev) => ({ ...prev, company: undefined }))
+                }}
                 placeholder="Nome da empresa"
-                required
               />
+              {errors.company && <p className="text-sm text-red-500 mt-1">{errors.company}</p>}
             </div>
 
             <div>
-              <Label htmlFor="cityId">Localização *</Label>
+              <Label htmlFor="cityId">Localização</Label>
               <CitySelect
                 value={selectedCityId}
-                onValueChange={setSelectedCityId}
+                onValueChange={(value) => {
+                  setSelectedCityId(value)
+                  if (errors.cityId) setErrors((prev) => ({ ...prev, cityId: undefined }))
+                }}
                 placeholder="Selecione a cidade da vaga"
                 name="cityId"
-                required
               />
+              {errors.cityId && <p className="text-sm text-red-500 mt-1">{errors.cityId}</p>}
             </div>
           </CardContent>
         </Card>
@@ -292,45 +275,9 @@ export function CreateJobForm() {
         {/* Descrição com Editor */}
         <Card>
           <CardHeader>
-            <CardTitle>Descrição da Vaga *</CardTitle>
+            <CardTitle>Descrição da Vaga</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Botões de Templates */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Blocos Prontos:</Label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTemplateBlock("requisitos")}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />📋 Requisitos
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTemplateBlock("atividades")}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />🎯 Atividades
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTemplateBlock("beneficios")}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />🎁 Benefícios
-                </Button>
-              </div>
-            </div>
-
             {/* Barra de Ferramentas de Formatação */}
             <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-md">
               <Button type="button" variant="ghost" size="sm" onClick={() => insertText("**", "**")} title="Negrito">
@@ -375,31 +322,15 @@ export function CreateJobForm() {
                 id="description"
                 name="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descreva a vaga ou use os blocos prontos acima...
-
-Exemplo de estrutura:
-
-## 📝 Sobre a Vaga
-Descrição geral da posição e responsabilidades principais.
-
-## 📋 Requisitos
-• **Escolaridade:** Ensino médio completo
-• **Experiência:** Mínimo 1 ano na área
-
-## 🎯 Principais Atividades  
-• Atender clientes
-• Organizar documentos
-• Elaborar relatórios
-
-## 🎁 Benefícios
-• Vale transporte
-• Vale alimentação
-• Plano de saúde"
+                onChange={(e) => {
+                  setDescription(e.target.value)
+                  if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }))
+                }}
+                placeholder="Descreva a vaga, responsabilidades, requisitos e benefícios..."
                 rows={16}
-                required
                 className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono"
               />
+              {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
             </div>
 
             {/* Preview da Formatação */}
@@ -410,8 +341,8 @@ Descrição geral da posição e responsabilidades principais.
                   className="prose prose-sm max-w-none text-sm"
                   dangerouslySetInnerHTML={{
                     __html: description
-                      .replace(/## (.*)/g, '<h2 class="text-lg font-bold mt-4 mb-2">$1</h2>')
-                      .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-3 mb-2">$1</h3>')
+                      .replace(/## (.*)/g, '<h2 class="text-base font-bold mt-4 mb-2">$1</h2>')
+                      .replace(/### (.*)/g, '<h3 class="text-sm font-semibold mt-3 mb-2">$1</h3>')
                       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
                       .replace(/• (.*)/g, '<li style="margin-left: 1rem;">$1</li>')
                       .replace(/\n/g, "<br>"),
@@ -435,6 +366,49 @@ Descrição geral da posição e responsabilidades principais.
               </p>
               <p>• Use emojis para destacar seções (📋 🎯 🎁)</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Configurações de Candidatura */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Configurações de Candidatura</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="allowPlatformApplications"
+                checked={allowPlatformApplications}
+                onCheckedChange={(checked) => setAllowPlatformApplications(checked as boolean)}
+              />
+              <div className="space-y-1">
+                <Label
+                  htmlFor="allowPlatformApplications"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Permitir candidaturas pela plataforma
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Candidatos poderão se candidatar diretamente pela plataforma usando seus perfis
+                </p>
+              </div>
+            </div>
+
+            {allowPlatformApplications && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-700 dark:text-blue-300">
+                    <p className="font-medium mb-1">Benefícios das candidaturas pela plataforma:</p>
+                    <ul className="space-y-0.5 text-xs">
+                      <li>• Receba candidaturas organizadas em um só lugar</li>
+                      <li>• Visualize perfis completos dos candidatos</li>
+                      <li>• Gerencie o processo seletivo de forma eficiente</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

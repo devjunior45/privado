@@ -186,7 +186,7 @@ export function PageHeader({
   return (
     <div
       className={`
-        bg-white transition-all duration-300 ease-out
+        bg-white dark:bg-background transition-all duration-300 ease-out
         ${enableStickyBehavior ? "md:sticky md:top-0" : ""}
         ${enableStickyBehavior && isSticky ? "fixed top-0 left-0 right-0 w-full z-50 border-b border-gray-200" : "relative"}
         ${enableStickyBehavior && isVisible ? "translate-y-0 opacity-100" : enableStickyBehavior ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}
@@ -395,8 +395,8 @@ export function PageHeader({
 
         {/* Título da página (se fornecido e não for busca) */}
         {title && !showSearch && (
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div className="flex h-[40px] items-center justify-center">
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           </div>
         )}
       </div>
