@@ -9,9 +9,9 @@ import { ptBR } from "date-fns/locale"
 
 interface NotificationItemProps {
   notification: Notification
-  onClick: () => void
-  onMarkAsRead: () => void
-  onDelete: () => void
+  onClick?: () => void
+  onMarkAsRead: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 export function NotificationItem({ notification, onClick, onMarkAsRead, onDelete }: NotificationItemProps) {
@@ -39,11 +39,24 @@ export function NotificationItem({ notification, onClick, onMarkAsRead, onDelete
     }
   }
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick()
+    }
+
+    // If notification is not read, mark it as read when clicked
+    if (!notification.is_read) {
+      onMarkAsRead(notification.id)
+    }
+  }
+
   return (
     <Card
-      className={`${notification.is_read ? "bg-white" : "bg-blue-50"} hover:bg-gray-50 transition-colors cursor-pointer`}
+      className={`${
+        notification.is_read ? "bg-white dark:bg-black" : "bg-blue-50 dark:bg-blue-900/20"
+      } hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors cursor-pointer`}
     >
-      <CardContent className="p-4" onClick={onClick}>
+      <CardContent className="p-4" onClick={handleClick}>
         <div className="flex gap-3">
           <div className="flex-shrink-0 mt-1">{getNotificationIcon(notification.type)}</div>
 
@@ -64,7 +77,7 @@ export function NotificationItem({ notification, onClick, onMarkAsRead, onDelete
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation()
-                    onMarkAsRead()
+                    onMarkAsRead(notification.id)
                   }}
                   className="h-7 text-xs"
                 >
@@ -78,9 +91,9 @@ export function NotificationItem({ notification, onClick, onMarkAsRead, onDelete
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onDelete()
+                  onDelete(notification.id)
                 }}
-                className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
                 Excluir

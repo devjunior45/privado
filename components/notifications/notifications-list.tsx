@@ -2,9 +2,17 @@
 import { useNotifications } from "@/hooks/use-notifications"
 import { NotificationItem } from "./notification-item"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
 
 export function NotificationsList() {
-  const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications()
+  const { notifications, isLoading, markAsRead, deleteNotification } = useNotifications()
+  const router = useRouter()
+
+  const handleNotificationClick = (notification: any) => {
+    if (notification.link) {
+      router.push(notification.link)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -39,7 +47,13 @@ export function NotificationsList() {
   return (
     <div className="space-y-4">
       {notifications.map((notification) => (
-        <NotificationItem key={notification.id} notification={notification} onMarkAsRead={markAsRead} />
+        <NotificationItem
+          key={notification.id}
+          notification={notification}
+          onClick={() => handleNotificationClick(notification)}
+          onMarkAsRead={markAsRead}
+          onDelete={deleteNotification}
+        />
       ))}
     </div>
   )
