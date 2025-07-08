@@ -106,7 +106,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
       <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           {isOwnProfile ? (
-            <h1 className="font-semibold text-lg">Perfil</h1>
+            <h1 className="font-semibold text-lg flex-1 text-center">Perfil</h1>
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8 w-8 p-0">

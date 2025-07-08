@@ -55,7 +55,7 @@ const EDUCATION_LEVELS = [
   "Ensino Técnico",
   "Ensino Superior Incompleto",
   "Ensino Superior Completo",
-  "Pós-gradua��ão",
+  "Pós-graduação",
   "Mestrado",
   "Doutorado",
 ]
@@ -79,6 +79,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const [isEducationComplete, setIsEducationComplete] = useState(true)
   const [isCourseComplete, setIsCourseComplete] = useState(true)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
+  const [selectedEducationLevel, setSelectedEducationLevel] = useState("")
 
   const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"}/profile/${profile.username}`
 
@@ -239,12 +240,14 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       const level = formData.get("level") as string
       const institution = formData.get("institution") as string
       const completionYear = formData.get("completionYear") as string
+      const courseName = formData.get("courseName") as string
 
       const newEducation = {
         level,
         institution,
         completionYear: completionYear || undefined,
         isComplete: isEducationComplete,
+        courseName: courseName || undefined,
       }
 
       setProfileData((prev) => ({
@@ -254,6 +257,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
 
       setIsEducationOpen(false)
       setIsEducationComplete(true)
+      setSelectedEducationLevel("")
       showToast("Escolaridade adicionada com sucesso!", "success")
     } catch (error) {
       console.error("Erro ao adicionar escolaridade:", error)
@@ -418,7 +422,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 </Button>
               )}
               {profileData.email && (
-                <Button variant="outline" size="sm" asChild className="flex-1">
+                <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
                   <a href={`mailto:${profileData.email}`}>
                     <Mail className="w-4 h-4 mr-2" />
                     Email
@@ -429,7 +433,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
 
             {/* Botões de Ação */}
             <div className="flex gap-2 w-full">
-              <Button variant="outline" size="sm" onClick={handleShareProfile} className="flex-1">
+              <Button variant="outline" size="sm" onClick={handleShareProfile} className="flex-1 bg-transparent">
                 <Share2 className="w-4 h-4 mr-2" />
                 Compartilhar
               </Button>
@@ -542,6 +546,9 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                     </Button>
                   )}
                   <h3 className="font-semibold">{edu.level}</h3>
+                  {edu.courseName && (
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-300">{edu.courseName}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">{edu.institution}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{edu.isComplete ? "Concluído" : "Em andamento"}</span>
@@ -793,7 +800,15 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       </Dialog>
 
       {/* Dialog para Adicionar Escolaridade */}
-      <Dialog open={isEducationOpen} onOpenChange={setIsEducationOpen}>
+      <Dialog
+        open={isEducationOpen}
+        onOpenChange={(open) => {
+          setIsEducationOpen(open)
+          if (!open) {
+            setSelectedEducationLevel("")
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Nova Escolaridade</DialogTitle>
@@ -802,7 +817,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
           <form action={handleEducationSubmit} className="space-y-4">
             <div>
               <Label htmlFor="level">Nível de Escolaridade</Label>
-              <Select name="level" required>
+              <Select name="level" required onValueChange={setSelectedEducationLevel}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o nível" />
                 </SelectTrigger>
@@ -815,6 +830,15 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedEducationLevel &&
+              !selectedEducationLevel.includes("Ensino Fundamental") &&
+              !selectedEducationLevel.includes("Ensino Médio") && (
+                <div>
+                  <Label htmlFor="courseName">Nome do Curso</Label>
+                  <Input id="courseName" name="courseName" placeholder="Ex: Administração, Enfermagem, etc." required />
+                </div>
+              )}
 
             <div>
               <Label htmlFor="institution">Instituição de Ensino</Label>

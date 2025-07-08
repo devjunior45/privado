@@ -322,6 +322,7 @@ export async function addEducation(formData: FormData) {
   const institution = formData.get("institution") as string
   const completionYear = formData.get("completionYear") as string
   const isComplete = formData.get("isComplete") === "true"
+  const courseName = formData.get("courseName") as string
 
   // Buscar educação atual
   const { data: profile } = await supabase.from("profiles").select("education").eq("id", user.id).single()
@@ -332,6 +333,7 @@ export async function addEducation(formData: FormData) {
     institution,
     completionYear: completionYear || undefined,
     isComplete,
+    courseName: courseName || undefined,
   }
 
   const updatedEducation = [...currentEducation, newEducation]

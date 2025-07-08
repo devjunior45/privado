@@ -12,6 +12,7 @@ export interface Education {
   institution: string
   completionYear?: string
   isComplete: boolean
+  courseName?: string
 }
 
 export interface Course {
