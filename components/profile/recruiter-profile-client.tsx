@@ -11,6 +11,7 @@ import type { UserProfile } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import { updateRecruiterProfile, requestVerification } from "@/app/actions/profile"
 import { toast } from "sonner"
+import { SettingsSheet } from "@/components/ui/settings-sheet"
 
 interface RecruiterProfileClientProps {
   profile: UserProfile
@@ -161,10 +162,13 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)} className="flex-1">
-        <Edit className="w-4 h-4 mr-2" />
-        Editar Perfil
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
+          <Edit className="w-4 h-4 mr-2" />
+          Editar Perfil
+        </Button>
+        <SettingsSheet />
+      </div>
 
       {/* Dialog para Editar Perfil */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
