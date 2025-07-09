@@ -31,7 +31,11 @@ export function ResumePDF({ profile }: ResumePDFProps) {
       // Criar um link para download
       const link = document.createElement("a")
       link.href = pdfDataUrl
-      link.download = `curriculo-${profile.username || "usuario"}.pdf`
+      const now = new Date()
+      const dateStr = now.toLocaleDateString("pt-BR").replace(/\//g, "-")
+      const timeStr = now.toLocaleTimeString("pt-BR", { hour12: false }).replace(/:/g, "-")
+      const fileName = `curriculo-${profile.username || "usuario"}-${dateStr}-${timeStr}.pdf`
+      link.download = fileName
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -44,7 +48,7 @@ export function ResumePDF({ profile }: ResumePDFProps) {
   }
 
   return (
-    <Button onClick={handleGeneratePDF} disabled={isGenerating} variant="outline" className="w-full">
+    <Button onClick={handleGeneratePDF} disabled={isGenerating} variant="outline" className="w-full bg-transparent">
       {isGenerating ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />

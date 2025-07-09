@@ -92,13 +92,27 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
     }
 
     resumeUrls.forEach((url) => {
-      window.open(url, "_blank")
+      const link = document.createElement("a")
+      link.href = url
+      link.download = ""
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     })
 
     toast({
       title: "Sucesso",
-      description: `${resumeUrls.length} currículos foram abertos para download`,
+      description: `${resumeUrls.length} currículos foram baixados`,
     })
+  }
+
+  const downloadResume = (resumeUrl: string, candidateName: string) => {
+    const link = document.createElement("a")
+    link.href = resumeUrl
+    link.download = `curriculo-${candidateName.replace(/\s+/g, "-").toLowerCase()}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (isLoading) {
@@ -251,10 +265,18 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
                       {/* Ações */}
                       <div className="flex gap-1 mt-auto">
                         {application.resume_pdf_url && (
-                          <Button variant="outline" size="sm" className="flex-1 h-8 text-xs bg-transparent" asChild>
-                            <a href={application.resume_pdf_url} target="_blank" rel="noreferrer">
-                              <FileText className="w-3 h-3" />
-                            </a>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 h-8 text-xs bg-transparent"
+                            onClick={() =>
+                              downloadResume(
+                                application.resume_pdf_url,
+                                profile?.full_name || profile?.username || "candidato",
+                              )
+                            }
+                          >
+                            <FileText className="w-3 h-3" />
                           </Button>
                         )}
 
