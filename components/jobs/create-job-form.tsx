@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
 import { useToast } from "@/components/ui/toast"
 import { createClient } from "@/lib/supabase/client"
+import { useSectors } from "@/hooks/use-sectors"
+import { MultiSelect } from "@/components/ui/multi-select"
 
 const DARK_COLORS = [
   { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
@@ -37,6 +39,7 @@ export function CreateJobForm() {
   const [salary, setSalary] = useState("")
   const [description, setDescription] = useState("")
   const [allowPlatformApplications, setAllowPlatformApplications] = useState(true)
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([])
   const [errors, setErrors] = useState<{
     title?: string
     company?: string
@@ -45,6 +48,7 @@ export function CreateJobForm() {
   }>({})
   const router = useRouter()
   const { showToast, ToastContainer } = useToast()
+  const { sectors, isLoading: isLoadingSectors } = useSectors()
 
   // Buscar dados do perfil para preencher empresa
   useEffect(() => {
@@ -153,6 +157,9 @@ export function CreateJobForm() {
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
     if (salary.trim()) formData.append("salary", salary)
+    if (selectedSectors.length > 0) {
+      formData.append("sector_ids", JSON.stringify(selectedSectors.map(Number)))
+    }
 
     if (selectedImage) {
       formData.append("image", selectedImage)
@@ -171,6 +178,8 @@ export function CreateJobForm() {
       setIsLoading(false)
     }
   }
+
+  const sectorOptions = sectors.map((s) => ({ value: s.id.toString(), label: s.name }))
 
   return (
     <div className="space-y-6">
@@ -281,6 +290,16 @@ export function CreateJobForm() {
                 name="cityId"
               />
               {errors.cityId && <p className="text-sm text-red-500 mt-1">{errors.cityId}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="sectors">Setor(es)</Label>
+              <MultiSelect
+                options={sectorOptions}
+                selected={selectedSectors}
+                onChange={setSelectedSectors}
+                placeholder={isLoadingSectors ? "Carregando..." : "Selecione um ou mais setores"}
+              />
             </div>
           </CardContent>
         </Card>

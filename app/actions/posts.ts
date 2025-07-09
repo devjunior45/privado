@@ -23,6 +23,7 @@ export async function createJobPost(formData: FormData) {
   const backgroundColor = formData.get("backgroundColor") as string
   const allowPlatformApplications = formData.get("allowPlatformApplications") === "true"
   const imageFile = formData.get("image") as File
+  const sectorIds = JSON.parse((formData.get("sector_ids") as string) || "[]")
 
   // Validar cidade
   if (!cityId) {
@@ -55,6 +56,7 @@ export async function createJobPost(formData: FormData) {
     allow_platform_applications: allowPlatformApplications,
     author_id: user.id,
     status: "active", // Sempre ativa ao criar
+    sector_ids: sectorIds,
   })
 
   if (error) {

@@ -15,7 +15,6 @@ export default function FeedPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  // Deriva valores primitivos – permanece igual entre renders se a URL não mudar
   const cityParam = searchParams.get("city") ? Number.parseInt(searchParams.get("city")!) : null
   const searchParam = searchParams.get("q") || ""
   const postParam = searchParams.get("post") || null
@@ -27,6 +26,7 @@ export default function FeedPage() {
       is_saved?: boolean
       has_applied?: boolean
       application_date?: string | null
+      sector_ids?: number[]
     })[]
   >([])
   const [filteredPosts, setFilteredPosts] = useState<
@@ -34,6 +34,7 @@ export default function FeedPage() {
       is_saved?: boolean
       has_applied?: boolean
       application_date?: string | null
+      sector_ids?: number[]
     })[]
   >([])
 
@@ -44,9 +45,11 @@ export default function FeedPage() {
   const [currentFilters, setCurrentFilters] = useState<{
     locations: number[]
     salaryRanges: string[]
+    sectors: number[]
   }>({
     locations: [],
     salaryRanges: [],
+    sectors: [],
   })
 
   const supabase = createClient()
@@ -69,7 +72,9 @@ export default function FeedPage() {
 
       const { data: fetchedPosts, error: postsError } = await supabase
         .from("job_posts")
-        .select(`*, profiles (id, username, full_name, avatar_url, whatsapp, user_type, company_name, is_verified)`)
+        .select(
+          `*, sector_ids, profiles (id, username, full_name, avatar_url, whatsapp, user_type, company_name, is_verified)`,
+        )
         .eq("status", "active")
         .order("created_at", { ascending: false })
 
@@ -116,7 +121,6 @@ export default function FeedPage() {
     }
   }, [supabase])
 
-  // Aplicar filtros sempre que os dados ou filtros mudarem
   const applyFilters = useCallback(() => {
     const cityFromUrl = searchParams.get("city")
     const searchFromUrl = searchParams.get("q")
@@ -136,10 +140,15 @@ export default function FeedPage() {
 
       const locationMatch =
         currentFilters.locations.length === 0 || currentFilters.locations.includes(post.city_id || 0)
+
       const salaryMatch =
         currentFilters.salaryRanges.length === 0 || (post.salary && currentFilters.salaryRanges.includes(post.salary))
 
-      return searchMatch && cityMatch && locationMatch && salaryMatch
+      const sectorMatch =
+        currentFilters.sectors.length === 0 ||
+        (post.sector_ids && post.sector_ids.some((id: number) => currentFilters.sectors.includes(id)))
+
+      return searchMatch && cityMatch && locationMatch && salaryMatch && sectorMatch
     })
     setFilteredPosts(filtered)
   }, [allPosts, cityParam, searchParam, currentFilters, postParam])
@@ -180,7 +189,7 @@ export default function FeedPage() {
     router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
   }
 
-  const handleMobileFilterChange = (filters: { locations: number[]; salaryRanges: string[] }) => {
+  const handleMobileFilterChange = (filters: { locations: number[]; salaryRanges: string[]; sectors: number[] }) => {
     setCurrentFilters(filters)
   }
 
