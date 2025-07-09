@@ -34,7 +34,7 @@ export function ResumePDF({ profile }: ResumePDFProps) {
       const now = new Date()
       const dateStr = now.toLocaleDateString("pt-BR").replace(/\//g, "-")
       const timeStr = now.toLocaleTimeString("pt-BR", { hour12: false }).replace(/:/g, "-")
-      const fileName = `curriculo-${profile.username || "usuario"}-${dateStr}-${timeStr}.pdf`
+      const fileName = `${profile.full_name || profile.username || "usuario"}-${dateStr}-${timeStr}.pdf`
       link.download = fileName
       document.body.appendChild(link)
       link.click()

@@ -80,9 +80,9 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
   }, [applications, searchTerm])
 
   const exportAllResumes = () => {
-    const resumeUrls = applications.filter((app) => app.resume_pdf_url).map((app) => app.resume_pdf_url)
+    const applicationsWithResumes = applications.filter((app) => app.resume_pdf_url)
 
-    if (resumeUrls.length === 0) {
+    if (applicationsWithResumes.length === 0) {
       toast({
         title: "Aviso",
         description: "Nenhum currículo disponível para download",
@@ -91,10 +91,18 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
       return
     }
 
-    resumeUrls.forEach((url) => {
+    const now = new Date()
+    const dateStr = now.toLocaleDateString("pt-BR").replace(/\//g, "-")
+    const timeStr = now.toLocaleTimeString("pt-BR", { hour12: false }).replace(/:/g, "-")
+
+    applicationsWithResumes.forEach((app) => {
+      const profile = app.profiles
+      const fileName = `${profile?.full_name || profile?.username || "candidato"}-${dateStr}-${timeStr}.pdf`
+
+      // Criar link temporário para download com nome personalizado
       const link = document.createElement("a")
-      link.href = url
-      link.download = ""
+      link.href = app.resume_pdf_url
+      link.download = fileName
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -102,17 +110,8 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
 
     toast({
       title: "Sucesso",
-      description: `${resumeUrls.length} currículos foram baixados`,
+      description: `${applicationsWithResumes.length} currículos foram baixados`,
     })
-  }
-
-  const downloadResume = (resumeUrl: string, candidateName: string) => {
-    const link = document.createElement("a")
-    link.href = resumeUrl
-    link.download = `curriculo-${candidateName.replace(/\s+/g, "-").toLowerCase()}.pdf`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
   }
 
   if (isLoading) {
@@ -269,12 +268,19 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
                             variant="outline"
                             size="sm"
                             className="flex-1 h-8 text-xs bg-transparent"
-                            onClick={() =>
-                              downloadResume(
-                                application.resume_pdf_url,
-                                profile?.full_name || profile?.username || "candidato",
-                              )
-                            }
+                            onClick={() => {
+                              const now = new Date()
+                              const dateStr = now.toLocaleDateString("pt-BR").replace(/\//g, "-")
+                              const timeStr = now.toLocaleTimeString("pt-BR", { hour12: false }).replace(/:/g, "-")
+                              const fileName = `${profile?.full_name || profile?.username || "candidato"}-${dateStr}-${timeStr}.pdf`
+
+                              const link = document.createElement("a")
+                              link.href = application.resume_pdf_url
+                              link.download = fileName
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                            }}
                           >
                             <FileText className="w-3 h-3" />
                           </Button>
