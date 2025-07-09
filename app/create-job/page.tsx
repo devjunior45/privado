@@ -1,7 +1,6 @@
 import { Header } from "@/components/header"
 import { CreateJobForm } from "@/components/jobs/create-job-form"
 import { PageContainer } from "@/components/page-container"
-import { PageHeader } from "@/components/page-header"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -24,13 +23,9 @@ export default async function CreateJobPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header title="Nova Vaga" showSettings={false} isLoggedIn={true} />
+      <Header title="Nova Vaga" showSettings={false} isLoggedIn={true} showBackButton={true} />
       <div className="mx-4 md:mx-0">
         <PageContainer>
-          <PageHeader
-            title="Publicar Nova Vaga"
-            description="Preencha os dados da vaga para atrair os melhores candidatos"
-          />
           <CreateJobForm />
         </PageContainer>
       </div>

@@ -219,6 +219,17 @@ export async function generateResumePDF(profile: UserProfile): Promise<string> {
         y += 5
       }
 
+      // Nome do curso (acima da instituição)
+      if (edu.courseName) {
+        const courseName = safeText(edu.courseName)
+        if (courseName) {
+          doc.setFont(normalFont, "bold")
+          doc.setFontSize(10)
+          doc.text(courseName, margin, y)
+          y += 5
+        }
+      }
+
       // Instituição
       const institution = safeText(edu.institution)
       if (institution) {

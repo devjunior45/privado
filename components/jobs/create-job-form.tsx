@@ -34,6 +34,7 @@ export function CreateJobForm() {
   const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
   const [title, setTitle] = useState("")
   const [companyName, setCompanyName] = useState("")
+  const [salary, setSalary] = useState("")
   const [description, setDescription] = useState("")
   const [allowPlatformApplications, setAllowPlatformApplications] = useState(true)
   const [errors, setErrors] = useState<{
@@ -151,6 +152,7 @@ export function CreateJobForm() {
     formData.append("description", description)
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
+    if (salary.trim()) formData.append("salary", salary)
 
     if (selectedImage) {
       formData.append("image", selectedImage)
@@ -254,6 +256,17 @@ export function CreateJobForm() {
                 placeholder="Nome da empresa"
               />
               {errors.company && <p className="text-sm text-red-500 mt-1">{errors.company}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="salary">Salário (Opcional)</Label>
+              <Input
+                id="salary"
+                name="salary"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="Ex: R$ 5.000 - R$ 8.000"
+              />
             </div>
 
             <div>
@@ -451,9 +464,9 @@ export function CreateJobForm() {
           </Card>
         )}
 
-        {/* Botões */}
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isLoading} className="flex-1">
+        {/* Botão de Publicar */}
+        <div className="flex justify-center">
+          <Button type="submit" disabled={isLoading} className="w-full max-w-md">
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -462,9 +475,6 @@ export function CreateJobForm() {
             ) : (
               "Publicar Vaga"
             )}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancelar
           </Button>
         </div>
       </form>
