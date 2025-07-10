@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 
-export interface Sector {
+interface Sector {
   id: number
   name: string
 }
@@ -11,22 +11,26 @@ export interface Sector {
 export function useSectors() {
   const [sectors, setSectors] = useState<Sector[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchSectors = async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase.from("sectors").select("id, name").order("name", { ascending: true })
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.from("sectors").select("id, name").order("name")
 
-      if (error) {
-        console.error("Error fetching sectors:", error)
-      } else {
+        if (error) throw error
+
         setSectors(data || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar setores")
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
 
     fetchSectors()
   }, [])
 
-  return { sectors, isLoading }
+  return { sectors, isLoading, error }
 }

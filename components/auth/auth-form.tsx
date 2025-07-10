@@ -12,6 +12,7 @@ import { Building, ArrowLeft, MapPin, Users, Eye } from "lucide-react"
 import type { UserType } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import Image from "next/image"
+import { GoogleIcon } from "@/components/icons/google-icon"
 
 type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
 
@@ -97,6 +98,22 @@ export function AuthForm() {
     }
   }
 
+  const handleSignInWithGoogle = async () => {
+    const supabase = createClient()
+    setIsLoading(true)
+    setError("")
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (error) {
+      setError(error.message)
+      setIsLoading(false)
+    }
+  }
+
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type)
     setCurrentStep("city-selection")
@@ -125,8 +142,27 @@ export function AuthForm() {
           <p className="text-muted-foreground">Como você gostaria de continuar?</p>
         </div>
 
+        <Button
+          onClick={handleSignInWithGoogle}
+          className="w-full h-12 bg-transparent"
+          variant="outline"
+          disabled={isLoading}
+        >
+          <GoogleIcon className="mr-2 h-5 w-5" />
+          Entrar com Google
+        </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Ou</span>
+          </div>
+        </div>
+
         <Button onClick={() => setCurrentStep("login")} className="w-full h-12" variant="default">
-          Já tenho uma conta
+          Entrar com email
         </Button>
 
         <Button onClick={() => setCurrentStep("user-type")} className="w-full h-12" variant="outline">
@@ -146,7 +182,7 @@ export function AuthForm() {
           <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
-        <p className="text-muted-foreground">Acesse sua conta</p>
+        <p className="text-muted-foreground">Acesse sua conta com seu email</p>
       </div>
 
       {error && (

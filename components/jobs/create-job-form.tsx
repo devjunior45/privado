@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Upload, X, ImageIcon, Bold, List } from "lucide-react"
+import { Loader2, Upload, X, ImageIcon, Bold } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
 import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
@@ -24,8 +24,6 @@ const DARK_COLORS = [
   { name: "Roxo Escuro", value: "#581C87", class: "bg-purple-900" },
   { name: "Vermelho Escuro", value: "#7F1D1D", class: "bg-red-900" },
   { name: "Índigo Escuro", value: "#312E81", class: "bg-indigo-900" },
-  { name: "Rosa Escuro", value: "#831843", class: "bg-pink-900" },
-  { name: "Laranja Escuro", value: "#9A3412", class: "bg-orange-900" },
 ]
 
 export function CreateJobForm() {
@@ -45,6 +43,7 @@ export function CreateJobForm() {
     company?: string
     cityId?: string
     description?: string
+    sectors?: string
   }>({})
   const router = useRouter()
   const { showToast, ToastContainer } = useToast()
@@ -74,6 +73,14 @@ export function CreateJobForm() {
     fetchProfile()
   }, [])
 
+  // Auto scroll para o final da página quando o conteúdo aumenta
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [description])
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -91,7 +98,7 @@ export function CreateJobForm() {
     setImagePreview(null)
   }
 
-  // Funções de formatação de texto
+  // Função de formatação de texto simplificada
   const insertText = (before: string, after = "") => {
     const textarea = document.getElementById("description") as HTMLTextAreaElement
     const start = textarea.selectionStart
@@ -106,33 +113,12 @@ export function CreateJobForm() {
     }, 0)
   }
 
-  const insertList = (type: "bullet" | "numbered") => {
-    const textarea = document.getElementById("description") as HTMLTextAreaElement
-    const start = textarea.selectionStart
-    const lines = description.substring(0, start).split("\n")
-    const currentLine = lines[lines.length - 1]
-
-    let listItem = ""
-    if (type === "bullet") {
-      listItem = currentLine.trim() === "" ? "• " : "\n• "
-    } else {
-      listItem = currentLine.trim() === "" ? "1. " : "\n1. "
-    }
-
-    const newText = description.substring(0, start) + listItem + description.substring(start)
-    setDescription(newText)
-
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + listItem.length, start + listItem.length)
-    }, 0)
-  }
-
   const validateForm = () => {
     const newErrors: typeof errors = {}
     if (!title.trim()) newErrors.title = "O título da vaga é obrigatório."
     if (!companyName.trim()) newErrors.company = "O nome da empresa é obrigatório."
     if (!selectedCityId) newErrors.cityId = "A localização é obrigatória."
+    if (selectedSectors.length === 0) newErrors.sectors = "Selecione pelo menos um setor."
     if (!selectedImage && !description.trim()) {
       newErrors.description = "A descrição é obrigatória se não houver imagem."
     }
@@ -179,10 +165,15 @@ export function CreateJobForm() {
     }
   }
 
+  // Função para renderizar o texto com formatação em tempo real
+  const renderFormattedText = (text: string) => {
+    return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>")
+  }
+
   const sectorOptions = sectors.map((s) => ({ value: s.id.toString(), label: s.name }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <form onSubmit={handleFormSubmit} noValidate>
         {/* Upload de Imagem */}
         <Card>
@@ -293,13 +284,17 @@ export function CreateJobForm() {
             </div>
 
             <div>
-              <Label htmlFor="sectors">Setor(es)</Label>
+              <Label htmlFor="sectors">Setor(es) *</Label>
               <MultiSelect
                 options={sectorOptions}
                 selected={selectedSectors}
-                onChange={setSelectedSectors}
+                onChange={(value) => {
+                  setSelectedSectors(value)
+                  if (errors.sectors) setErrors((prev) => ({ ...prev, sectors: undefined }))
+                }}
                 placeholder={isLoadingSectors ? "Carregando..." : "Selecione um ou mais setores"}
               />
+              {errors.sectors && <p className="text-sm text-red-500 mt-1">{errors.sectors}</p>}
             </div>
           </CardContent>
         </Card>
@@ -310,46 +305,14 @@ export function CreateJobForm() {
             <CardTitle>Descrição da Vaga</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Barra de Ferramentas de Formatação */}
-            <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-md">
+            {/* Barra de Ferramentas de Formatação Simplificada */}
+            <div className="flex gap-2 p-2 bg-muted rounded-md">
               <Button type="button" variant="ghost" size="sm" onClick={() => insertText("**", "**")} title="Negrito">
                 <Bold className="w-4 h-4" />
               </Button>
-
-              <div className="w-px bg-border mx-1" />
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => insertList("bullet")}
-                title="Lista com marcadores"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => insertList("numbered")}
-                title="Lista numerada"
-              >
-                <span className="text-sm font-mono">1.</span>
-              </Button>
-
-              <div className="w-px bg-border mx-1" />
-
-              <Button type="button" variant="ghost" size="sm" onClick={() => insertText("## ")} title="Título">
-                <span className="text-xs font-bold">H2</span>
-              </Button>
-
-              <Button type="button" variant="ghost" size="sm" onClick={() => insertText("### ")} title="Subtítulo">
-                <span className="text-xs font-bold">H3</span>
-              </Button>
             </div>
 
-            <div>
+            <div className="relative">
               <textarea
                 id="description"
                 name="description"
@@ -360,41 +323,40 @@ export function CreateJobForm() {
                 }}
                 placeholder="Descreva a vaga, responsabilidades, requisitos e benefícios..."
                 rows={16}
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono"
+                className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white"
+                style={{
+                  background: description ? "transparent" : undefined,
+                  color: description ? "transparent" : undefined,
+                }}
               />
-              {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
+
+              {/* Preview sobreposto */}
+              {description && (
+                <div
+                  className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-auto bg-white dark:bg-black text-black dark:text-white rounded-md"
+                  style={{
+                    minHeight: "16rem",
+                    lineHeight: "1.5",
+                  }}
+                >
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{
+                      __html: renderFormattedText(description),
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Preview da Formatação */}
-            {description && (
-              <div className="border rounded-md p-4 bg-muted/30">
-                <Label className="text-sm font-medium mb-2 block">Preview da Formatação:</Label>
-                <div
-                  className="prose prose-sm max-w-none text-sm"
-                  dangerouslySetInnerHTML={{
-                    __html: description
-                      .replace(/## (.*)/g, '<h2 class="text-base font-bold mt-4 mb-2">$1</h2>')
-                      .replace(/### (.*)/g, '<h3 class="text-sm font-semibold mt-3 mb-2">$1</h3>')
-                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                      .replace(/• (.*)/g, '<li style="margin-left: 1rem;">$1</li>')
-                      .replace(/\n/g, "<br>"),
-                  }}
-                />
-              </div>
-            )}
+            {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
 
             <div className="text-xs text-muted-foreground space-y-1">
               <p>
-                <strong>Dicas de Formatação:</strong>
-              </p>
-              <p>
-                • Use <code>## Título</code> para seções principais
+                <strong>Dica de Formatação:</strong>
               </p>
               <p>
                 • Use <code>**texto**</code> para negrito
-              </p>
-              <p>
-                • Use <code>• item</code> para listas
               </p>
               <p>• Use emojis para destacar seções (📋 🎯 🎁)</p>
             </div>
@@ -453,14 +415,14 @@ export function CreateJobForm() {
             <CardContent>
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">Escolha uma cor escura para destacar sua vaga no feed</p>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {DARK_COLORS.map((color) => (
                     <button
                       key={color.value}
                       type="button"
                       onClick={() => setSelectedColor(color.value)}
                       className={`
-                        relative w-12 h-12 rounded-full border-2 transition-all
+                        relative w-12 h-12 rounded-full border-2 transition-all mx-auto
                         ${
                           selectedColor === color.value
                             ? "border-primary ring-2 ring-primary/20 scale-110"
