@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
-import { generateUniqueUsername } from "@/utils/username-generator"
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -12,45 +11,16 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Verificar se o usuário já tem um perfil
+      // Verificar se o usuário já tem um perfil completo
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, username, user_type, city_id")
         .eq("id", data.user.id)
         .single()
 
-      // Se não existe perfil, criar um novo
-      if (!existingProfile) {
-        try {
-          // Extrair informações do usuário do Google
-          const fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name || "Usuario"
-          const email = data.user.email || ""
-
-          // Gerar username único
-          const username = await generateUniqueUsername(fullName)
-
-          // Criar perfil
-          const { error: profileError } = await supabase.from("profiles").insert({
-            id: data.user.id,
-            username: username,
-            full_name: fullName,
-            email: email,
-            user_type: "candidate", // Padrão como candidato
-            avatar_url: data.user.user_metadata?.avatar_url || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-
-          if (profileError) {
-            console.error("Erro ao criar perfil:", profileError)
-            return NextResponse.redirect(`${origin}/login?error=Erro ao criar perfil`)
-          }
-
-          console.log(`Perfil criado para usuário Google: ${username}`)
-        } catch (error) {
-          console.error("Erro no processo de criação do perfil:", error)
-          return NextResponse.redirect(`${origin}/login?error=Erro interno`)
-        }
+      // Se não existe perfil ou está incompleto, redirecionar para completar
+      if (!existingProfile || !existingProfile.user_type || !existingProfile.city_id) {
+        return NextResponse.redirect(`${origin}/complete-profile`)
       }
 
       return NextResponse.redirect(`${origin}${next}`)

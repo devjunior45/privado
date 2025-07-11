@@ -1,39 +1,45 @@
 import { createClient } from "@/lib/supabase/client"
 
-export function generateUsernameFromName(fullName: string): string {
-  // Remove acentos e caracteres especiais
-  const cleanName = fullName
+// Remove acentos e caracteres especiais
+function removeAccents(str: string): string {
+  return str
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "") // Remove tudo que não for letra ou número
-    .substring(0, 15) // Limita a 15 caracteres
-
-  // Gera 3 números aleatórios
-  const randomNumbers = Math.floor(Math.random() * 900) + 100 // Entre 100 e 999
-
-  return `${cleanName}${randomNumbers}`
 }
 
-export async function generateUniqueUsername(fullName: string): Promise<string> {
+// Gera 3 números aleatórios
+function generateRandomNumbers(): string {
+  return Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0")
+}
+
+// Verifica se o username já existe
+async function usernameExists(username: string): Promise<boolean> {
   const supabase = createClient()
-  let attempts = 0
-  const maxAttempts = 10
+  const { data } = await supabase.from("profiles").select("username").eq("username", username).single()
 
-  while (attempts < maxAttempts) {
-    const username = generateUsernameFromName(fullName)
+  return !!data
+}
 
-    // Verifica se o username já existe
-    const { data: existingUser } = await supabase.from("profiles").select("username").eq("username", username).single()
+// Gera um username único
+export async function generateUniqueUsername(fullName: string): Promise<string> {
+  const baseName = removeAccents(fullName.split(" ")[0]) // Pega apenas o primeiro nome
 
-    if (!existingUser) {
+  // Tenta até 10 vezes gerar um username único
+  for (let i = 0; i < 10; i++) {
+    const randomNumbers = generateRandomNumbers()
+    const username = `${baseName}${randomNumbers}`
+
+    const exists = await usernameExists(username)
+    if (!exists) {
       return username
     }
-
-    attempts++
   }
 
-  // Se não conseguir gerar um username único, adiciona timestamp
-  const fallbackUsername = generateUsernameFromName(fullName) + Date.now().toString().slice(-4)
-  return fallbackUsername
+  // Se não conseguir gerar um único, usa timestamp como fallback
+  const timestamp = Date.now().toString().slice(-3)
+  return `${baseName}${timestamp}`
 }
