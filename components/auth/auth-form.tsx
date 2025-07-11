@@ -19,6 +19,7 @@ type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal
 export function AuthForm() {
   const [currentStep, setCurrentStep] = useState<AuthStep>("welcome")
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -36,6 +37,12 @@ export function AuthForm() {
     if (type && (type === "candidate" || type === "recruiter")) {
       setUserType(type)
       setCurrentStep("city-selection")
+    }
+
+    // Verificar se há erro na URL
+    const errorParam = searchParams.get("error")
+    if (errorParam) {
+      setError(errorParam)
     }
   }, [searchParams])
 
@@ -99,18 +106,26 @@ export function AuthForm() {
   }
 
   const handleSignInWithGoogle = async () => {
-    const supabase = createClient()
-    setIsLoading(true)
+    setIsGoogleLoading(true)
     setError("")
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    if (error) {
-      setError(error.message)
-      setIsLoading(false)
+
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+        setIsGoogleLoading(false)
+      }
+    } catch (error: any) {
+      setError("Erro ao conectar com o Google")
+      setIsGoogleLoading(false)
     }
   }
 
@@ -142,14 +157,20 @@ export function AuthForm() {
           <p className="text-muted-foreground">Como você gostaria de continuar?</p>
         </div>
 
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <Button
           onClick={handleSignInWithGoogle}
           className="w-full h-12 bg-transparent"
           variant="outline"
-          disabled={isLoading}
+          disabled={isGoogleLoading}
         >
           <GoogleIcon className="mr-2 h-5 w-5" />
-          Entrar com Google
+          {isGoogleLoading ? "Conectando..." : "Entrar com Google"}
         </Button>
 
         <div className="relative">
