@@ -232,7 +232,7 @@ export function PageHeader({
               <DropdownMenuContent align="end" className="w-56 max-h-[300px] overflow-y-auto">
                 <DropdownMenuItem
                   onClick={() => handleCityChange(null)}
-                  className={!currentSelectedCityId ? "bg-blue-50" : ""}
+                  className={`${!currentSelectedCityId ? "bg-blue-50 dark:bg-gray-700" : ""} hover:bg-gray-100 dark:hover:bg-gray-700`}
                 >
                   <MapPin className="w-4 h-4 mr-2" />
                   Todas as cidades
@@ -247,7 +247,7 @@ export function PageHeader({
                     <DropdownMenuItem
                       key={city.id}
                       onClick={() => handleCityChange(city.id)}
-                      className={currentSelectedCityId === city.id ? "bg-blue-50" : ""}
+                      className={`${currentSelectedCityId === city.id ? "bg-blue-50 dark:bg-gray-700" : ""} hover:bg-gray-100 dark:hover:bg-gray-700`}
                     >
                       <MapPin className="w-4 h-4 mr-2" />
                       {formatCityDisplay(city)}

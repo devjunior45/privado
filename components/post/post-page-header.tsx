@@ -8,19 +8,34 @@ export function PostPageClientHeader() {
   const router = useRouter()
 
   const handleBack = () => {
-    // Verifica se há histórico de navegação e se a página anterior é do mesmo domínio
-    if (window.history.length > 1 && document.referrer) {
-      const referrerUrl = new URL(document.referrer)
-      const currentUrl = new URL(window.location.href)
+    // Verifica se há histórico de navegação no browser
+    if (window.history.length > 1) {
+      // Verifica se há um referrer e se é do mesmo domínio
+      if (document.referrer) {
+        try {
+          const referrerUrl = new URL(document.referrer)
+          const currentUrl = new URL(window.location.href)
 
-      // Se o referrer é do mesmo domínio, volta para a página anterior
-      if (referrerUrl.origin === currentUrl.origin) {
+          // Se o referrer é do mesmo domínio, volta para a página anterior
+          if (referrerUrl.origin === currentUrl.origin) {
+            router.back()
+            return
+          }
+        } catch (error) {
+          // Se houver erro ao processar URLs, tenta voltar mesmo assim
+          router.back()
+          return
+        }
+      } else {
+        // Se não há referrer mas há histórico, ainda assim tenta voltar
+        // (pode ser navegação interna sem referrer)
         router.back()
         return
       }
     }
 
-    // Se não há referrer interno ou o usuário chegou diretamente, vai para o feed
+    // Se não há histórico ou o referrer não é do mesmo domínio,
+    // redireciona para o feed
     router.push("/feed")
   }
 
