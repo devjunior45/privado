@@ -128,20 +128,16 @@ export function PageHeader({
     }
   }
 
-  const handleFilterChange = () => {
-    onFilterChange?.({
-      locations: selectedLocations,
-      salaryRanges: selectedSalaryRanges,
-      sectors: selectedSectors,
-    })
-  }
-
   const handleLocationToggle = (cityId: number) => {
     const newLocations = selectedLocations.includes(cityId)
       ? selectedLocations.filter((id) => id !== cityId)
       : [...selectedLocations, cityId]
     setSelectedLocations(newLocations)
-    handleFilterChange()
+    onFilterChange?.({
+      locations: newLocations,
+      salaryRanges: selectedSalaryRanges,
+      sectors: selectedSectors,
+    })
   }
 
   const handleSalaryToggle = (salary: string) => {
@@ -149,7 +145,11 @@ export function PageHeader({
       ? selectedSalaryRanges.filter((s) => s !== salary)
       : [...selectedSalaryRanges, salary]
     setSelectedSalaryRanges(newSalaries)
-    handleFilterChange()
+    onFilterChange?.({
+      locations: selectedLocations,
+      salaryRanges: newSalaries,
+      sectors: selectedSectors,
+    })
   }
 
   const handleSectorToggle = (sectorId: number) => {
@@ -157,7 +157,11 @@ export function PageHeader({
       ? selectedSectors.filter((id) => id !== sectorId)
       : [...selectedSectors, sectorId]
     setSelectedSectors(newSectors)
-    handleFilterChange()
+    onFilterChange?.({
+      locations: selectedLocations,
+      salaryRanges: selectedSalaryRanges,
+      sectors: newSectors,
+    })
   }
 
   const clearFilters = () => {
