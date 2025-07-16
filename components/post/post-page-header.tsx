@@ -8,15 +8,20 @@ export function PostPageClientHeader() {
   const router = useRouter()
 
   const handleBack = () => {
-    // Verifica se a página de referência (de onde o usuário veio) é do mesmo site.
-    // Se for, usa a função de voltar do navegador.
-    if (document.referrer && new URL(document.referrer).origin === window.location.origin) {
-      router.back()
-    } else {
-      // Se o usuário acessou o link diretamente (sem referência interna),
-      // o botão o levará para o feed.
-      router.push("/feed")
+    // Verifica se há histórico de navegação e se a página anterior é do mesmo domínio
+    if (window.history.length > 1 && document.referrer) {
+      const referrerUrl = new URL(document.referrer)
+      const currentUrl = new URL(window.location.href)
+
+      // Se o referrer é do mesmo domínio, volta para a página anterior
+      if (referrerUrl.origin === currentUrl.origin) {
+        router.back()
+        return
+      }
     }
+
+    // Se não há referrer interno ou o usuário chegou diretamente, vai para o feed
+    router.push("/feed")
   }
 
   return (
