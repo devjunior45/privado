@@ -13,6 +13,7 @@ import type { UserType } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import Image from "next/image"
 import { GoogleIcon } from "@/components/icons/google-icon"
+import Link from "next/link"
 
 type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
 
@@ -227,6 +228,16 @@ export function AuthForm() {
             required
           />
         </div>
+
+        <div className="text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Entrando..." : "Entrar"}
         </Button>
