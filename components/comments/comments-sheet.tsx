@@ -285,8 +285,8 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
           </div>
 
           {/* Comment Input */}
-          {user && (
-            <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
+          <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
+            {user ? (
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
                   value={newComment}
@@ -299,8 +299,12 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-gray-500 dark:text-gray-400 text-sm text-center">Faça login para comentar</p>
+              </div>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

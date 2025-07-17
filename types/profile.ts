@@ -11,8 +11,9 @@ export interface Education {
   level: string
   institution: string
   completionYear?: string
-  isComplete: boolean
+  isComplete: boolean // Mantém para compatibilidade
   courseName?: string
+  status?: "cursando" | "incompleto" | "concluído" // Novo campo
 }
 
 export interface Course {

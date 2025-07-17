@@ -321,7 +321,7 @@ export async function addEducation(formData: FormData) {
   const level = formData.get("level") as string
   const institution = formData.get("institution") as string
   const completionYear = formData.get("completionYear") as string
-  const isComplete = formData.get("isComplete") === "true"
+  const status = (formData.get("status") as string) || "concluído"
   const courseName = formData.get("courseName") as string
 
   // Buscar educação atual
@@ -331,8 +331,9 @@ export async function addEducation(formData: FormData) {
   const newEducation: Education = {
     level,
     institution,
-    completionYear: completionYear || undefined,
-    isComplete,
+    completionYear: status === "concluído" ? completionYear || undefined : undefined,
+    isComplete: status === "concluído", // Mantém compatibilidade
+    status: status as "cursando" | "incompleto" | "concluído",
     courseName: courseName || undefined,
   }
 
@@ -341,7 +342,7 @@ export async function addEducation(formData: FormData) {
   const { error } = await supabase.from("profiles").update({ education: updatedEducation }).eq("id", user.id)
 
   if (error) {
-    throw new Error("Erro ao adicionar escolaridade: " + error.message)
+    throw new Error("Erro ao adicionar formação: " + error.message)
   }
 
   revalidatePath("/profile")

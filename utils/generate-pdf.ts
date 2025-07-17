@@ -203,28 +203,27 @@ export async function generateResumePDF(profile: UserProfile): Promise<string> {
 
     doc.setFont(titleFont, "bold")
     doc.setFontSize(12)
-    doc.text("ESCOLARIDADE", margin, y)
+    doc.text("FORMAÇÃO", margin, y)
     y += 8
 
     const education = profile.education as Education[]
     education.forEach((edu) => {
       checkNewPage(20)
 
-      // Nível
-      const level = safeText(edu.level)
-      if (level) {
-        doc.setFont(normalFont, "bold")
-        doc.setFontSize(11)
-        doc.text(level, margin, y)
-        y += 5
-      }
-
-      // Nome do curso (acima da instituição)
-      if (edu.courseName) {
-        const courseName = safeText(edu.courseName)
+      // Nível ou Nome do curso
+      if (edu.level === "Ensino Fundamental" || edu.level === "Ensino Médio") {
+        const level = safeText(edu.level)
+        if (level) {
+          doc.setFont(normalFont, "bold")
+          doc.setFontSize(11)
+          doc.text(level, margin, y)
+          y += 5
+        }
+      } else {
+        const courseName = safeText(edu.courseName || edu.level)
         if (courseName) {
           doc.setFont(normalFont, "bold")
-          doc.setFontSize(10)
+          doc.setFontSize(11)
           doc.text(courseName, margin, y)
           y += 5
         }
@@ -241,9 +240,10 @@ export async function generateResumePDF(profile: UserProfile): Promise<string> {
 
       // Status e ano
       doc.setFont(normalFont, "normal")
-      doc.setFontSize(9)
-      const status = edu.isComplete ? "Concluído" : "Em andamento"
-      const statusText = edu.completionYear ? `${status} - ${safeText(edu.completionYear)}` : status
+      doc.setFontSize(10)
+      const status = edu.status || "concluído"
+      const statusText =
+        status === "concluído" && edu.completionYear ? `${status} em ${safeText(edu.completionYear)}` : status
       doc.text(statusText, margin, y)
       y += 8
     })
