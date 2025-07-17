@@ -3,6 +3,7 @@ import { ProfileView } from "@/components/profile/profile-view"
 import { RecruiterPublicView } from "@/components/profile/recruiter-public-view"
 import { notFound } from "next/navigation"
 import type { JobPostWithProfile } from "@/types/database"
+import { Header } from "@/components/header"
 
 interface ProfilePageProps {
   params: {
@@ -81,9 +82,10 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     )
   }
 
-  // Para candidatos, usar a visualização normal
+  // Para candidatos, usar a visualização normal com header
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-black pb-20">
+      <Header title={`@${profile.username}`} showBackButton={true} isLoggedIn={isLoggedIn} />
       <div className="max-w-md mx-auto px-4 py-6">
         <ProfileView profile={profile} isOwnProfile={isOwnProfile} />
       </div>
