@@ -31,3 +31,4 @@ const useMobile = (query = "(max-width: 767px)") => {
 }
 
 export default useMobile
+export { useMobile } // ← enables `import { useMobile } from "@/hooks/use-mobile"`
