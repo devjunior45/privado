@@ -55,7 +55,7 @@ export function AuthForm() {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -72,7 +72,14 @@ export function AuthForm() {
 
       if (error) throw error
 
-      router.push("/feed")
+      // Se o usuário foi criado mas precisa confirmar email
+      if (data.user && !data.user.email_confirmed_at) {
+        router.push("/confirm-email")
+      } else {
+        // Se o email já foi confirmado (caso raro), ir direto para o feed
+        router.push("/feed")
+      }
+
       router.refresh()
     } catch (error: any) {
       console.error("Erro no cadastro:", error)

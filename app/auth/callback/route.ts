@@ -23,6 +23,7 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/complete-profile`)
       }
 
+      // Se tudo está completo, ir para o feed
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
