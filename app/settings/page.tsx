@@ -7,7 +7,18 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Eye, Shield, Palette, Mail, Lock } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { ArrowLeft, Eye, Shield, Palette, Mail, Lock, LogOut, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { createClient } from "@/lib/supabase/client"
@@ -23,6 +34,8 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   // Estados para visibilidade
   const [phoneVisible, setPhoneVisible] = useState(true)
@@ -35,6 +48,10 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+
+  // Estados para deletar conta
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
 
   useEffect(() => {
     loadUserData()
@@ -184,6 +201,88 @@ export default function SettingsPage() {
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const { error } = await supabase.auth.signOut()
+
+      if (error) throw error
+
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      })
+
+      router.push("/login")
+      router.refresh()
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível fazer logout.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast({
+        title: "Erro",
+        description: "Digite sua senha para confirmar.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsDeletingAccount(true)
+    try {
+      // Verificar se a senha está correta
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: deletePassword,
+      })
+
+      if (signInError) {
+        throw new Error("Senha incorreta")
+      }
+
+      // Deletar dados do perfil
+      const { error: profileError } = await supabase.from("profiles").delete().eq("id", user.id)
+
+      if (profileError) {
+        console.error("Erro ao deletar perfil:", profileError)
+      }
+
+      // Deletar conta do usuário
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
+
+      if (deleteError) {
+        // Se não conseguir deletar via admin, fazer logout
+        await supabase.auth.signOut()
+      }
+
+      toast({
+        title: "Conta encerrada",
+        description: "Sua conta foi encerrada com sucesso.",
+      })
+
+      router.push("/login")
+      router.refresh()
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível encerrar a conta.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeletingAccount(false)
+      setShowDeleteAccount(false)
+      setDeletePassword("")
     }
   }
 
@@ -398,6 +497,81 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Conta */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LogOut className="w-5 h-5" />
+              Conta
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Logout */}
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full justify-start bg-transparent"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {isLoggingOut ? "Saindo..." : "Sair da conta"}
+            </Button>
+
+            {/* Deletar Conta */}
+            <AlertDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-red-600 hover:text-red-700 bg-transparent"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Encerrar conta
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Encerrar conta</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Todos os seus dados serão permanentemente deletados, incluindo:
+                    <br />
+                    <br />• Perfil e informações pessoais
+                    <br />• Histórico de candidaturas
+                    <br />• Vagas salvas
+                    <br />• Notificações
+                    <br />
+                    <br />
+                    Digite sua senha para confirmar:
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4">
+                  <Input
+                    type="password"
+                    placeholder="Digite sua senha"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => {
+                      setDeletePassword("")
+                    }}
+                  >
+                    Cancelar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    disabled={isDeletingAccount || !deletePassword}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {isDeletingAccount ? "Encerrando..." : "Encerrar conta"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </div>
