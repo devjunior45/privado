@@ -30,7 +30,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
   const [visibleReplies, setVisibleReplies] = useState<Set<string>>(new Set())
-  const [repliesDisplayCount, setRepliesDisplayCount] = useState<Record<string, number>>({})
+  const [repliesCount, setRepliesCount] = useState<Map<string, number>>(new Map())
 
   // Drag to close functionality
   const [isDragging, setIsDragging] = useState(false)
@@ -40,6 +40,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
   const sheetRef = useRef<HTMLDivElement>(null)
 
   const supabase = createClient()
+  const REPLIES_PER_PAGE = 8
 
   useEffect(() => {
     const getUser = async () => {
@@ -56,7 +57,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
       fetchComments()
       setTranslateY(0)
       setVisibleReplies(new Set())
-      setRepliesDisplayCount({})
+      setRepliesCount(new Map())
     }
   }, [isOpen, postId])
 
@@ -65,6 +66,15 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
       setIsLoading(true)
       const fetchedComments = await getComments(postId)
       setComments(fetchedComments)
+
+      // Initialize replies count for each comment
+      const newRepliesCount = new Map()
+      fetchedComments.forEach((comment) => {
+        if (comment.replies && comment.replies.length > 0) {
+          newRepliesCount.set(comment.id, REPLIES_PER_PAGE)
+        }
+      })
+      setRepliesCount(newRepliesCount)
     } catch (error) {
       console.error("Erro ao buscar comentários:", error)
     } finally {
@@ -74,7 +84,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
 
   const showReplies = (commentId: string) => {
     setVisibleReplies((prev) => new Set([...prev, commentId]))
-    setRepliesDisplayCount((prev) => ({ ...prev, [commentId]: 8 }))
+    setRepliesCount((prev) => new Map([...prev, [commentId, REPLIES_PER_PAGE]]))
   }
 
   const hideReplies = (commentId: string) => {
@@ -83,18 +93,20 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
       newSet.delete(commentId)
       return newSet
     })
-    setRepliesDisplayCount((prev) => {
-      const newCount = { ...prev }
-      delete newCount[commentId]
-      return newCount
+    setRepliesCount((prev) => {
+      const newMap = new Map(prev)
+      newMap.delete(commentId)
+      return newMap
     })
   }
 
   const loadMoreReplies = (commentId: string) => {
-    setRepliesDisplayCount((prev) => ({
-      ...prev,
-      [commentId]: (prev[commentId] || 8) + 8,
-    }))
+    setRepliesCount((prev) => {
+      const newMap = new Map(prev)
+      const currentCount = newMap.get(commentId) || REPLIES_PER_PAGE
+      newMap.set(commentId, currentCount + REPLIES_PER_PAGE)
+      return newMap
+    })
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -263,37 +275,47 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
             </Button>
           </div>
         )}
+      </div>
+    </div>
+  )
 
-        {/* Show replies button - only show if replies exist and are not visible */}
-        {!isReply && comment.replies && comment.replies.length > 0 && !visibleReplies.has(comment.id) && (
-          <div className="mt-3">
+  const renderCommentWithReplies = (comment: Comment) => {
+    const isRepliesVisible = visibleReplies.has(comment.id)
+    const currentRepliesCount = repliesCount.get(comment.id) || REPLIES_PER_PAGE
+    const totalReplies = comment.replies?.length || 0
+    const visibleRepliesData = comment.replies?.slice(0, currentRepliesCount) || []
+    const hasMoreReplies = totalReplies > currentRepliesCount
+
+    return (
+      <div key={comment.id}>
+        {renderComment(comment)}
+
+        {/* Show replies button */}
+        {!isRepliesVisible && totalReplies > 0 && (
+          <div className="mt-3 ml-11">
             <button
               onClick={() => showReplies(comment.id)}
-              className="flex items-center gap-1 text-xs text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-black dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <ChevronDown className="w-3 h-3" />
               <span>
-                Ver {comment.replies.length} {comment.replies.length === 1 ? "resposta" : "respostas"}
+                Ver {totalReplies} {totalReplies === 1 ? "resposta" : "respostas"}
               </span>
             </button>
           </div>
         )}
 
         {/* Replies */}
-        {!isReply && comment.replies && comment.replies.length > 0 && visibleReplies.has(comment.id) && (
+        {isRepliesVisible && (
           <div className="mt-3">
-            <div className="space-y-2">
-              {comment.replies
-                .slice(0, repliesDisplayCount[comment.id] || 8)
-                .map((reply) => renderComment(reply, true))}
-            </div>
+            <div className="space-y-2">{visibleRepliesData.map((reply) => renderComment(reply, true))}</div>
 
             {/* Load more replies button */}
-            {comment.replies.length > (repliesDisplayCount[comment.id] || 8) && (
-              <div className="mt-3">
+            {hasMoreReplies && (
+              <div className="mt-3 ml-11">
                 <button
                   onClick={() => loadMoreReplies(comment.id)}
-                  className="flex items-center gap-1 text-xs text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  className="flex items-center gap-1 text-xs text-black dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
                   <ChevronDown className="w-3 h-3" />
                   <span>Ver mais</span>
@@ -301,11 +323,11 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
               </div>
             )}
 
-            {/* Hide replies button - always at the bottom */}
-            <div className="mt-3">
+            {/* Hide replies button */}
+            <div className="mt-3 ml-11">
               <button
                 onClick={() => hideReplies(comment.id)}
-                className="flex items-center gap-1 text-xs text-black dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                className="flex items-center gap-1 text-xs text-black dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <ChevronUp className="w-3 h-3" />
                 <span>Ocultar respostas</span>
@@ -314,8 +336,8 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
           </div>
         )}
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -357,7 +379,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum comentário ainda</p>
               </div>
             ) : (
-              <div className="py-4 space-y-4">{comments.map((comment) => renderComment(comment))}</div>
+              <div className="py-4 space-y-4">{comments.map((comment) => renderCommentWithReplies(comment))}</div>
             )}
           </div>
 
