@@ -11,7 +11,7 @@ import { RecruiterProfileClient } from "./recruiter-profile-client"
 import { WhatsAppButton } from "@/components/ui/whatsapp-button"
 
 interface RecruiterProfileProps {
-  profile: UserProfile
+  profile: UserProfile & { phone_visible?: boolean; email_visible?: boolean }
   isOwnProfile?: boolean
 }
 
@@ -38,6 +38,10 @@ export async function RecruiterProfile({ profile, isOwnProfile = false }: Recrui
     const numbers = cnpj.replace(/\D/g, "")
     return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
   }
+
+  // Verificar se deve mostrar botões de contato
+  const shouldShowWhatsApp = isOwnProfile || profile.phone_visible !== false
+  const shouldShowEmail = isOwnProfile || profile.email_visible !== false
 
   return (
     <div className="max-w-md mx-auto space-y-6 pb-20">
@@ -100,18 +104,22 @@ export async function RecruiterProfile({ profile, isOwnProfile = false }: Recrui
               <p className="text-sm text-muted-foreground">{profile.professional_summary}</p>
             )}
 
-            {/* Botões de Contato */}
-            <div className="flex gap-2 w-full">
-              {profile.whatsapp && <WhatsAppButton whatsapp={profile.whatsapp} className="flex-1" />}
-              {profile.email && (
-                <Button variant="outline" size="sm" asChild className="flex-1">
-                  <a href={`mailto:${profile.email}`}>
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email
-                  </a>
-                </Button>
-              )}
-            </div>
+            {/* Botões de Contato - Condicionais baseados na visibilidade */}
+            {(shouldShowWhatsApp || shouldShowEmail) && (
+              <div className="flex gap-2 w-full">
+                {shouldShowWhatsApp && profile.whatsapp && (
+                  <WhatsAppButton whatsapp={profile.whatsapp} className="flex-1" />
+                )}
+                {shouldShowEmail && profile.email && (
+                  <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
+                    <a href={`mailto:${profile.email}`}>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </a>
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Verificação */}
             {isOwnProfile && !profile.is_verified && !pendingVerification && (

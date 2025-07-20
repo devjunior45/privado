@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Send, Heart, MessageCircle } from "lucide-react"
+import { Send, Heart, MessageCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { createComment, toggleCommentLike } from "@/app/actions/comments"
 import { createClient } from "@/lib/supabase/client"
 import type { Comment } from "@/types/comments"
@@ -29,6 +29,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
   const [isLoading, setIsLoading] = useState(false)
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
+  const [visibleReplies, setVisibleReplies] = useState<Set<string>>(new Set())
 
   // Drag to close functionality
   const [isDragging, setIsDragging] = useState(false)
@@ -53,6 +54,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
     if (isOpen) {
       fetchComments()
       setTranslateY(0)
+      setVisibleReplies(new Set())
     }
   }, [isOpen, postId])
 
@@ -66,6 +68,16 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const toggleRepliesVisibility = (commentId: string) => {
+    const newVisibleReplies = new Set(visibleReplies)
+    if (newVisibleReplies.has(commentId)) {
+      newVisibleReplies.delete(commentId)
+    } else {
+      newVisibleReplies.add(commentId)
+    }
+    setVisibleReplies(newVisibleReplies)
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -140,6 +152,9 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
       setReplyContent("")
       setReplyingTo(null)
       await fetchComments()
+
+      // Automatically show replies after adding a new one
+      setVisibleReplies((prev) => new Set([...prev, parentId]))
     } catch (error) {
       console.error("Erro ao enviar resposta:", error)
     } finally {
@@ -232,8 +247,32 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
           </div>
         )}
 
+        {/* Replies toggle button */}
+        {!isReply && comment.replies && comment.replies.length > 0 && (
+          <div className="mt-3">
+            <button
+              onClick={() => toggleRepliesVisibility(comment.id)}
+              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+            >
+              {visibleReplies.has(comment.id) ? (
+                <>
+                  <ChevronUp className="w-3 h-3" />
+                  <span>Ocultar respostas</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3 h-3" />
+                  <span>
+                    Ver {comment.replies.length} {comment.replies.length === 1 ? "resposta" : "respostas"}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Replies */}
-        {comment.replies && comment.replies.length > 0 && (
+        {!isReply && comment.replies && comment.replies.length > 0 && visibleReplies.has(comment.id) && (
           <div className="mt-3 space-y-2">{comment.replies.map((reply) => renderComment(reply, true))}</div>
         )}
       </div>

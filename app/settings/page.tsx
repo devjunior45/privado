@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,15 +17,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Eye, Shield, Palette, Mail, Lock, LogOut, Trash2 } from "lucide-react"
+import { ArrowLeft, Eye, Shield, Mail, Lock, LogOut, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useTheme } from "next-themes"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const supabase = createClient()
 
@@ -286,10 +283,6 @@ export default function SettingsPage() {
     }
   }
 
-  const handleThemeChange = (value: string) => {
-    setTheme(value)
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -344,36 +337,6 @@ export default function SettingsPage() {
             <Button onClick={updateVisibilitySettings} disabled={saving} className="w-full">
               {saving ? "Salvando..." : "Salvar configurações"}
             </Button>
-          </CardContent>
-        </Card>
-
-        {/* Tema */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5" />
-              Tema
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Escolha o tema do aplicativo</Label>
-              <Select value={theme} onValueChange={handleThemeChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o tema" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="system">Sistema</SelectItem>
-                  <SelectItem value="light">Claro</SelectItem>
-                  <SelectItem value="dark">Escuro</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {theme === "system" && "Segue o tema do seu dispositivo"}
-                {theme === "light" && "Tema claro sempre ativo"}
-                {theme === "dark" && "Tema escuro sempre ativo"}
-              </p>
-            </div>
           </CardContent>
         </Card>
 

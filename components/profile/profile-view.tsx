@@ -43,7 +43,7 @@ import { CityDisplay } from "@/components/ui/city-display"
 import { useToast } from "@/components/ui/toast"
 
 interface ProfileViewProps {
-  profile: UserProfile & { is_verified?: boolean }
+  profile: UserProfile & { is_verified?: boolean; phone_visible?: boolean; email_visible?: boolean }
   isOwnProfile?: boolean
 }
 
@@ -62,7 +62,9 @@ const EDUCATION_STATUS = ["cursando", "incompleto", "concluído"]
 const CNH_TYPES = ["A", "B", "AB", "C", "D", "E"]
 
 export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps) {
-  const [profileData, setProfileData] = useState<UserProfile & { is_verified?: boolean }>(profile)
+  const [profileData, setProfileData] = useState<
+    UserProfile & { is_verified?: boolean; phone_visible?: boolean; email_visible?: boolean }
+  >(profile)
   const [isProfileLoading, setIsProfileLoading] = useState(false)
   const [isSkillsLoading, setIsSkillsLoading] = useState(false)
   const [isExperienceLoading, setIsExperienceLoading] = useState(false)
@@ -84,6 +86,10 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"}/profile/${profile.username}`
 
   const { showToast, ToastContainer } = useToast()
+
+  // Verificar se deve mostrar botões de contato
+  const shouldShowWhatsApp = isOwnProfile || profileData.phone_visible !== false
+  const shouldShowEmail = isOwnProfile || profileData.email_visible !== false
 
   const handleWhatsAppContact = () => {
     if (profileData.whatsapp) {
@@ -415,23 +421,25 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
               </div>
             )}
 
-            {/* Botões de Contato */}
-            <div className="flex gap-2 w-full">
-              {profileData.whatsapp && (
-                <Button onClick={handleWhatsAppContact} className="flex-1" size="sm">
-                  <Phone className="w-4 h-4 mr-2" />
-                  WhatsApp
-                </Button>
-              )}
-              {profileData.email && (
-                <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
-                  <a href={`mailto:${profileData.email}`}>
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email
-                  </a>
-                </Button>
-              )}
-            </div>
+            {/* Botões de Contato - Condicionais baseados na visibilidade */}
+            {(shouldShowWhatsApp || shouldShowEmail) && (
+              <div className="flex gap-2 w-full">
+                {shouldShowWhatsApp && profileData.whatsapp && (
+                  <Button onClick={handleWhatsAppContact} className="flex-1" size="sm">
+                    <Phone className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                )}
+                {shouldShowEmail && profileData.email && (
+                  <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
+                    <a href={`mailto:${profileData.email}`}>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </a>
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Botões de Ação */}
             <div className="flex gap-2 w-full">
