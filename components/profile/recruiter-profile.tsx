@@ -73,9 +73,15 @@ export async function RecruiterProfile({ profile, isOwnProfile = false }: Recrui
               ) : null}
             </div>
 
-            <div>
+            <div className="w-full">
               <div className="flex items-center justify-center gap-2">
-                <h1 className="text-2xl font-bold">{profile.company_name || profile.full_name || profile.username}</h1>
+                {profile.company_name || profile.full_name ? (
+                  <h1 className="text-2xl font-bold">
+                    {profile.company_name || profile.full_name || profile.username}
+                  </h1>
+                ) : (
+                  isOwnProfile && <RecruiterProfileClient profile={profile} showNameButton />
+                )}
                 {profile.is_verified && (
                   <Badge className="bg-green-100 text-green-800">
                     <ShieldCheck className="w-3 h-3 mr-1" />
@@ -100,26 +106,32 @@ export async function RecruiterProfile({ profile, isOwnProfile = false }: Recrui
               {profile.cnpj && <p className="text-sm text-muted-foreground mt-1">CNPJ: {formatCNPJ(profile.cnpj)}</p>}
             </div>
 
-            {profile.professional_summary && (
+            {/* Resumo Profissional */}
+            {profile.professional_summary ? (
               <p className="text-sm text-muted-foreground">{profile.professional_summary}</p>
+            ) : (
+              isOwnProfile && <RecruiterProfileClient profile={profile} showSummaryButton />
             )}
 
             {/* Botões de Contato - Condicionais baseados na visibilidade */}
-            {(shouldShowWhatsApp || shouldShowEmail) && (
-              <div className="flex gap-2 w-full">
-                {shouldShowWhatsApp && profile.whatsapp && (
-                  <WhatsAppButton whatsapp={profile.whatsapp} className="flex-1" />
-                )}
-                {shouldShowEmail && profile.email && (
-                  <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
-                    <a href={`mailto:${profile.email}`}>
-                      <Mail className="w-4 h-4 mr-2" />
-                      Email
-                    </a>
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="flex gap-2 w-full">
+              {shouldShowWhatsApp && profile.whatsapp ? (
+                <WhatsAppButton whatsapp={profile.whatsapp} className="flex-1" />
+              ) : (
+                isOwnProfile && <RecruiterProfileClient profile={profile} showWhatsAppButton />
+              )}
+
+              {shouldShowEmail && profile.email ? (
+                <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
+                  <a href={`mailto:${profile.email}`}>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Email
+                  </a>
+                </Button>
+              ) : (
+                isOwnProfile && <RecruiterProfileClient profile={profile} showEmailButton />
+              )}
+            </div>
 
             {/* Verificação */}
             {isOwnProfile && !profile.is_verified && !pendingVerification && (

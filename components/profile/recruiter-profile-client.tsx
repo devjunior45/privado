@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, Shield } from "lucide-react"
+import { Edit, Shield, Plus } from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import { updateRecruiterProfile, requestVerification } from "@/app/actions/profile"
@@ -16,13 +16,30 @@ import { SettingsSheet } from "@/components/ui/settings-sheet"
 interface RecruiterProfileClientProps {
   profile: UserProfile
   showVerificationButton?: boolean
+  showNameButton?: boolean
+  showSummaryButton?: boolean
+  showWhatsAppButton?: boolean
+  showEmailButton?: boolean
 }
 
-export function RecruiterProfileClient({ profile, showVerificationButton = false }: RecruiterProfileClientProps) {
+export function RecruiterProfileClient({
+  profile,
+  showVerificationButton = false,
+  showNameButton = false,
+  showSummaryButton = false,
+  showWhatsAppButton = false,
+  showEmailButton = false,
+}: RecruiterProfileClientProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isVerificationOpen, setIsVerificationOpen] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
   const [isLoading, setIsLoading] = useState(false)
+  const [focusField, setFocusField] = useState<string | null>(null)
+
+  const openEditWithFocus = (field: string) => {
+    setFocusField(field)
+    setIsEditOpen(true)
+  }
 
   const handleProfileSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -33,6 +50,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
 
       await updateRecruiterProfile(formData)
       setIsEditOpen(false)
+      setFocusField(null)
       toast.success("Perfil atualizado com sucesso!")
       window.location.reload() // Refresh to show updated data
     } catch (error) {
@@ -58,6 +76,157 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
     }
   }
 
+  // Botão de nome da empresa
+  if (showNameButton) {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          onClick={() => openEditWithFocus("companyName")}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Adicione o nome da empresa
+        </Button>
+
+        {/* Dialog para Editar Perfil */}
+        <Dialog
+          open={isEditOpen}
+          onOpenChange={(open) => {
+            setIsEditOpen(open)
+            if (!open) setFocusField(null)
+          }}
+        >
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Perfil da Empresa</DialogTitle>
+            </DialogHeader>
+
+            <form action={handleProfileSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="avatar">Logo da Empresa</Label>
+                <Input id="avatar" name="avatar" type="file" accept="image/*" />
+                {profile.avatar_url && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecione uma nova imagem para substituir a atual
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="companyName">Nome da Empresa *</Label>
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  defaultValue={profile.company_name || ""}
+                  required
+                  autoFocus={focusField === "companyName"}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cnpj">CNPJ (opcional)</Label>
+                <Input
+                  id="cnpj"
+                  name="cnpj"
+                  defaultValue={profile.cnpj || ""}
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cityId">Cidade *</Label>
+                <CitySelect
+                  value={selectedCityId}
+                  onValueChange={setSelectedCityId}
+                  placeholder="Selecione a cidade da empresa"
+                  name="cityId"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp *</Label>
+                <Input
+                  id="whatsapp"
+                  name="whatsapp"
+                  defaultValue={profile.whatsapp || ""}
+                  placeholder="(11) 99999-9999"
+                  required
+                  autoFocus={focusField === "whatsapp"}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  defaultValue={profile.email || ""}
+                  required
+                  autoFocus={focusField === "email"}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Descrição da Empresa</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={profile.professional_summary || ""}
+                  placeholder="Descreva sua empresa, área de atuação, valores..."
+                  rows={3}
+                  autoFocus={focusField === "description"}
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Salvando..." : "Salvar Perfil"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </>
+    )
+  }
+
+  // Botão de resumo profissional
+  if (showSummaryButton) {
+    return (
+      <div
+        onClick={() => openEditWithFocus("description")}
+        className="w-full p-4 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:border-muted-foreground/50 transition-colors"
+      >
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <Plus className="w-4 h-4" />
+          <span className="text-sm">Adicione a descrição da empresa</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Botão de WhatsApp
+  if (showWhatsAppButton) {
+    return (
+      <Button variant="outline" onClick={() => openEditWithFocus("whatsapp")} className="flex-1" size="sm">
+        <Plus className="w-4 h-4 mr-2" />
+        Adicione o telefone
+      </Button>
+    )
+  }
+
+  // Botão de Email
+  if (showEmailButton) {
+    return (
+      <Button variant="outline" onClick={() => openEditWithFocus("email")} className="flex-1 bg-transparent" size="sm">
+        <Plus className="w-4 h-4 mr-2" />
+        Adicione o e-mail
+      </Button>
+    )
+  }
+
+  // Botão de verificação
   if (showVerificationButton) {
     return (
       <>
@@ -171,7 +340,13 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
       </div>
 
       {/* Dialog para Editar Perfil */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open)
+          if (!open) setFocusField(null)
+        }}
+      >
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Perfil da Empresa</DialogTitle>
@@ -188,7 +363,13 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
 
             <div>
               <Label htmlFor="companyName">Nome da Empresa *</Label>
-              <Input id="companyName" name="companyName" defaultValue={profile.company_name || ""} required />
+              <Input
+                id="companyName"
+                name="companyName"
+                defaultValue={profile.company_name || ""}
+                required
+                autoFocus={focusField === "companyName"}
+              />
             </div>
 
             <div>
@@ -220,12 +401,20 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
                 defaultValue={profile.whatsapp || ""}
                 placeholder="(11) 99999-9999"
                 required
+                autoFocus={focusField === "whatsapp"}
               />
             </div>
 
             <div>
               <Label htmlFor="email">Email *</Label>
-              <Input id="email" name="email" type="email" defaultValue={profile.email || ""} required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={profile.email || ""}
+                required
+                autoFocus={focusField === "email"}
+              />
             </div>
 
             <div>
@@ -236,6 +425,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
                 defaultValue={profile.professional_summary || ""}
                 placeholder="Descreva sua empresa, área de atuação, valores..."
                 rows={3}
+                autoFocus={focusField === "description"}
               />
             </div>
 
