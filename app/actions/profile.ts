@@ -267,26 +267,6 @@ export async function updateSkills(formData: FormData) {
   revalidatePath("/profile")
 }
 
-export async function updateFirstJobStatus(isFirstJob: boolean) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth")
-  }
-
-  const { error } = await supabase.from("profiles").update({ is_first_job: isFirstJob }).eq("id", user.id)
-
-  if (error) {
-    console.error("Erro ao atualizar status de primeiro emprego:", error)
-    throw new Error("Erro ao atualizar status: " + error.message)
-  }
-
-  revalidatePath("/profile")
-}
-
 export async function addExperience(formData: FormData) {
   const supabase = await createClient()
 
@@ -319,14 +299,7 @@ export async function addExperience(formData: FormData) {
 
   const updatedExperiences = [...currentExperiences, newExperience]
 
-  // Ao adicionar experiência, remover o status de primeiro emprego
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      experiences: updatedExperiences,
-      is_first_job: false, // Remove o status de primeiro emprego
-    })
-    .eq("id", user.id)
+  const { error } = await supabase.from("profiles").update({ experiences: updatedExperiences }).eq("id", user.id)
 
   if (error) {
     throw new Error("Erro ao adicionar experiência: " + error.message)

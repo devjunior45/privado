@@ -25,7 +25,6 @@ import {
   Trash2,
   Loader2,
   ShieldCheck,
-  Star,
 } from "lucide-react"
 import type { UserProfile, Experience, Education, Course } from "@/types/profile"
 import { ResumePDF } from "./resume-pdf"
@@ -38,11 +37,12 @@ import {
   removeExperience,
   removeEducation,
   removeCourse,
-  updateFirstJobStatus,
 } from "@/app/actions/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import { CityDisplay } from "@/components/ui/city-display"
 import { useToast } from "@/components/ui/toast"
+import { useMobile } from "@/hooks/use-mobile"
+import { useRouter } from "next/navigation"
 
 interface ProfileViewProps {
   profile: UserProfile & { is_verified?: boolean; phone_visible?: boolean; email_visible?: boolean }
@@ -84,18 +84,17 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
   const [selectedEducationLevel, setSelectedEducationLevel] = useState("")
   const [educationStatus, setEducationStatus] = useState("concluído")
-  const [focusField, setFocusField] = useState<string | null>(null)
 
   const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"}/profile/${profile.username}`
 
   const { showToast, ToastContainer } = useToast()
 
+  const isMobile = useMobile()
+  const router = useRouter()
+
   // Verificar se deve mostrar botões de contato
   const shouldShowWhatsApp = isOwnProfile || profileData.phone_visible !== false
   const shouldShowEmail = isOwnProfile || profileData.email_visible !== false
-
-  // Verificar se tem experiências
-  const hasExperiences = profileData.experiences && profileData.experiences.length > 0
 
   const handleWhatsAppContact = () => {
     if (profileData.whatsapp) {
@@ -139,25 +138,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
     return startDate
   }
 
-  const openProfileEditWithFocus = (field: string) => {
-    setFocusField(field)
-    setIsProfileEditOpen(true)
-  }
-
-  const handleFirstJobToggle = async (checked: boolean) => {
-    try {
-      await updateFirstJobStatus(checked)
-      setProfileData((prev) => ({
-        ...prev,
-        is_first_job: checked,
-      }))
-      showToast(checked ? "Status de primeiro emprego ativado!" : "Status de primeiro emprego removido!", "success")
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error)
-      showToast("Erro ao atualizar status. Tente novamente.", "error")
-    }
-  }
-
   const handleProfileSubmit = async (formData: FormData) => {
     setIsProfileLoading(true)
     try {
@@ -185,7 +165,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       }))
 
       setIsProfileEditOpen(false)
-      setFocusField(null)
       showToast("Perfil atualizado com sucesso!", "success")
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
@@ -249,7 +228,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       setProfileData((prev) => ({
         ...prev,
         experiences: [...(prev.experiences || []), newExperience],
-        is_first_job: false, // Remove o status de primeiro emprego
       }))
 
       setIsExperienceOpen(false)
@@ -393,7 +371,18 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg">Perfil</CardTitle>
           {isOwnProfile && (
-            <Button variant="ghost" size="sm" onClick={() => setIsProfileEditOpen(true)} className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (isMobile) {
+                  router.push("/settings")
+                } else {
+                  setIsProfileEditOpen(true)
+                }
+              }}
+              className="h-8 w-8 p-0"
+            >
               <Edit className="w-4 h-4" />
             </Button>
           )}
@@ -415,22 +404,9 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
               )}
             </div>
 
-            <div className="w-full">
+            <div>
               <div className="flex items-center justify-center gap-2">
-                {profileData.full_name ? (
-                  <h1 className="text-2xl font-bold">{profileData.full_name}</h1>
-                ) : (
-                  isOwnProfile && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => openProfileEditWithFocus("fullName")}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Adicione seu nome
-                    </Button>
-                  )
-                )}
+                <h1 className="text-2xl font-bold">{profileData.full_name || profileData.username}</h1>
                 {profileData.is_verified && (
                   <Badge className="bg-green-100 text-green-800">
                     <ShieldCheck className="w-3 h-3 mr-1" />
@@ -438,17 +414,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                   </Badge>
                 )}
               </div>
-
-              {/* Badge de Primeiro Emprego */}
-              {profileData.is_first_job && (
-                <div className="flex justify-center mt-2">
-                  <Badge className="bg-blue-100 text-blue-800">
-                    <Star className="w-3 h-3 mr-1" />
-                    Primeiro Emprego
-                  </Badge>
-                </div>
-              )}
-
               {profileData.city_id && (
                 <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
                   <MapPin className="w-4 h-4" />
@@ -460,21 +425,8 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
               )}
             </div>
 
-            {/* Resumo Profissional */}
-            {profileData.professional_summary ? (
+            {profileData.professional_summary && (
               <p className="text-sm text-muted-foreground">{profileData.professional_summary}</p>
-            ) : (
-              isOwnProfile && (
-                <div
-                  onClick={() => openProfileEditWithFocus("professionalSummary")}
-                  className="w-full p-4 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                >
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm">Adicione seu resumo profissional</span>
-                  </div>
-                </div>
-              )
             )}
 
             {/* CNH */}
@@ -486,47 +438,24 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
             )}
 
             {/* Botões de Contato - Condicionais baseados na visibilidade */}
-            <div className="flex gap-2 w-full">
-              {shouldShowWhatsApp && profileData.whatsapp ? (
-                <Button onClick={handleWhatsAppContact} className="flex-1" size="sm">
-                  <Phone className="w-4 h-4 mr-2" />
-                  WhatsApp
-                </Button>
-              ) : (
-                isOwnProfile && (
-                  <Button
-                    variant="outline"
-                    onClick={() => openProfileEditWithFocus("whatsapp")}
-                    className="flex-1"
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicione o telefone
+            {(shouldShowWhatsApp || shouldShowEmail) && (
+              <div className="flex gap-2 w-full">
+                {shouldShowWhatsApp && profileData.whatsapp && (
+                  <Button onClick={handleWhatsAppContact} className="flex-1" size="sm">
+                    <Phone className="w-4 h-4 mr-2" />
+                    WhatsApp
                   </Button>
-                )
-              )}
-
-              {shouldShowEmail && profileData.email ? (
-                <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
-                  <a href={`mailto:${profileData.email}`}>
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email
-                  </a>
-                </Button>
-              ) : (
-                isOwnProfile && (
-                  <Button
-                    variant="outline"
-                    onClick={() => openProfileEditWithFocus("email")}
-                    className="flex-1 bg-transparent"
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicione o e-mail
+                )}
+                {shouldShowEmail && profileData.email && (
+                  <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
+                    <a href={`mailto:${profileData.email}`}>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </a>
                   </Button>
-                )
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Botões de Ação */}
             <div className="flex gap-2 w-full">
@@ -580,7 +509,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
           )}
         </CardHeader>
         <CardContent>
-          {hasExperiences ? (
+          {profileData.experiences && profileData.experiences.length > 0 ? (
             <div className="space-y-4">
               {(profileData.experiences as Experience[]).map((exp, index) => (
                 <div key={index} className="border-l-2 border-blue-200 pl-4 relative">
@@ -607,25 +536,9 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {isOwnProfile && (
-                <>
-                  <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
-
-                  {/* Checkbox de Primeiro Emprego */}
-                  <div className="flex items-center justify-center space-x-2 p-2">
-                    <Checkbox
-                      id="firstJob"
-                      checked={profileData.is_first_job || false}
-                      onCheckedChange={handleFirstJobToggle}
-                    />
-                    <Label htmlFor="firstJob" className="text-sm">
-                      Primeiro Emprego
-                    </Label>
-                  </div>
-                </>
-              )}
-            </div>
+            isOwnProfile && (
+              <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
+            )
           )}
         </CardContent>
       </Card>
@@ -743,13 +656,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       )}
 
       {/* Dialog para Editar Perfil */}
-      <Dialog
-        open={isProfileEditOpen}
-        onOpenChange={(open) => {
-          setIsProfileEditOpen(open)
-          if (!open) setFocusField(null)
-        }}
-      >
+      <Dialog open={isProfileEditOpen} onOpenChange={setIsProfileEditOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Perfil</DialogTitle>
@@ -766,13 +673,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
 
             <div>
               <Label htmlFor="fullName">Nome Completo</Label>
-              <Input
-                id="fullName"
-                name="fullName"
-                defaultValue={profileData.full_name || ""}
-                required
-                autoFocus={focusField === "fullName"}
-              />
+              <Input id="fullName" name="fullName" defaultValue={profileData.full_name || ""} required />
             </div>
 
             <div>
@@ -792,19 +693,12 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 name="whatsapp"
                 defaultValue={profileData.whatsapp || ""}
                 placeholder="(11) 99999-9999"
-                autoFocus={focusField === "whatsapp"}
               />
             </div>
 
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                defaultValue={profileData.email || ""}
-                autoFocus={focusField === "email"}
-              />
+              <Input id="email" name="email" type="email" defaultValue={profileData.email || ""} />
             </div>
 
             <div>
@@ -815,7 +709,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 defaultValue={profileData.professional_summary || ""}
                 placeholder="Ex: Atendente com 2 anos de experiência..."
                 rows={3}
-                autoFocus={focusField === "professionalSummary"}
               />
             </div>
 
