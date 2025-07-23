@@ -25,7 +25,6 @@ import {
   Trash2,
   Loader2,
   ShieldCheck,
-  Star,
 } from "lucide-react"
 import type { UserProfile, Experience, Education, Course } from "@/types/profile"
 import { ResumePDF } from "./resume-pdf"
@@ -38,7 +37,6 @@ import {
   removeExperience,
   removeEducation,
   removeCourse,
-  updateFirstJobStatus,
 } from "@/app/actions/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import { CityDisplay } from "@/components/ui/city-display"
@@ -94,9 +92,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const shouldShowWhatsApp = isOwnProfile || profileData.phone_visible !== false
   const shouldShowEmail = isOwnProfile || profileData.email_visible !== false
 
-  // Verificar se tem experiências
-  const hasExperiences = profileData.experiences && profileData.experiences.length > 0
-
   const handleWhatsAppContact = () => {
     if (profileData.whatsapp) {
       const message = `Olá ${profileData.full_name || profileData.username}, vi seu perfil na Nortão Empregos!`
@@ -142,20 +137,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const openProfileEditWithFocus = (field: string) => {
     setFocusField(field)
     setIsProfileEditOpen(true)
-  }
-
-  const handleFirstJobToggle = async (checked: boolean) => {
-    try {
-      await updateFirstJobStatus(checked)
-      setProfileData((prev) => ({
-        ...prev,
-        is_first_job: checked,
-      }))
-      showToast(checked ? "Status de primeiro emprego ativado!" : "Status de primeiro emprego removido!", "success")
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error)
-      showToast("Erro ao atualizar status. Tente novamente.", "error")
-    }
   }
 
   const handleProfileSubmit = async (formData: FormData) => {
@@ -249,7 +230,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       setProfileData((prev) => ({
         ...prev,
         experiences: [...(prev.experiences || []), newExperience],
-        is_first_job: false, // Remove o status de primeiro emprego
       }))
 
       setIsExperienceOpen(false)
@@ -438,17 +418,6 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                   </Badge>
                 )}
               </div>
-
-              {/* Badge de Primeiro Emprego */}
-              {profileData.is_first_job && (
-                <div className="flex justify-center mt-2">
-                  <Badge className="bg-blue-100 text-blue-800">
-                    <Star className="w-3 h-3 mr-1" />
-                    Primeiro Emprego
-                  </Badge>
-                </div>
-              )}
-
               {profileData.city_id && (
                 <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
                   <MapPin className="w-4 h-4" />
@@ -580,7 +549,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
           )}
         </CardHeader>
         <CardContent>
-          {hasExperiences ? (
+          {profileData.experiences && profileData.experiences.length > 0 ? (
             <div className="space-y-4">
               {(profileData.experiences as Experience[]).map((exp, index) => (
                 <div key={index} className="border-l-2 border-blue-200 pl-4 relative">
@@ -607,25 +576,9 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {isOwnProfile && (
-                <>
-                  <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
-
-                  {/* Checkbox de Primeiro Emprego */}
-                  <div className="flex items-center justify-center space-x-2 p-2">
-                    <Checkbox
-                      id="firstJob"
-                      checked={profileData.is_first_job || false}
-                      onCheckedChange={handleFirstJobToggle}
-                    />
-                    <Label htmlFor="firstJob" className="text-sm">
-                      Primeiro Emprego
-                    </Label>
-                  </div>
-                </>
-              )}
-            </div>
+            isOwnProfile && (
+              <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
+            )
           )}
         </CardContent>
       </Card>

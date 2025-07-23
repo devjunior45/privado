@@ -1,178 +1,315 @@
-import jsPDF from "jspdf"
-import type { UserProfile } from "@/types/profile"
+import { jsPDF } from "jspdf"
+import type { UserProfile, Experience, Education, Course } from "@/types/profile"
 
 export async function generateResumePDF(profile: UserProfile): Promise<string> {
-  const pdf = new jsPDF()
+  // Criar um novo documento PDF
+  const doc = new jsPDF()
 
-  // Configurações iniciais
-  const pageWidth = pdf.internal.pageSize.getWidth()
+  // Configurações de fonte
+  const titleFont = "helvetica"
+  const normalFont = "helvetica"
+
+  // Margens e configurações
   const margin = 20
-  const lineHeight = 7
-  let yPosition = margin
+  const pageHeight = 297 // A4 height in mm
+  const maxY = pageHeight - 30 // Leave space for footer
+  let y = margin
 
-  // Função auxiliar para adicionar texto com quebra de linha
-  const addText = (text: string, fontSize = 10, isBold = false) => {
-    pdf.setFontSize(fontSize)
-    if (isBold) {
-      pdf.setFont("helvetica", "bold")
-    } else {
-      pdf.setFont("helvetica", "normal")
+  // Função para verificar se precisa de nova página
+  const checkNewPage = (requiredSpace = 10) => {
+    if (y + requiredSpace > maxY) {
+      doc.addPage()
+      y = margin
     }
-
-    const lines = pdf.splitTextToSize(text, pageWidth - 2 * margin)
-    pdf.text(lines, margin, yPosition)
-    yPosition += lines.length * lineHeight
   }
 
-  // Função para adicionar espaçamento
-  const addSpace = (space = lineHeight) => {
-    yPosition += space
+  // Função para texto seguro (evita null/undefined)
+  const safeText = (text: any): string => {
+    if (text === null || text === undefined) return ""
+    return String(text).trim()
   }
 
-  // Cabeçalho com nome
-  addText(profile.full_name || profile.username, 18, true)
-  addSpace()
-
-  // Badge de Primeiro Emprego (se aplicável)
-  if (profile.is_first_job) {
-    pdf.setFillColor(59, 130, 246) // Cor azul
-    pdf.setTextColor(255, 255, 255) // Texto branco
-    pdf.setFontSize(10)
-    pdf.setFont("helvetica", "bold")
-
-    const badgeText = "★ PRIMEIRO EMPREGO"
-    const textWidth = pdf.getTextWidth(badgeText)
-    const badgeWidth = textWidth + 10
-    const badgeHeight = 8
-
-    // Desenhar o badge
-    pdf.roundedRect(margin, yPosition - 2, badgeWidth, badgeHeight, 2, 2, "F")
-    pdf.text(badgeText, margin + 5, yPosition + 3)
-
-    // Resetar cor do texto
-    pdf.setTextColor(0, 0, 0)
-    yPosition += badgeHeight + 5
+  // Título
+  doc.setFont(titleFont, "bold")
+  doc.setFontSize(18)
+  const fullName = safeText(profile.full_name || profile.username)
+  if (fullName) {
+    doc.text(fullName, margin, y)
   }
+  y += 10
 
   // Informações de contato
-  if (profile.city || profile.state) {
-    const location = `${profile.city || ""}${profile.city && profile.state ? ", " : ""}${profile.state || ""}`
-    addText(`📍 ${location}`)
-  }
+  doc.setFont(normalFont, "normal")
+  doc.setFontSize(10)
 
-  if (profile.whatsapp) {
-    addText(`📱 ${profile.whatsapp}`)
+  const contactInfo = []
+
+  if (profile.city || profile.state) {
+    const location = `${safeText(profile.city)}${profile.city && profile.state ? ", " : ""}${safeText(profile.state)}`
+    if (location.trim()) contactInfo.push(location)
   }
 
   if (profile.email) {
-    addText(`✉️ ${profile.email}`)
+    contactInfo.push(`Email: ${safeText(profile.email)}`)
   }
 
-  addSpace(10)
+  if (profile.whatsapp) {
+    contactInfo.push(`WhatsApp: ${safeText(profile.whatsapp)}`)
+  }
 
-  // Resumo Profissional
+  if (profile.cnh_types && Array.isArray(profile.cnh_types) && profile.cnh_types.length > 0) {
+    contactInfo.push(`CNH: ${profile.cnh_types.join(", ")}`)
+  }
+
+  if (contactInfo.length > 0) {
+    doc.text(contactInfo.join(" | "), margin, y)
+  }
+  y += 10
+
+  // Linha separadora
+  doc.setDrawColor(200)
+  doc.line(margin, y, 210 - margin, y)
+  y += 10
+
+  // Resumo profissional
   if (profile.professional_summary) {
-    addText("RESUMO PROFISSIONAL", 12, true)
-    addSpace(3)
-    addText(profile.professional_summary)
-    addSpace(10)
+    checkNewPage(20)
+
+    doc.setFont(titleFont, "bold")
+    doc.setFontSize(12)
+    doc.text("RESUMO PROFISSIONAL", margin, y)
+    y += 6
+
+    doc.setFont(normalFont, "normal")
+    doc.setFontSize(10)
+
+    const summary = safeText(profile.professional_summary)
+    if (summary) {
+      const summaryLines = doc.splitTextToSize(summary, 170)
+      doc.text(summaryLines, margin, y)
+      y += summaryLines.length * 5 + 5
+    }
   }
 
   // Habilidades
-  if (profile.skills && profile.skills.length > 0) {
-    addText("HABILIDADES", 12, true)
-    addSpace(3)
-    addText(profile.skills.join(" • "))
-    addSpace(10)
+  if (profile.skills && Array.isArray(profile.skills) && profile.skills.length > 0) {
+    checkNewPage(15)
+
+    doc.setFont(titleFont, "bold")
+    doc.setFontSize(12)
+    doc.text("HABILIDADES", margin, y)
+    y += 6
+
+    doc.setFont(normalFont, "normal")
+    doc.setFontSize(10)
+
+    const skillsText = profile.skills.filter((skill) => skill && skill.trim()).join(", ")
+    if (skillsText) {
+      const skillsLines = doc.splitTextToSize(skillsText, 170)
+      doc.text(skillsLines, margin, y)
+      y += skillsLines.length * 5 + 5
+    }
   }
 
-  // Experiência Profissional
-  if (profile.experiences && profile.experiences.length > 0) {
-    addText("EXPERIÊNCIA PROFISSIONAL", 12, true)
-    addSpace(5)
+  // Experiência profissional
+  if (profile.experiences && Array.isArray(profile.experiences) && profile.experiences.length > 0) {
+    checkNewPage(20)
 
-    profile.experiences.forEach((exp) => {
-      addText(exp.position, 11, true)
+    doc.setFont(titleFont, "bold")
+    doc.setFontSize(12)
+    doc.text("EXPERIÊNCIA PROFISSIONAL", margin, y)
+    y += 8
+
+    const experiences = profile.experiences as Experience[]
+    experiences.forEach((exp) => {
+      checkNewPage(25)
+
+      // Cargo
+      const position = safeText(exp.position)
+      if (position) {
+        doc.setFont(normalFont, "bold")
+        doc.setFontSize(11)
+        doc.text(position, margin, y)
+        y += 5
+      }
+
+      // Empresa
       if (exp.company) {
-        addText(exp.company)
+        const company = safeText(exp.company)
+        if (company) {
+          doc.setFont(normalFont, "normal")
+          doc.setFontSize(10)
+          doc.text(company, margin, y)
+          y += 5
+        }
       }
 
       // Período
       if (exp.startDate || exp.endDate) {
+        doc.setFont(normalFont, "normal")
+        doc.setFontSize(9)
         let period = ""
+
         if (exp.startDate) {
-          const startDate = new Date(exp.startDate).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
-          period = startDate
+          try {
+            const startDate = new Date(exp.startDate).toLocaleDateString("pt-BR", {
+              month: "short",
+              year: "numeric",
+            })
+            period = startDate
+
+            if (exp.isCurrentJob) {
+              period += " - Atual"
+            } else if (exp.endDate) {
+              const endDate = new Date(exp.endDate).toLocaleDateString("pt-BR", {
+                month: "short",
+                year: "numeric",
+              })
+              period += ` - ${endDate}`
+            }
+          } catch (error) {
+            // Se houver erro na data, usar texto simples
+            period = exp.isCurrentJob ? "Atual" : ""
+          }
         }
-        if (exp.isCurrentJob) {
-          period += " - Atual"
-        } else if (exp.endDate) {
-          const endDate = new Date(exp.endDate).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
-          period += ` - ${endDate}`
+
+        if (period) {
+          doc.text(period, margin, y)
+          y += 5
         }
-        addText(period, 9)
       }
 
+      // Atividades
       if (exp.activities) {
-        addText(exp.activities, 9)
+        const activities = safeText(exp.activities)
+        if (activities) {
+          doc.setFont(normalFont, "normal")
+          doc.setFontSize(9)
+          const activitiesLines = doc.splitTextToSize(activities, 170)
+          doc.text(activitiesLines, margin, y)
+          y += activitiesLines.length * 4 + 3
+        }
       }
-      addSpace(8)
+
+      y += 3
     })
+
+    y += 2
   }
 
-  // Formação
-  if (profile.education && profile.education.length > 0) {
-    addText("FORMAÇÃO", 12, true)
-    addSpace(5)
+  // Escolaridade
+  if (profile.education && Array.isArray(profile.education) && profile.education.length > 0) {
+    checkNewPage(20)
 
-    profile.education.forEach((edu) => {
+    doc.setFont(titleFont, "bold")
+    doc.setFontSize(12)
+    doc.text("FORMAÇÃO", margin, y)
+    y += 8
+
+    const education = profile.education as Education[]
+    education.forEach((edu) => {
+      checkNewPage(20)
+
+      // Nível ou Nome do curso
       if (edu.level === "Ensino Fundamental" || edu.level === "Ensino Médio") {
-        addText(edu.level, 11, true)
+        const level = safeText(edu.level)
+        if (level) {
+          doc.setFont(normalFont, "bold")
+          doc.setFontSize(11)
+          doc.text(level, margin, y)
+          y += 5
+        }
       } else {
-        addText(edu.courseName || edu.level, 11, true)
+        const courseName = safeText(edu.courseName || edu.level)
+        if (courseName) {
+          doc.setFont(normalFont, "bold")
+          doc.setFontSize(11)
+          doc.text(courseName, margin, y)
+          y += 5
+        }
       }
 
-      addText(edu.institution)
+      // Instituição
+      const institution = safeText(edu.institution)
+      if (institution) {
+        doc.setFont(normalFont, "normal")
+        doc.setFontSize(10)
+        doc.text(institution, margin, y)
+        y += 5
+      }
 
+      // Status e ano
+      doc.setFont(normalFont, "normal")
+      doc.setFontSize(10)
       const status = edu.status || "concluído"
-      let statusText = status.charAt(0).toUpperCase() + status.slice(1)
-      if ((status === "concluído" || !status) && edu.completionYear) {
-        statusText += ` em ${edu.completionYear}`
-      }
-      addText(statusText, 9)
-      addSpace(8)
+      const statusText =
+        status === "concluído" && edu.completionYear ? `${status} em ${safeText(edu.completionYear)}` : status
+      doc.text(statusText, margin, y)
+      y += 8
     })
+
+    y += 2
   }
 
   // Cursos
-  if (profile.courses && profile.courses.length > 0) {
-    addText("CURSOS", 12, true)
-    addSpace(5)
+  if (profile.courses && Array.isArray(profile.courses) && profile.courses.length > 0) {
+    checkNewPage(20)
 
-    profile.courses.forEach((course) => {
-      addText(course.name, 11, true)
-      addText(course.institution)
+    doc.setFont(titleFont, "bold")
+    doc.setFontSize(12)
+    doc.text("CURSOS", margin, y)
+    y += 8
 
-      let courseInfo = course.isComplete ? "Concluído" : "Em andamento"
-      if (course.duration) {
-        courseInfo += ` • ${course.duration}`
+    const courses = profile.courses as Course[]
+    courses.forEach((course) => {
+      checkNewPage(15)
+
+      // Nome do curso
+      const courseName = safeText(course.name)
+      if (courseName) {
+        doc.setFont(normalFont, "bold")
+        doc.setFontSize(11)
+        doc.text(courseName, margin, y)
+        y += 5
       }
-      if (course.completionYear) {
-        courseInfo += ` • ${course.completionYear}`
+
+      // Instituição
+      if (course.institution) {
+        const institution = safeText(course.institution)
+        if (institution) {
+          doc.setFont(normalFont, "normal")
+          doc.setFontSize(10)
+          doc.text(institution, margin, y)
+          y += 5
+        }
       }
-      addText(courseInfo, 9)
-      addSpace(8)
+
+      // Duração e ano
+      if (course.duration || course.completionYear) {
+        doc.setFont(normalFont, "normal")
+        doc.setFontSize(9)
+        const details = []
+        if (course.duration) details.push(safeText(course.duration))
+        if (course.completionYear) details.push(safeText(course.completionYear))
+
+        const detailsText = details.filter((d) => d.trim()).join(" - ")
+        if (detailsText) {
+          doc.text(detailsText, margin, y)
+          y += 5
+        }
+      }
+
+      y += 3
     })
+
+    y += 2
   }
 
-  // CNH
-  if (profile.cnh_types && profile.cnh_types.length > 0) {
-    addText("CARTEIRA DE HABILITAÇÃO", 12, true)
-    addSpace(3)
-    addText(`CNH: ${profile.cnh_types.join(", ")}`)
-    addSpace(10)
-  }
+  // Rodapé
+  const today = new Date().toLocaleDateString("pt-BR")
+  doc.setFontSize(8)
+  doc.text(`Currículo gerado em ${today} via Nortão Empregos`, margin, pageHeight - 20)
 
   // Retornar o PDF como data URL
-  return pdf.output("dataurlstring")
+  return doc.output("dataurlstring")
 }
