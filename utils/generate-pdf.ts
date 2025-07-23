@@ -127,12 +127,14 @@ export async function generateResumePDF(profile: UserProfile): Promise<string> {
     if (profile.is_first_job && (!profile.experiences || profile.experiences.length === 0)) {
       doc.setFont(normalFont, "bold")
       doc.setFontSize(11)
-      doc.text("PRIMEIRO EMPREGO", margin, y)
-      y += 8
-    }
+      doc.text("Primeiro Emprego", margin, y)
+      y += 5
 
-    // Experiências existentes
-    if (profile.experiences && Array.isArray(profile.experiences) && profile.experiences.length > 0) {
+      doc.setFont(normalFont, "normal")
+      doc.setFontSize(10)
+      doc.text("Candidato em busca da primeira oportunidade profissional", margin, y)
+      y += 10
+    } else if (profile.experiences && Array.isArray(profile.experiences) && profile.experiences.length > 0) {
       const experiences = profile.experiences as Experience[]
       experiences.forEach((exp) => {
         checkNewPage(25)

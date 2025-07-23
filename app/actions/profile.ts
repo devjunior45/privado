@@ -23,7 +23,6 @@ export async function updateProfile(formData: FormData) {
   const email = formData.get("email") as string
   const professionalSummary = formData.get("professionalSummary") as string
   const cnhTypes = formData.getAll("cnhTypes") as string[]
-  const isFirstJob = formData.get("isFirstJob") === "true"
   const avatarFile = formData.get("avatar") as File
 
   let avatarUrl = null
@@ -78,7 +77,6 @@ export async function updateProfile(formData: FormData) {
     email,
     professional_summary: professionalSummary,
     cnh_types: cnhTypes,
-    is_first_job: isFirstJob,
   }
 
   if (avatarUrl) {
@@ -182,6 +180,26 @@ export async function updateRecruiterProfile(formData: FormData) {
   if (error) {
     console.error("Erro ao atualizar perfil:", error)
     throw new Error("Erro ao atualizar perfil: " + error.message)
+  }
+
+  revalidatePath("/profile")
+}
+
+export async function updateFirstJobStatus(isFirstJob: boolean) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/auth")
+  }
+
+  const { error } = await supabase.from("profiles").update({ is_first_job: isFirstJob }).eq("id", user.id)
+
+  if (error) {
+    console.error("Erro ao atualizar status de primeiro emprego:", error)
+    throw new Error("Erro ao atualizar status: " + error.message)
   }
 
   revalidatePath("/profile")
@@ -305,6 +323,13 @@ export async function addExperience(formData: FormData) {
 
   if (error) {
     throw new Error("Erro ao adicionar experiência: " + error.message)
+  }
+
+  // Se adicionar experiência, desmarcar primeiro emprego automaticamente
+  const { error: firstJobError } = await supabase.from("profiles").update({ is_first_job: false }).eq("id", user.id)
+
+  if (firstJobError) {
+    console.error("Erro ao desmarcar primeiro emprego:", firstJobError)
   }
 
   revalidatePath("/profile")
