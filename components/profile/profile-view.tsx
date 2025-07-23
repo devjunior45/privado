@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,22 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  MapPin,
-  Phone,
-  Mail,
-  Share2,
-  Briefcase,
-  GraduationCap,
-  Award,
-  Car,
-  Calendar,
-  Edit,
-  Plus,
-  Trash2,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react"
+import { Briefcase, GraduationCap, Award, Calendar, Plus, Trash2, Loader2 } from "lucide-react"
 import type { UserProfile, Experience, Education, Course } from "@/types/profile"
 import { ResumePDF } from "./resume-pdf"
 import {
@@ -39,7 +23,6 @@ import {
   removeCourse,
 } from "@/app/actions/profile"
 import { CitySelect } from "@/components/ui/city-select"
-import { CityDisplay } from "@/components/ui/city-display"
 import { useToast } from "@/components/ui/toast"
 
 interface ProfileViewProps {
@@ -83,7 +66,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const [selectedEducationLevel, setSelectedEducationLevel] = useState("")
   const [educationStatus, setEducationStatus] = useState("concluído")
   const [focusField, setFocusField] = useState<string | null>(null)
-  const [isFirstJob, setIsFirstJob] = useState(profileData.is_first_job || false)
+  const [isFirstJob, setIsFirstJob] = useState(profile.is_first_job || false)
 
   const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"}/profile/${profile.username}`
 
@@ -142,6 +125,8 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
         formData.append("cityId", selectedCityId.toString())
       }
 
+      formData.append("isFirstJob", isFirstJob.toString())
+
       await updateProfile(formData)
 
       // Atualização otimista do estado local
@@ -159,6 +144,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
         professional_summary: professionalSummary,
         cnh_types: cnhTypes,
         city_id: selectedCityId,
+        is_first_job: isFirstJob,
       }))
 
       setIsProfileEditOpen(false)
@@ -200,36 +186,10 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
     }
   }
 
-  const handleFirstJobToggle = async (checked: boolean) => {
-    try {
-      const formData = new FormData()
-      formData.append("isFirstJob", checked.toString())
-
-      await updateProfile(formData)
-
-      setProfileData((prev) => ({
-        ...prev,
-        is_first_job: checked,
-      }))
-
-      showToast(checked ? "Status de primeiro emprego ativado!" : "Status de primeiro emprego removido!", "success")
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error)
-      showToast("Erro ao atualizar status. Tente novamente.", "error")
-      setIsFirstJob(!checked) // Reverte o estado em caso de erro
-    }
-  }
-
   const handleExperienceSubmit = async (formData: FormData) => {
     setIsExperienceLoading(true)
     try {
       formData.append("isCurrentJob", isCurrentJob.toString())
-
-      // Se tinha primeiro emprego marcado, desmarcar ao adicionar experiência
-      if (profileData.is_first_job) {
-        formData.append("isFirstJob", "false")
-      }
-
       await addExperience(formData)
 
       // Atualização otimista
@@ -251,10 +211,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       setProfileData((prev) => ({
         ...prev,
         experiences: [...(prev.experiences || []), newExperience],
-        is_first_job: false, // Desmarcar primeiro emprego
       }))
-
-      setIsFirstJob(false) // Atualizar estado local
 
       setIsExperienceOpen(false)
       setIsCurrentJob(false)
@@ -408,182 +365,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   }, [isProfileEditOpen, focusField])
 
   return (
-    <div className="max-w-md mx-auto space-y-6 pb-20">
-      {/* Header do Perfil */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Perfil</CardTitle>
-          {isOwnProfile && (
-            <Button variant="ghost" size="sm" onClick={() => setIsProfileEditOpen(true)} className="h-8 w-8 p-0">
-              <Edit className="w-4 h-4" />
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center text-center space-y-4">
-            <div className="relative">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={profileData.avatar_url || "/placeholder.svg"} alt={profileData.full_name || ""} />
-                <AvatarFallback className="text-2xl">
-                  {(profileData.full_name || profileData.username).charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {/* Selo de Verificação */}
-              {profileData.is_verified && (
-                <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-2">
-                  <ShieldCheck className="w-4 h-4 text-white" />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-center gap-2">
-                {profileData.full_name ? (
-                  <h1 className="text-2xl font-bold">{profileData.full_name}</h1>
-                ) : (
-                  isOwnProfile && (
-                    <button
-                      onClick={() => openProfileEditWithFocus("fullName")}
-                      className="text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-gray-400 transition-colors"
-                    >
-                      <span className="text-lg">+ Adicionar nome completo</span>
-                    </button>
-                  )
-                )}
-                {profileData.is_verified && (
-                  <Badge className="bg-green-100 text-green-800">
-                    <ShieldCheck className="w-3 h-3 mr-1" />
-                    Verificado
-                  </Badge>
-                )}
-              </div>
-              {profileData.city_id ? (
-                <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
-                  <MapPin className="w-4 h-4" />
-                  <CityDisplay
-                    cityId={profileData.city_id}
-                    fallback={`${profileData.city || ""}${profileData.city && profileData.state ? ", " : ""}${profileData.state || ""}`}
-                  />
-                </div>
-              ) : (
-                isOwnProfile && (
-                  <button
-                    onClick={() => openProfileEditWithFocus("cityId")}
-                    className="flex items-center justify-center gap-1 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-2 mt-1 hover:border-gray-400 transition-colors"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">+ Adicionar cidade</span>
-                  </button>
-                )
-              )}
-            </div>
-
-            {profileData.professional_summary ? (
-              <p className="text-sm text-muted-foreground">{profileData.professional_summary}</p>
-            ) : (
-              isOwnProfile && (
-                <button
-                  onClick={() => openProfileEditWithFocus("professionalSummary")}
-                  className="text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-3 w-full hover:border-gray-400 transition-colors"
-                >
-                  <span className="text-sm">
-                    +{" "}
-                    {profileData.user_type === "recruiter"
-                      ? "Adicione a descrição da sua empresa"
-                      : "Adicione um resumo profissional"}
-                  </span>
-                </button>
-              )
-            )}
-
-            {/* CNH */}
-            {profileData.cnh_types && profileData.cnh_types.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Car className="w-4 h-4" />
-                <span className="text-sm">CNH: {profileData.cnh_types.join(", ")}</span>
-              </div>
-            )}
-
-            {/* Placeholder para WhatsApp quando vazio */}
-            {!profileData.whatsapp && isOwnProfile && (
-              <button
-                onClick={() => openProfileEditWithFocus("whatsapp")}
-                className="flex items-center gap-2 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-3 w-full hover:border-gray-400 transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                <span className="text-sm">+ Adicionar WhatsApp</span>
-              </button>
-            )}
-
-            {/* Placeholder para Email quando vazio */}
-            {!profileData.email && isOwnProfile && (
-              <button
-                onClick={() => openProfileEditWithFocus("email")}
-                className="flex items-center gap-2 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-3 w-full hover:border-gray-400 transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                <span className="text-sm">+ Adicionar Email</span>
-              </button>
-            )}
-
-            {/* Botões de Contato - Condicionais baseados na visibilidade */}
-            {(shouldShowWhatsApp || shouldShowEmail) && (
-              <div className="flex gap-2 w-full">
-                {shouldShowWhatsApp && profileData.whatsapp && (
-                  <Button onClick={handleWhatsAppContact} className="flex-1" size="sm">
-                    <Phone className="w-4 h-4 mr-2" />
-                    WhatsApp
-                  </Button>
-                )}
-                {shouldShowEmail && profileData.email && (
-                  <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
-                    <a href={`mailto:${profileData.email}`}>
-                      <Mail className="w-4 h-4 mr-2" />
-                      Email
-                    </a>
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Botões de Ação */}
-            <div className="flex gap-2 w-full">
-              <Button variant="outline" size="sm" onClick={handleShareProfile} className="flex-1 bg-transparent">
-                <Share2 className="w-4 h-4 mr-2" />
-                Compartilhar
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Habilidades */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Habilidades</CardTitle>
-          {isOwnProfile && (
-            <Button variant="ghost" size="sm" onClick={() => setIsSkillsEditOpen(true)} className="h-8 w-8 p-0">
-              <Edit className="w-4 h-4" />
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {profileData.skills && profileData.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {profileData.skills.map((skill, index) => (
-                <Badge key={index} variant="secondary">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            isOwnProfile && (
-              <p className="text-muted-foreground text-center py-2">Adicione suas habilidades para se destacar</p>
-            )
-          )}
-        </CardContent>
-      </Card>
-
+    <div>
       {/* Experiências */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -598,15 +380,15 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
           )}
         </CardHeader>
         <CardContent>
+          {/* Badge de Primeiro Emprego */}
+          {profileData.is_first_job && (!profileData.experiences || profileData.experiences.length === 0) && (
+            <div className="mb-4">
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200">Primeiro Emprego</Badge>
+            </div>
+          )}
+
           {profileData.experiences && profileData.experiences.length > 0 ? (
             <div className="space-y-4">
-              {profileData.is_first_job && (
-                <div className="border-l-2 border-blue-200 pl-4">
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                    Primeiro Emprego
-                  </Badge>
-                </div>
-              )}
               {(profileData.experiences as Experience[]).map((exp, index) => (
                 <div key={index} className="border-l-2 border-blue-200 pl-4 relative">
                   {isOwnProfile && (
@@ -632,28 +414,9 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
               ))}
             </div>
           ) : (
-            isOwnProfile && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="firstJob"
-                    checked={isFirstJob}
-                    onCheckedChange={(checked) => {
-                      setIsFirstJob(checked as boolean)
-                      handleFirstJobToggle(checked as boolean)
-                    }}
-                  />
-                  <Label htmlFor="firstJob">Primeiro Emprego</Label>
-                </div>
-                {isFirstJob && (
-                  <div className="border-l-2 border-blue-200 pl-4">
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                      Primeiro Emprego
-                    </Badge>
-                  </div>
-                )}
-                <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
-              </div>
+            isOwnProfile &&
+            !profileData.is_first_job && (
+              <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
             )
           )}
         </CardContent>
@@ -853,6 +616,16 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 ))}
               </div>
             </div>
+
+            {/* Checkbox Primeiro Emprego - só aparece se não tem experiências */}
+            {(!profileData.experiences || profileData.experiences.length === 0) && (
+              <div className="flex items-center space-x-2">
+                <Checkbox id="isFirstJob" checked={isFirstJob} onCheckedChange={setIsFirstJob} />
+                <Label htmlFor="isFirstJob" className="text-sm">
+                  Primeiro Emprego
+                </Label>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={isProfileLoading}>
               {isProfileLoading ? (

@@ -17,14 +17,13 @@ export async function updateProfile(formData: FormData) {
     redirect("/auth")
   }
 
-  const isFirstJob = formData.get("isFirstJob")
-
   const fullName = formData.get("fullName") as string
   const cityId = formData.get("cityId") ? Number.parseInt(formData.get("cityId") as string) : null
   const whatsapp = formData.get("whatsapp") as string
   const email = formData.get("email") as string
   const professionalSummary = formData.get("professionalSummary") as string
   const cnhTypes = formData.getAll("cnhTypes") as string[]
+  const isFirstJob = formData.get("isFirstJob") === "true"
   const avatarFile = formData.get("avatar") as File
 
   let avatarUrl = null
@@ -79,10 +78,7 @@ export async function updateProfile(formData: FormData) {
     email,
     professional_summary: professionalSummary,
     cnh_types: cnhTypes,
-  }
-
-  if (isFirstJob !== null) {
-    updateData.is_first_job = isFirstJob === "true"
+    is_first_job: isFirstJob,
   }
 
   if (avatarUrl) {
@@ -283,8 +279,6 @@ export async function addExperience(formData: FormData) {
     redirect("/auth")
   }
 
-  const isFirstJob = formData.get("isFirstJob")
-
   const position = formData.get("position") as string
   const company = formData.get("company") as string
   const startDate = formData.get("startDate") as string
@@ -294,15 +288,6 @@ export async function addExperience(formData: FormData) {
 
   // Buscar experiências atuais
   const { data: profile } = await supabase.from("profiles").select("experiences").eq("id", user.id).single()
-
-  // Se estava marcado como primeiro emprego, desmarcar
-  if (isFirstJob === "false") {
-    const { error: firstJobError } = await supabase.from("profiles").update({ is_first_job: false }).eq("id", user.id)
-
-    if (firstJobError) {
-      console.error("Erro ao desmarcar primeiro emprego:", firstJobError)
-    }
-  }
 
   const currentExperiences = (profile?.experiences as Experience[]) || []
   const newExperience: Experience = {
