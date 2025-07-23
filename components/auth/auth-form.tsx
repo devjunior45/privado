@@ -14,6 +14,8 @@ import { CitySelect } from "@/components/ui/city-select"
 import Image from "next/image"
 import { GoogleIcon } from "@/components/icons/google-icon"
 import Link from "next/link"
+import { useTheme } from "next-themes"
+import { useMobile } from "@/hooks/use-mobile"
 
 type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
 
@@ -32,6 +34,8 @@ export function AuthForm() {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { theme } = useTheme()
+  const isMobile = useMobile()
 
   useEffect(() => {
     const type = searchParams.get("userType") as UserType | null
@@ -46,6 +50,13 @@ export function AuthForm() {
       setError(errorParam)
     }
   }, [searchParams])
+
+  const getLogoSrc = () => {
+    if (isMobile) {
+      return theme === "dark" ? "/temaescuro.png" : "/temaclaro.png"
+    }
+    return "/logo.empresa.png"
+  }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -154,7 +165,7 @@ export function AuthForm() {
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
         <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <p className="text-muted-foreground">Conectando talentos e oportunidades</p>
       </div>
@@ -208,7 +219,7 @@ export function AuthForm() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
         <p className="text-muted-foreground">Acesse sua conta com seu email</p>
@@ -259,7 +270,7 @@ export function AuthForm() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Criar Conta</h2>
         <p className="text-muted-foreground">O que você pretende fazer?</p>
@@ -300,7 +311,7 @@ export function AuthForm() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
           <MapPin className="w-6 h-6" />
@@ -356,7 +367,7 @@ export function AuthForm() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Seus Dados</h2>
         <p className="text-muted-foreground">Finalize seu cadastro</p>
@@ -415,7 +426,7 @@ export function AuthForm() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="mb-6">
-          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Dados da Empresa</h2>
         <p className="text-muted-foreground">Finalize seu cadastro</p>

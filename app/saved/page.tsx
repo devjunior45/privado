@@ -161,8 +161,8 @@ export default async function SavedJobsPage() {
     )
   }
 
-  // Buscar perfil do usuário para cidade padrão
-  const { data: userProfile } = await supabase.from("profiles").select("city_id").eq("id", user.id).single()
+  // Buscar perfil do usuário para cidade padrão e tipo de usuário
+  const { data: userProfile } = await supabase.from("profiles").select("city_id, user_type").eq("id", user.id).single()
 
   const savedJobs = await getSavedJobsWithApplications()
 
@@ -186,6 +186,8 @@ export default async function SavedJobsPage() {
         return null
     }
   }
+
+  const isRecruiter = userProfile?.user_type === "recruiter"
 
   return (
     <PageContainer header={<PageHeader title="Vagas Salvas" userProfile={userProfile} />}>
@@ -253,8 +255,8 @@ export default async function SavedJobsPage() {
                       </span>
                     </div>
 
-                    {/* Mostrar status de candidatura se aplicável */}
-                    {savedJob.has_applied && (
+                    {/* Mostrar status de candidatura apenas para candidatos */}
+                    {!isRecruiter && savedJob.has_applied && (
                       <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full w-fit">
                         <CheckCircle className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">
@@ -273,14 +275,19 @@ export default async function SavedJobsPage() {
                         <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent text-xs">
                           <Link href={`/post/${savedJob.job_posts.id}`}>Ver Vaga</Link>
                         </Button>
-                        {!savedJob.has_applied ? (
-                          <Button size="sm" asChild className="flex-1 text-xs">
-                            <Link href={`/post/${savedJob.job_posts.id}`}>Candidatar-se</Link>
-                          </Button>
-                        ) : (
-                          <Button size="sm" disabled className="flex-1 text-xs">
-                            Já Candidatado
-                          </Button>
+                        {/* Mostrar botão de candidatura apenas para candidatos */}
+                        {!isRecruiter && (
+                          <>
+                            {!savedJob.has_applied ? (
+                              <Button size="sm" asChild className="flex-1 text-xs">
+                                <Link href={`/post/${savedJob.job_posts.id}`}>Candidatar-se</Link>
+                              </Button>
+                            ) : (
+                              <Button size="sm" disabled className="flex-1 text-xs">
+                                Já Candidatado
+                              </Button>
+                            )}
+                          </>
                         )}
                       </>
                     ) : (
@@ -288,9 +295,11 @@ export default async function SavedJobsPage() {
                         <Button variant="outline" size="sm" disabled className="flex-1 bg-transparent text-xs">
                           Ver Vaga
                         </Button>
-                        <Button size="sm" disabled className="flex-1 text-xs">
-                          {savedJob.job_posts.status === "paused" ? "Vaga Pausada" : "Vaga Encerrada"}
-                        </Button>
+                        {!isRecruiter && (
+                          <Button size="sm" disabled className="flex-1 text-xs">
+                            {savedJob.job_posts.status === "paused" ? "Vaga Pausada" : "Vaga Encerrada"}
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>
