@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Upload, X, ImageIcon, Bold } from "lucide-react"
+import { Loader2, Upload, X, ImageIcon } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
 import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
@@ -72,14 +72,6 @@ export function CreateJobForm() {
 
     fetchProfile()
   }, [])
-
-  // Auto scroll para o final da página quando o conteúdo aumenta
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [description])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -305,13 +297,6 @@ export function CreateJobForm() {
             <CardTitle>Descrição da Vaga</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Barra de Ferramentas de Formatação Simplificada */}
-            <div className="flex gap-2 p-2 bg-muted rounded-md">
-              <Button type="button" variant="ghost" size="sm" onClick={() => insertText("**", "**")} title="Negrito">
-                <Bold className="w-4 h-4" />
-              </Button>
-            </div>
-
             <div className="relative">
               <textarea
                 id="description"

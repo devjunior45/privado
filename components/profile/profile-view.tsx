@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,8 +41,6 @@ import {
 import { CitySelect } from "@/components/ui/city-select"
 import { CityDisplay } from "@/components/ui/city-display"
 import { useToast } from "@/components/ui/toast"
-import { useMobile } from "@/hooks/use-mobile"
-import { useRouter } from "next/navigation"
 
 interface ProfileViewProps {
   profile: UserProfile & { is_verified?: boolean; phone_visible?: boolean; email_visible?: boolean }
@@ -84,13 +82,11 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
   const [selectedEducationLevel, setSelectedEducationLevel] = useState("")
   const [educationStatus, setEducationStatus] = useState("concluído")
+  const [focusField, setFocusField] = useState<string | null>(null)
 
   const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"}/profile/${profile.username}`
 
   const { showToast, ToastContainer } = useToast()
-
-  const isMobile = useMobile()
-  const router = useRouter()
 
   // Verificar se deve mostrar botões de contato
   const shouldShowWhatsApp = isOwnProfile || profileData.phone_visible !== false
@@ -364,6 +360,23 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
     }
   }
 
+  const openProfileEditWithFocus = (field: string) => {
+    setFocusField(field)
+    setIsProfileEditOpen(true)
+  }
+
+  useEffect(() => {
+    if (isProfileEditOpen && focusField) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(focusField)
+        if (element) {
+          element.focus()
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isProfileEditOpen, focusField])
+
   return (
     <div className="max-w-md mx-auto space-y-6 pb-20">
       {/* Header do Perfil */}
@@ -371,18 +384,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg">Perfil</CardTitle>
           {isOwnProfile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (isMobile) {
-                  router.push("/settings")
-                } else {
-                  setIsProfileEditOpen(true)
-                }
-              }}
-              className="h-8 w-8 p-0"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setIsProfileEditOpen(true)} className="h-8 w-8 p-0">
               <Edit className="w-4 h-4" />
             </Button>
           )}
@@ -406,7 +408,18 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
 
             <div>
               <div className="flex items-center justify-center gap-2">
-                <h1 className="text-2xl font-bold">{profileData.full_name || profileData.username}</h1>
+                {profileData.full_name ? (
+                  <h1 className="text-2xl font-bold">{profileData.full_name}</h1>
+                ) : (
+                  isOwnProfile && (
+                    <button
+                      onClick={() => openProfileEditWithFocus("fullName")}
+                      className="text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-gray-400 transition-colors"
+                    >
+                      <span className="text-lg">+ Adicionar nome completo</span>
+                    </button>
+                  )
+                )}
                 {profileData.is_verified && (
                   <Badge className="bg-green-100 text-green-800">
                     <ShieldCheck className="w-3 h-3 mr-1" />
@@ -414,7 +427,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                   </Badge>
                 )}
               </div>
-              {profileData.city_id && (
+              {profileData.city_id ? (
                 <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
                   <MapPin className="w-4 h-4" />
                   <CityDisplay
@@ -422,11 +435,35 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                     fallback={`${profileData.city || ""}${profileData.city && profileData.state ? ", " : ""}${profileData.state || ""}`}
                   />
                 </div>
+              ) : (
+                isOwnProfile && (
+                  <button
+                    onClick={() => openProfileEditWithFocus("cityId")}
+                    className="flex items-center justify-center gap-1 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-2 mt-1 hover:border-gray-400 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">+ Adicionar cidade</span>
+                  </button>
+                )
               )}
             </div>
 
-            {profileData.professional_summary && (
+            {profileData.professional_summary ? (
               <p className="text-sm text-muted-foreground">{profileData.professional_summary}</p>
+            ) : (
+              isOwnProfile && (
+                <button
+                  onClick={() => openProfileEditWithFocus("professionalSummary")}
+                  className="text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-3 w-full hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-sm">
+                    +{" "}
+                    {profileData.user_type === "recruiter"
+                      ? "Adicione a descrição da sua empresa"
+                      : "Adicione um resumo profissional"}
+                  </span>
+                </button>
+              )
             )}
 
             {/* CNH */}
@@ -435,6 +472,28 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 <Car className="w-4 h-4" />
                 <span className="text-sm">CNH: {profileData.cnh_types.join(", ")}</span>
               </div>
+            )}
+
+            {/* Placeholder para WhatsApp quando vazio */}
+            {!profileData.whatsapp && isOwnProfile && (
+              <button
+                onClick={() => openProfileEditWithFocus("whatsapp")}
+                className="flex items-center gap-2 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-3 w-full hover:border-gray-400 transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                <span className="text-sm">+ Adicionar WhatsApp</span>
+              </button>
+            )}
+
+            {/* Placeholder para Email quando vazio */}
+            {!profileData.email && isOwnProfile && (
+              <button
+                onClick={() => openProfileEditWithFocus("email")}
+                className="flex items-center gap-2 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg p-3 w-full hover:border-gray-400 transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                <span className="text-sm">+ Adicionar Email</span>
+              </button>
             )}
 
             {/* Botões de Contato - Condicionais baseados na visibilidade */}
@@ -656,7 +715,13 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       )}
 
       {/* Dialog para Editar Perfil */}
-      <Dialog open={isProfileEditOpen} onOpenChange={setIsProfileEditOpen}>
+      <Dialog
+        open={isProfileEditOpen}
+        onOpenChange={(open) => {
+          setIsProfileEditOpen(open)
+          if (!open) setFocusField(null)
+        }}
+      >
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Perfil</DialogTitle>
@@ -683,6 +748,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 onValueChange={setSelectedCityId}
                 placeholder="Selecione sua cidade"
                 name="cityId"
+                id="cityId"
               />
             </div>
 

@@ -1,18 +1,14 @@
-"use client"
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Building, Plus, Shield, ShieldCheck, Mail, Settings } from "lucide-react"
+import { MapPin, Building, Plus, Shield, ShieldCheck, Mail } from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { CityDisplay } from "@/components/ui/city-display"
 import { RecruiterProfileClient } from "./recruiter-profile-client"
 import { WhatsAppButton } from "@/components/ui/whatsapp-button"
-import { useMobile } from "@/hooks/use-mobile"
-import { useRouter } from "next/navigation"
 
 interface RecruiterProfileProps {
   profile: UserProfile & { phone_visible?: boolean; email_visible?: boolean }
@@ -20,9 +16,6 @@ interface RecruiterProfileProps {
 }
 
 export async function RecruiterProfile({ profile, isOwnProfile = false }: RecruiterProfileProps) {
-  const isMobile = useMobile()
-  const router = useRouter()
-
   const supabase = await createClient()
 
   // Buscar vagas ativas do recrutador
@@ -56,14 +49,7 @@ export async function RecruiterProfile({ profile, isOwnProfile = false }: Recrui
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg">Perfil da Empresa</CardTitle>
-          {isOwnProfile &&
-            (isMobile ? (
-              <Button variant="ghost" size="sm" onClick={() => router.push("/settings")} className="h-8 w-8 p-0">
-                <Settings className="w-4 h-4" />
-              </Button>
-            ) : (
-              <RecruiterProfileClient profile={profile} />
-            ))}
+          {isOwnProfile && <RecruiterProfileClient profile={profile} />}
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center text-center space-y-4">
