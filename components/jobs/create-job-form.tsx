@@ -40,9 +40,7 @@ export function CreateJobForm() {
   const [selectedSectors, setSelectedSectors] = useState<string[]>([])
   const [errors, setErrors] = useState<{
     title?: string
-    company?: string
     cityId?: string
-    description?: string
     sectors?: string
   }>({})
   const router = useRouter()
@@ -108,12 +106,8 @@ export function CreateJobForm() {
   const validateForm = () => {
     const newErrors: typeof errors = {}
     if (!title.trim()) newErrors.title = "O título da vaga é obrigatório."
-    if (!companyName.trim()) newErrors.company = "O nome da empresa é obrigatório."
     if (!selectedCityId) newErrors.cityId = "A localização é obrigatória."
     if (selectedSectors.length === 0) newErrors.sectors = "Selecione pelo menos um setor."
-    if (!selectedImage && !description.trim()) {
-      newErrors.description = "A descrição é obrigatória se não houver imagem."
-    }
     return newErrors
   }
 
@@ -220,7 +214,7 @@ export function CreateJobForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="title">Título da Vaga</Label>
+              <Label htmlFor="title">Título da Vaga *</Label>
               <Input
                 id="title"
                 name="title"
@@ -241,13 +235,9 @@ export function CreateJobForm() {
                 id="company"
                 name="company"
                 value={companyName}
-                onChange={(e) => {
-                  setCompanyName(e.target.value)
-                  if (errors.company) setErrors((prev) => ({ ...prev, company: undefined }))
-                }}
+                onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Nome da empresa"
               />
-              {errors.company && <p className="text-sm text-red-500 mt-1">{errors.company}</p>}
             </div>
 
             <div>
@@ -262,7 +252,7 @@ export function CreateJobForm() {
             </div>
 
             <div>
-              <Label htmlFor="cityId">Localização</Label>
+              <Label htmlFor="cityId">Localização *</Label>
               <CitySelect
                 value={selectedCityId}
                 onValueChange={(value) => {
@@ -302,10 +292,7 @@ export function CreateJobForm() {
                 id="description"
                 name="description"
                 value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value)
-                  if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }))
-                }}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descreva a vaga, responsabilidades, requisitos e benefícios..."
                 rows={16}
                 className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white"
@@ -333,8 +320,6 @@ export function CreateJobForm() {
                 </div>
               )}
             </div>
-
-            {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
 
             <div className="text-xs text-muted-foreground space-y-1">
               <p>
