@@ -21,11 +21,7 @@ interface PageHeaderProps {
   onSearchChange?: (search: string) => void
   selectedCityId?: number | null
   onCityChange?: (cityId: number | null) => void
-  onFilterChange?: (filters: {
-    locations: number[]
-    salaryRanges: string[]
-    sectors: number[]
-  }) => void
+  onFilterChange?: (filters: { locations: number[]; sectors: number[] }) => void
   userProfile?: any
 }
 
@@ -136,7 +132,6 @@ export function PageHeader({
     setSelectedLocations(newLocations)
     onFilterChange?.({
       locations: newLocations,
-      salaryRanges: [],
       sectors: selectedSectors,
     })
   }
@@ -148,7 +143,6 @@ export function PageHeader({
     setSelectedSectors(newSectors)
     onFilterChange?.({
       locations: selectedLocations,
-      salaryRanges: [],
       sectors: newSectors,
     })
   }
@@ -158,7 +152,6 @@ export function PageHeader({
     setSelectedSectors([])
     onFilterChange?.({
       locations: [],
-      salaryRanges: [],
       sectors: [],
     })
   }
@@ -252,7 +245,7 @@ export function PageHeader({
             <Card className="border-gray-200 rounded-lg">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">Filtros</h3>
+                  <h3 className="font-semibold text-sm text-gray-900">Filtros</h3>
                   {hasActiveFilters && (
                     <Button variant="outline" size="sm" onClick={clearFilters} className="h-7 text-xs bg-transparent">
                       <X className="h-3 w-3 mr-1" />
