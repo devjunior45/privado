@@ -21,7 +21,8 @@ interface PageHeaderProps {
   onSearchChange?: (search: string) => void
   selectedCityId?: number | null
   onCityChange?: (cityId: number | null) => void
-  onFilterChange?: (filters: { locations: number[]; sectors: number[] }) => void
+  onFilterChange?: (filters: { locations: number[]; salaryRanges: string[]; sectors: number[] }) => void
+  availableSalaryRanges?: string[]
   userProfile?: any
 }
 
@@ -34,11 +35,13 @@ export function PageHeader({
   selectedCityId = null,
   onCityChange,
   onFilterChange,
+  availableSalaryRanges = [],
   userProfile,
 }: PageHeaderProps) {
   const [searchValue, setSearchValue] = useState("")
   const [isFiltersVisible, setIsFiltersVisible] = useState(false)
   const [selectedLocations, setSelectedLocations] = useState<number[]>([])
+  const [selectedSalaryRanges, setSelectedSalaryRanges] = useState<string[]>([])
   const [selectedSectors, setSelectedSectors] = useState<number[]>([])
   const [currentSelectedCityId, setCurrentSelectedCityId] = useState<number | null>(selectedCityId)
   const [isVisible, setIsVisible] = useState(true)
@@ -132,6 +135,19 @@ export function PageHeader({
     setSelectedLocations(newLocations)
     onFilterChange?.({
       locations: newLocations,
+      salaryRanges: selectedSalaryRanges,
+      sectors: selectedSectors,
+    })
+  }
+
+  const handleSalaryToggle = (salary: string) => {
+    const newSalaries = selectedSalaryRanges.includes(salary)
+      ? selectedSalaryRanges.filter((s) => s !== salary)
+      : [...selectedSalaryRanges, salary]
+    setSelectedSalaryRanges(newSalaries)
+    onFilterChange?.({
+      locations: selectedLocations,
+      salaryRanges: newSalaries,
       sectors: selectedSectors,
     })
   }
@@ -143,21 +159,24 @@ export function PageHeader({
     setSelectedSectors(newSectors)
     onFilterChange?.({
       locations: selectedLocations,
+      salaryRanges: selectedSalaryRanges,
       sectors: newSectors,
     })
   }
 
   const clearFilters = () => {
     setSelectedLocations([])
+    setSelectedSalaryRanges([])
     setSelectedSectors([])
     onFilterChange?.({
       locations: [],
+      salaryRanges: [],
       sectors: [],
     })
   }
 
-  const hasActiveFilters = selectedLocations.length > 0 || selectedSectors.length > 0
-  const totalFilters = selectedLocations.length + selectedSectors.length
+  const hasActiveFilters = selectedLocations.length > 0 || selectedSalaryRanges.length > 0 || selectedSectors.length > 0
+  const totalFilters = selectedLocations.length + selectedSalaryRanges.length + selectedSectors.length
 
   return (
     <div
@@ -253,7 +272,7 @@ export function PageHeader({
                     </Button>
                   )}
                 </div>
-                <div className="w-full">
+                <div className="grid grid-cols-2 gap-3">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="justify-between h-9 text-xs w-full bg-transparent">
@@ -283,6 +302,37 @@ export function PageHeader({
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {availableSalaryRanges.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="justify-between h-9 text-xs w-full bg-transparent"
+                        >
+                          <span>Salário</span>
+                          {selectedSalaryRanges.length > 0 && (
+                            <span className="bg-blue-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center">
+                              {selectedSalaryRanges.length}
+                            </span>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56">
+                        <DropdownMenuLabel>Filtrar por salário</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {availableSalaryRanges.map((salary) => (
+                          <DropdownMenuCheckboxItem
+                            key={salary}
+                            checked={selectedSalaryRanges.includes(salary)}
+                            onCheckedChange={() => handleSalaryToggle(salary)}
+                          >
+                            {salary}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </CardContent>
             </Card>
