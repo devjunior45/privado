@@ -49,6 +49,7 @@ export interface UserProfile {
   company_location?: string | null
   cnpj?: string | null
   is_verified?: boolean
+  is_first_job?: boolean
 }
 
 export interface JobApplication {

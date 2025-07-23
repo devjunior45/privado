@@ -83,6 +83,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const [selectedEducationLevel, setSelectedEducationLevel] = useState("")
   const [educationStatus, setEducationStatus] = useState("concluído")
   const [focusField, setFocusField] = useState<string | null>(null)
+  const [isFirstJob, setIsFirstJob] = useState(profileData.is_first_job || false)
 
   const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000"}/profile/${profile.username}`
 
@@ -199,10 +200,36 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
     }
   }
 
+  const handleFirstJobToggle = async (checked: boolean) => {
+    try {
+      const formData = new FormData()
+      formData.append("isFirstJob", checked.toString())
+
+      await updateProfile(formData)
+
+      setProfileData((prev) => ({
+        ...prev,
+        is_first_job: checked,
+      }))
+
+      showToast(checked ? "Status de primeiro emprego ativado!" : "Status de primeiro emprego removido!", "success")
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error)
+      showToast("Erro ao atualizar status. Tente novamente.", "error")
+      setIsFirstJob(!checked) // Reverte o estado em caso de erro
+    }
+  }
+
   const handleExperienceSubmit = async (formData: FormData) => {
     setIsExperienceLoading(true)
     try {
       formData.append("isCurrentJob", isCurrentJob.toString())
+
+      // Se tinha primeiro emprego marcado, desmarcar ao adicionar experiência
+      if (profileData.is_first_job) {
+        formData.append("isFirstJob", "false")
+      }
+
       await addExperience(formData)
 
       // Atualização otimista
@@ -224,7 +251,10 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       setProfileData((prev) => ({
         ...prev,
         experiences: [...(prev.experiences || []), newExperience],
+        is_first_job: false, // Desmarcar primeiro emprego
       }))
+
+      setIsFirstJob(false) // Atualizar estado local
 
       setIsExperienceOpen(false)
       setIsCurrentJob(false)
@@ -570,6 +600,13 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
         <CardContent>
           {profileData.experiences && profileData.experiences.length > 0 ? (
             <div className="space-y-4">
+              {profileData.is_first_job && (
+                <div className="border-l-2 border-blue-200 pl-4">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    Primeiro Emprego
+                  </Badge>
+                </div>
+              )}
               {(profileData.experiences as Experience[]).map((exp, index) => (
                 <div key={index} className="border-l-2 border-blue-200 pl-4 relative">
                   {isOwnProfile && (
@@ -596,7 +633,27 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
             </div>
           ) : (
             isOwnProfile && (
-              <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="firstJob"
+                    checked={isFirstJob}
+                    onCheckedChange={(checked) => {
+                      setIsFirstJob(checked as boolean)
+                      handleFirstJobToggle(checked as boolean)
+                    }}
+                  />
+                  <Label htmlFor="firstJob">Primeiro Emprego</Label>
+                </div>
+                {isFirstJob && (
+                  <div className="border-l-2 border-blue-200 pl-4">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      Primeiro Emprego
+                    </Badge>
+                  </div>
+                )}
+                <p className="text-muted-foreground text-center py-2">Adicione suas experiências profissionais</p>
+              </div>
             )
           )}
         </CardContent>
