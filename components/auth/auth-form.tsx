@@ -218,7 +218,7 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-10 flex justify-end pr-8 pt-4">
+        <div className="mb-2 flex justify-end pr-8 pt-4">
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
@@ -269,7 +269,7 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-10 flex justify-end pr-8 pt-4">
+        <div className="mb-2 flex justify-end pr-8 pt-4">
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold">Criar Conta</h2>
@@ -310,7 +310,7 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("user-type")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-10 flex justify-end pr-8 pt-4">
+        <div className="mb-2 flex justify-end pr-8 pt-4">
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
@@ -366,7 +366,7 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-10 flex justify-end pr-8 pt-4">
+        <div className="mb-2 flex justify-end pr-8 pt-4">
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold">Seus Dados</h2>
@@ -425,7 +425,7 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-10 flex justify-end pr-8 pt-4">
+        <div className="mb-2 flex justify-end pr-8 pt-4">
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold">Dados da Empresa</h2>
