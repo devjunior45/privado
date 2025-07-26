@@ -10,7 +10,7 @@ import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Galeria de Empregos",
+  title: "Nortão Empregos",
   description: "Encontre as melhores oportunidades de trabalho",
   manifest: "/manifest.json",
   themeColor: "#000000",
