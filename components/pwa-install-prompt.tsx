@@ -105,7 +105,7 @@ export function PWAInstallPrompt() {
         </div>
 
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Instale o Galeria de Empregos para acesso rápido e notificações.
+          Instale o Nortão Empregos para acesso rápido e notificações.
         </p>
 
         <div className="flex space-x-2">
