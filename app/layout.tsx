@@ -10,12 +10,12 @@ import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Nortão Empregos",
+  title: "Galeria de Empregos",
   description: "Encontre as melhores oportunidades de trabalho",
   manifest: "/manifest.json",
   themeColor: "#000000",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
-    generator: 'Lourival Junior'
+    generator: 'v0.dev'
 }
 
 export default async function RootLayout({

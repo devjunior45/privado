@@ -17,6 +17,38 @@ interface HeaderProps {
 export function Header({ title, showSettings = false, isLoggedIn = false, showBackButton = false }: HeaderProps) {
   const router = useRouter()
 
+  const handleBack = () => {
+    // Verifica se há histórico de navegação no browser
+    if (window.history.length > 1) {
+      // Verifica se há um referrer e se é do mesmo domínio
+      if (document.referrer) {
+        try {
+          const referrerUrl = new URL(document.referrer)
+          const currentUrl = new URL(window.location.href)
+
+          // Se o referrer é do mesmo domínio, volta para a página anterior
+          if (referrerUrl.origin === currentUrl.origin) {
+            router.back()
+            return
+          }
+        } catch (error) {
+          // Se houver erro ao processar URLs, redireciona para o feed
+          router.push("/feed")
+          return
+        }
+      } else {
+        // Se não há referrer mas há histórico, ainda assim tenta voltar
+        // (pode ser navegação interna sem referrer)
+        router.back()
+        return
+      }
+    }
+
+    // Se não há histórico ou o referrer não é do mesmo domínio,
+    // redireciona para o feed
+    router.push("/feed")
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* Mobile Header */}
@@ -24,7 +56,7 @@ export function Header({ title, showSettings = false, isLoggedIn = false, showBa
         {/* Left side - Back button or placeholder */}
         <div className="w-10">
           {showBackButton && (
-            <Button variant="ghost" size="sm" className="p-2" onClick={() => router.back()}>
+            <Button variant="ghost" size="sm" className="p-2" onClick={handleBack}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
           )}
@@ -44,7 +76,7 @@ export function Header({ title, showSettings = false, isLoggedIn = false, showBa
         <div className="flex flex-1 items-center justify-between">
           <div className="flex items-center space-x-4">
             {showBackButton && (
-              <Button variant="ghost" size="sm" className="p-2" onClick={() => router.back()}>
+              <Button variant="ghost" size="sm" className="p-2" onClick={handleBack}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             )}
