@@ -298,7 +298,7 @@ function JobCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={`/feed?post=${job.id}`} target="_blank">
+                  <Link href={`/post/${job.id}`} target="_blank">
                     <Eye className="w-4 h-4 mr-2" />
                     Visualizar
                     <ExternalLink className="w-3 h-3 ml-auto" />

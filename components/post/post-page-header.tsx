@@ -22,8 +22,8 @@ export function PostPageClientHeader() {
             return
           }
         } catch (error) {
-          // Se houver erro ao processar URLs, redireciona para o feed
-          router.push("/feed")
+          // Se houver erro ao processar URLs, tenta voltar mesmo assim
+          router.back()
           return
         }
       } else {

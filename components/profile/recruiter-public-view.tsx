@@ -295,7 +295,10 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
 
                   {/* Overlay com estatísticas (apenas para vagas ativas) */}
                   {post.status === "active" && (
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-sm">
+                    <Link
+                      href={`/post/${post.id}`}
+                      className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-sm"
+                    >
                       <div className="flex items-center gap-3 text-white text-sm">
                         <div className="flex items-center gap-1">
                           <Heart className="w-4 h-4 fill-white" />
@@ -306,7 +309,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
                           <span>0</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   )}
                 </div>
               ))}
