@@ -185,26 +185,6 @@ export async function updateRecruiterProfile(formData: FormData) {
   revalidatePath("/profile")
 }
 
-export async function updateFirstJobStatus(isFirstJob: boolean) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth")
-  }
-
-  const { error } = await supabase.from("profiles").update({ is_first_job: isFirstJob }).eq("id", user.id)
-
-  if (error) {
-    console.error("Erro ao atualizar status de primeiro emprego:", error)
-    throw new Error("Erro ao atualizar status: " + error.message)
-  }
-
-  revalidatePath("/profile")
-}
-
 export async function requestVerification(formData: FormData) {
   const supabase = await createClient()
 
@@ -252,6 +232,26 @@ export async function requestVerification(formData: FormData) {
   if (requestError) {
     console.error("Erro ao criar solicitação:", requestError)
     throw new Error("Erro ao solicitar verificação: " + requestError.message)
+  }
+
+  revalidatePath("/profile")
+}
+
+export async function updateFirstJobStatus(isFirstJob: boolean) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/auth")
+  }
+
+  const { error } = await supabase.from("profiles").update({ is_first_job: isFirstJob }).eq("id", user.id)
+
+  if (error) {
+    console.error("Erro ao atualizar status de primeiro emprego:", error)
+    throw new Error("Erro ao atualizar status: " + error.message)
   }
 
   revalidatePath("/profile")

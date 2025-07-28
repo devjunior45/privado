@@ -220,7 +220,7 @@ export function JobPost({
         }
       } catch (error) {
         setIsSaved(isSaved)
-        console.error("Erro ao salvar post:", error)
+        console.error("Erro ao salvar vaga:", error)
         alert("Erro ao salvar vaga. Tente novamente.")
       }
     })
@@ -300,11 +300,6 @@ export function JobPost({
                   : (postProfile.full_name || postProfile.username).charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {postProfile.is_verified && (
-              <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                <ShieldCheck className={`${isMobile ? "w-2 h-2" : "w-3 h-3"} text-white`} />
-              </div>
-            )}
           </div>
           <div className="flex-1 min-w-0">
             <Link href={`/profile/${postProfile.username}`} className="hover:underline">
