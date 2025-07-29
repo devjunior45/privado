@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Como Excluir Minha Conta - Nortão Empregos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+      color: #222;
+      background: #f9f9f9;
+    }
+    h1 {
+      color: #195233;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 1.1em;
+      margin-bottom: 15px;
+    }
+    ol {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+    .important {
+      background: #ffe6e6;
+      border-left: 6px solid #d9534f;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      color: #a94442;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Como Excluir Minha Conta - Nortão Empregos</h1>
+
+  <p>Para excluir sua conta e todos os seus dados da plataforma, siga o passo a passo abaixo:</p>
+
+  <ol>
+    <li>Faça login no aplicativo usando seu <strong>e-mail</strong> e <strong>senha</strong>.</li>
+    <li>No seu perfil, clique no ícone de <strong>engrenagem</strong> para acessar as configurações.</li>
+    <li>Na tela de configurações, role até a última opção e selecione <strong>"Excluir minha conta"</strong>.</li>
+    <li>Informe sua senha para confirmar a exclusão.</li>
+    <li>Após a confirmação, sua conta e todos os seus dados serão removidos da plataforma.</li>
+  </ol>
+
+  <div class="important">
+    Atenção: Todos os seus comentários, candidaturas e interações com vagas também serão apagados.<br/>
+    Contudo, dados que já foram baixados por recrutadores, como seu currículo em PDF, permanecerão com eles e não poderão ser excluídos por nós.
+  </div>
+
+  <p>Se tiver qualquer dúvida ou dificuldade, entre em contato conosco pelo e-mail: <a href="mailto:contato@nortaoempregos.com.br">contato@nortaoempregos.com.br</a></p>
+</body>
+</html>
