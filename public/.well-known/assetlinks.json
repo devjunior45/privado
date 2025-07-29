@@ -1,8 +1,11 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "br.com.nortaoempregos.twa",
-        "sha256_cert_fingerprints": ["F2:63:7A:B6:60:DE:AE:0D:C4:71:95:20:73:B0:0B:D3:39:67:4D:90:66:EB:86:88:9F:83:5E:6F:76:C2:19:D5"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.nortaoempregos.twa",
+      "sha256_cert_fingerprints":
+        ["AE:80:22:FC:76:B4:04:0A:B8:9B:D1:A1:06:E7:96:46:56:13:1F:5A:CD:62:F8:8E:16:61:14:96:7D:80:05:12"]
+    }
+  }
+]
