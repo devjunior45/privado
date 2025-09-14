@@ -361,33 +361,32 @@ export function CreateJobForm() {
                 onKeyUp={ensureCursorVisible}
                 onClick={ensureCursorVisible}
                 placeholder="Descreva a vaga, responsabilidades, requisitos e benefícios..."
-                className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white overflow-y-auto"
+                className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white overflow-y-auto relative z-10"
                 style={{
                   minHeight: "200px",
                   lineHeight: "1.5rem",
-                  position: "relative",
-                  zIndex: 2,
-                  backgroundColor: "transparent",
+                  caretColor: "currentColor",
                 }}
               />
 
               {/* Preview sobreposto */}
-              <div
-                ref={previewRef}
-                className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-y-auto bg-white dark:bg-black text-black dark:text-white rounded-md"
-                style={{
-                  minHeight: "200px",
-                  lineHeight: "1.5rem",
-                  zIndex: 1,
-                }}
-              >
+              {description && (
                 <div
-                  className="prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{
-                    __html: renderFormattedText(description),
+                  ref={previewRef}
+                  className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-y-auto bg-white dark:bg-black text-black dark:text-white rounded-md z-0"
+                  style={{
+                    minHeight: "200px",
+                    lineHeight: "1.5rem",
                   }}
-                />
-              </div>
+                >
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{
+                      __html: renderFormattedText(description),
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
