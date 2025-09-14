@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Edit, Trash2 } from "lucide-react"
-import { createComment, toggleCommentLike, deleteComment } from "@/app/actions/comments"
+import { createComment, toggleCommentLike, deleteComment, updateComment } from "@/app/actions/comments"
 import { createClient } from "@/lib/supabase/client"
 import type { Comment } from "@/types/comments"
 import { getRelativeDate } from "@/utils/date-utils"
@@ -260,9 +260,8 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
     if (!editContent.trim()) return
 
     try {
-      // Implementar função de edição no actions/comments.ts
-      // await updateComment(commentId, editContent.trim())
-      // await fetchComments()
+      await updateComment(commentId, editContent.trim())
+      await fetchComments()
       setEditingComment(null)
       setEditContent("")
     } catch (error) {
