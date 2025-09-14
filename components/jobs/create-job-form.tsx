@@ -365,30 +365,29 @@ export function CreateJobForm() {
                 style={{
                   minHeight: "200px",
                   lineHeight: "1.5rem",
-                  background: description ? "transparent" : undefined,
-                  color: description ? "transparent" : undefined,
-                  caretColor: description ? "black" : undefined,
+                  position: "relative",
+                  zIndex: 2,
+                  backgroundColor: "transparent",
                 }}
               />
 
               {/* Preview sobreposto */}
-              {description && (
+              <div
+                ref={previewRef}
+                className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-y-auto bg-white dark:bg-black text-black dark:text-white rounded-md"
+                style={{
+                  minHeight: "200px",
+                  lineHeight: "1.5rem",
+                  zIndex: 1,
+                }}
+              >
                 <div
-                  ref={previewRef}
-                  className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-y-auto bg-white dark:bg-black text-black dark:text-white rounded-md"
-                  style={{
-                    minHeight: "200px",
-                    lineHeight: "1.5rem",
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{
+                    __html: renderFormattedText(description),
                   }}
-                >
-                  <div
-                    className="prose prose-sm max-w-none dark:prose-invert"
-                    dangerouslySetInnerHTML={{
-                      __html: renderFormattedText(description),
-                    }}
-                  />
-                </div>
-              )}
+                />
+              </div>
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
