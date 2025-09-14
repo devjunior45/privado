@@ -94,12 +94,24 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
       if (userProfile?.user_type === "candidate") {
         baseTabs.push(
           { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
-          { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications", badge: displayUnreadCount },
+          {
+            id: "notifications",
+            label: "Notificações",
+            icon: Bell,
+            path: "/notifications",
+            badge: displayUnreadCount > 0 ? displayUnreadCount : undefined,
+          },
         )
       } else if (userProfile?.user_type === "recruiter") {
         baseTabs.push(
           { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-          { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications", badge: displayUnreadCount },
+          {
+            id: "notifications",
+            label: "Notificações",
+            icon: Bell,
+            path: "/notifications",
+            badge: displayUnreadCount > 0 ? displayUnreadCount : undefined,
+          },
         )
       }
       baseTabs.push({ id: "profile", label: "Perfil", icon: User, path: "/profile" })
@@ -190,7 +202,7 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
                   >
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] leading-tight">{tab.label}</span>
-                    {tab.badge && tab.badge > 0 && (
+                    {tab.badge && (
                       <span className="absolute top-0 right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                         {tab.badge > 99 ? "99+" : tab.badge}
                       </span>
@@ -252,7 +264,7 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
                 >
                   <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
                   <span className="truncate">{tab.label}</span>
-                  {tab.badge && tab.badge > 0 && (
+                  {tab.badge && (
                     <span className="ml-auto bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                       {tab.badge > 99 ? "99+" : tab.badge}
                     </span>
