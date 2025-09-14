@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,6 +46,8 @@ export function CreateJobForm() {
   const router = useRouter()
   const { showToast, ToastContainer } = useToast()
   const { sectors, isLoading: isLoadingSectors } = useSectors()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
 
   // Buscar dados do perfil para preencher empresa
   useEffect(() => {
@@ -71,6 +73,49 @@ export function CreateJobForm() {
     fetchProfile()
   }, [])
 
+  // Auto-resize textarea
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = "auto"
+      textarea.style.height = `${Math.max(textarea.scrollHeight, 200)}px`
+
+      // Sincronizar altura do preview
+      if (previewRef.current) {
+        previewRef.current.style.height = textarea.style.height
+      }
+    }
+  }
+
+  // Garantir que o cursor esteja sempre visível
+  const ensureCursorVisible = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      const cursorPosition = textarea.selectionStart
+      const textBeforeCursor = textarea.value.substring(0, cursorPosition)
+      const lines = textBeforeCursor.split("\n")
+      const currentLine = lines.length
+      const lineHeight = 24 // Aproximadamente 1.5rem
+      const cursorTop = (currentLine - 1) * lineHeight
+
+      // Se o cursor estiver fora da área visível, fazer scroll
+      if (cursorTop < textarea.scrollTop) {
+        textarea.scrollTop = cursorTop
+      } else if (cursorTop > textarea.scrollTop + textarea.clientHeight - lineHeight) {
+        textarea.scrollTop = cursorTop - textarea.clientHeight + lineHeight * 2
+      }
+
+      // Sincronizar scroll do preview
+      if (previewRef.current) {
+        previewRef.current.scrollTop = textarea.scrollTop
+      }
+    }
+  }
+
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [description])
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -90,7 +135,9 @@ export function CreateJobForm() {
 
   // Função de formatação de texto simplificada
   const insertText = (before: string, after = "") => {
-    const textarea = document.getElementById("description") as HTMLTextAreaElement
+    const textarea = textareaRef.current
+    if (!textarea) return
+
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
     const selectedText = description.substring(start, end)
@@ -100,6 +147,7 @@ export function CreateJobForm() {
     setTimeout(() => {
       textarea.focus()
       textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
+      ensureCursorVisible()
     }, 0)
   }
 
@@ -154,6 +202,21 @@ export function CreateJobForm() {
   // Função para renderizar o texto com formatação em tempo real
   const renderFormattedText = (text: string) => {
     return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>")
+  }
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value)
+    setTimeout(() => {
+      adjustTextareaHeight()
+      ensureCursorVisible()
+    }, 0)
+  }
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    // Sincronizar scroll entre textarea e preview
+    if (previewRef.current) {
+      previewRef.current.scrollTop = e.currentTarget.scrollTop
+    }
   }
 
   const sectorOptions = sectors.map((s) => ({ value: s.id.toString(), label: s.name }))
@@ -281,7 +344,7 @@ export function CreateJobForm() {
           </CardContent>
         </Card>
 
-        {/* Descrição com Editor */}
+        {/* Descrição com Editor Expansível */}
         <Card>
           <CardHeader>
             <CardTitle>Descrição da Vaga</CardTitle>
@@ -289,26 +352,33 @@ export function CreateJobForm() {
           <CardContent className="space-y-4">
             <div className="relative">
               <textarea
+                ref={textareaRef}
                 id="description"
                 name="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={handleDescriptionChange}
+                onScroll={handleScroll}
+                onKeyUp={ensureCursorVisible}
+                onClick={ensureCursorVisible}
                 placeholder="Descreva a vaga, responsabilidades, requisitos e benefícios..."
-                rows={16}
-                className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white"
+                className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white overflow-y-auto"
                 style={{
+                  minHeight: "200px",
+                  lineHeight: "1.5rem",
                   background: description ? "transparent" : undefined,
                   color: description ? "transparent" : undefined,
+                  caretColor: description ? "black" : undefined,
                 }}
               />
 
               {/* Preview sobreposto */}
               {description && (
                 <div
-                  className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-auto bg-white dark:bg-black text-black dark:text-white rounded-md"
+                  ref={previewRef}
+                  className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-y-auto bg-white dark:bg-black text-black dark:text-white rounded-md"
                   style={{
-                    minHeight: "16rem",
-                    lineHeight: "1.5",
+                    minHeight: "200px",
+                    lineHeight: "1.5rem",
                   }}
                 >
                   <div
