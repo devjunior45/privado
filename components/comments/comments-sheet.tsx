@@ -1,18 +1,18 @@
 "use client"
 
 import type React from "react"
-
+import { Edit, Trash2 } from "lucide-react"
+import { createComment, toggleCommentLike, deleteComment } from "@/app/actions/comments"
+import { createClient } from "@/lib/supabase/client"
+import type { Comment } from "@/types/comments"
+import { getRelativeDate } from "@/utils/date-utils"
+import { getComments } from "@/app/actions/comments"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Send, Heart, MessageCircle, ChevronDown, ChevronUp } from "lucide-react"
-import { createComment, toggleCommentLike } from "@/app/actions/comments"
-import { createClient } from "@/lib/supabase/client"
-import type { Comment } from "@/types/comments"
-import { getRelativeDate } from "@/utils/date-utils"
-import { getComments } from "@/app/actions/comments"
 
 interface CommentsSheetProps {
   isOpen: boolean
@@ -31,6 +31,10 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
   const [replyContent, setReplyContent] = useState("")
   const [visibleReplies, setVisibleReplies] = useState<Set<string>>(new Set())
   const [repliesCount, setRepliesCount] = useState<Map<string, number>>(new Map())
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [selectedComment, setSelectedComment] = useState<string | null>(null)
+  const [editingComment, setEditingComment] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState("")
 
   // Drag to close functionality
   const [isDragging, setIsDragging] = useState(false)
@@ -60,6 +64,25 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
       setRepliesCount(new Map())
     }
   }, [isOpen, postId])
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer)
+      }
+    }
+  }, [longPressTimer])
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setSelectedComment(null)
+    }
+
+    if (selectedComment) {
+      document.addEventListener("click", handleClickOutside)
+      return () => document.removeEventListener("click", handleClickOutside)
+    }
+  }, [selectedComment])
 
   const fetchComments = async () => {
     try {
@@ -202,6 +225,56 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
     }
   }
 
+  const handleLongPressStart = (commentId: string, content: string) => {
+    const timer = setTimeout(() => {
+      setSelectedComment(commentId)
+      setEditContent(content)
+    }, 500) // 500ms para long press
+    setLongPressTimer(timer)
+  }
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      setLongPressTimer(null)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteComment(commentId)
+      await fetchComments()
+      setSelectedComment(null)
+    } catch (error) {
+      console.error("Erro ao deletar comentário:", error)
+    }
+  }
+
+  const handleEditComment = (commentId: string, content: string) => {
+    setEditingComment(commentId)
+    setEditContent(content)
+    setSelectedComment(null)
+  }
+
+  const handleSaveEdit = async (commentId: string) => {
+    if (!editContent.trim()) return
+
+    try {
+      // Implementar função de edição no actions/comments.ts
+      // await updateComment(commentId, editContent.trim())
+      // await fetchComments()
+      setEditingComment(null)
+      setEditContent("")
+    } catch (error) {
+      console.error("Erro ao editar comentário:", error)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingComment(null)
+    setEditContent("")
+  }
+
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`flex gap-3 ${isReply ? "ml-8 mt-2" : ""}`}>
       <Avatar className="w-8 h-8 flex-shrink-0">
@@ -217,10 +290,64 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">{getRelativeDate(comment.created_at)}</span>
         </div>
-        <p className="text-sm text-gray-700 dark:text-gray-300 break-words mb-2">{comment.content}</p>
+
+        {editingComment === comment.id ? (
+          <div className="mb-2">
+            <Input
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="text-sm mb-2"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleSaveEdit(comment.id)}
+                size="sm"
+                disabled={!editContent.trim()}
+                className="h-6 px-2 text-xs"
+              >
+                Salvar
+              </Button>
+              <Button onClick={handleCancelEdit} variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="relative"
+            onTouchStart={() => user?.id === comment.user_id && handleLongPressStart(comment.id, comment.content)}
+            onTouchEnd={handleLongPressEnd}
+            onMouseDown={() => user?.id === comment.user_id && handleLongPressStart(comment.id, comment.content)}
+            onMouseUp={handleLongPressEnd}
+            onMouseLeave={handleLongPressEnd}
+          >
+            <p className="text-sm text-gray-700 dark:text-gray-300 break-words mb-2">{comment.content}</p>
+
+            {/* Menu de opções */}
+            {selectedComment === comment.id && user?.id === comment.user_id && (
+              <div className="absolute top-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-10">
+                <button
+                  onClick={() => handleEditComment(comment.id, comment.content)}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  <Edit className="w-3 h-3" />
+                  Editar
+                </button>
+                <button
+                  onClick={() => handleDeleteComment(comment.id)}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Excluir
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action buttons */}
-        {user && (
+        {user && editingComment !== comment.id && (
           <div className="flex items-center gap-4">
             <button
               onClick={() => handleLike(comment.id)}
@@ -245,7 +372,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
         )}
 
         {/* Reply input */}
-        {replyingTo === comment.id && user && (
+        {replyingTo === comment.id && user && editingComment !== comment.id && (
           <div className="mt-2 flex gap-2">
             <Input
               value={replyContent}

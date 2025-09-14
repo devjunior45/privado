@@ -38,6 +38,42 @@ export async function createComment(formData: FormData) {
   revalidatePath("/")
 }
 
+export async function updateComment(commentId: string, content: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  if (!content.trim()) {
+    throw new Error("Comentário não pode estar vazio")
+  }
+
+  try {
+    const { error } = await supabase
+      .from("job_comments")
+      .update({
+        content: content.trim(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", commentId)
+      .eq("user_id", user.id)
+
+    if (error) {
+      throw new Error("Erro ao editar comentário: " + error.message)
+    }
+
+    revalidatePath("/")
+  } catch (error) {
+    console.error("Erro ao editar comentário:", error)
+    throw error
+  }
+}
+
 export async function getComments(postId: string) {
   const supabase = await createClient()
 
