@@ -1,6 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import type React from "react"
+import React from "react"
 
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -66,6 +66,11 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [userJobs, setUserJobs] = useState<any[]>([])
 
+  // Sidebar specific states for desktop
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [sidebarSearchTerm, setSidebarSearchTerm] = useState("")
+  const [sidebarSelectedCityId, setSidebarSelectedCityId] = useState<number | null>(null)
+
   const supabase = createClient()
   const { cities } = useCities()
   const { unreadCount } = useNotifications()
@@ -102,9 +107,20 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
     const currentSearch = searchParams.get("q") || ""
     const currentCityParam = searchParams.get("city")
 
+    // Desktop search states
     setSearchTerm(currentSearch)
     setSelectedCityId(currentCityParam ? Number.parseInt(currentCityParam) : userProfile?.city_id || null)
-  }, [searchParams, userProfile])
+
+    // Mobile sidebar states
+    setSidebarSearchTerm(currentSearch)
+    let initialCityId = null
+    if (currentCityParam) {
+      initialCityId = Number.parseInt(currentCityParam)
+    } else if (!isMobile && userProfile?.city_id && (pathname === "/feed" || pathname === "/")) {
+      initialCityId = userProfile.city_id
+    }
+    setSidebarSelectedCityId(initialCityId)
+  }, [searchParams, userProfile, isMobile, pathname])
 
   useEffect(() => {
     if (pathname === "/feed" || pathname === "/" || pathname.startsWith("/job/")) {
@@ -124,17 +140,16 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
     }
   }, [pathname, isOwnProfile])
 
-  const tabs = [
-    { id: "opportunities", label: "Vagas", icon: Search, path: "/feed" },
-    { id: "saved", label: "Salvos", icon: Bookmark, path: "/saved" },
-    ...(isLoggedIn
-      ? [
-          ...(userProfile?.user_type === "candidate"
-            ? [{ id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" }]
-            : []),
-          ...(userProfile?.user_type === "recruiter"
-            ? [{ id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" }]
-            : []),
+  const tabs = React.useMemo(() => {
+    const baseTabs = [
+      { id: "opportunities", label: "Vagas", icon: Search, path: "/feed" },
+      { id: "saved", label: "Salvos", icon: Bookmark, path: "/saved" },
+    ]
+
+    if (isLoggedIn) {
+      if (userProfile?.user_type === "candidate") {
+        baseTabs.push(
+          { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
           {
             id: "notifications",
             label: "Notificações",
@@ -142,17 +157,48 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
             path: "/notifications",
             badge: displayUnreadCount > 0 ? displayUnreadCount : undefined,
           },
-        ]
-      : [
-          { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
-          { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
-        ]),
-  ]
+        )
+      } else if (userProfile?.user_type === "recruiter") {
+        baseTabs.push(
+          { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+          {
+            id: "notifications",
+            label: "Notificações",
+            icon: Bell,
+            path: "/notifications",
+            badge: displayUnreadCount > 0 ? displayUnreadCount : undefined,
+          },
+        )
+      }
+      baseTabs.push({ id: "profile", label: "Perfil", icon: User, path: "/profile" })
+    } else {
+      // Para usuários não logados, mostrar todas as opções
+      baseTabs.push(
+        { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
+        { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
+        { id: "profile", label: "Perfil", icon: User, path: "/profile" },
+      )
+    }
+
+    return baseTabs
+  }, [isLoggedIn, userProfile?.user_type, displayUnreadCount])
+
+  useEffect(() => {
+    tabs.forEach((tab) => {
+      if (tab.path) router.prefetch(tab.path)
+    })
+  }, [router, tabs])
 
   const handleNavigation = useCallback(
     (tab: (typeof tabs)[0]) => {
+      // Feedback visual de clique
       setClickedButton(tab.id)
       setTimeout(() => setClickedButton(null), 150)
+
+      // Para desktop, se clicar em "Vagas", abrir a caixa de pesquisa também
+      if (!isMobile && tab.id === "opportunities") {
+        setIsSearchExpanded(true)
+      }
 
       if (activeTab === tab.id && pathname === tab.path) return
 
@@ -161,9 +207,10 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
         router.push(tab.path)
       })
     },
-    [activeTab, pathname, router],
+    [activeTab, pathname, router, isMobile],
   )
 
+  // Desktop search handlers
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault()
     const newParams = new URLSearchParams()
@@ -198,9 +245,35 @@ export function Navigation({ isLoggedIn, userProfile }: NavigationProps) {
     router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
   }
 
+  // Mobile sidebar handlers (versão 56)
+  const handleSidebarCityChange = (cityId: number | null) => {
+    setSidebarSelectedCityId(cityId)
+    const newParams = new URLSearchParams(searchParams.toString())
+    if (cityId) {
+      newParams.set("city", cityId.toString())
+    } else {
+      newParams.delete("city")
+    }
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
+  }
+
+  const handleSidebarSearch = (e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault()
+    const newParams = new URLSearchParams(searchParams.toString())
+    if (sidebarSearchTerm) {
+      newParams.set("q", sidebarSearchTerm)
+    } else {
+      newParams.delete("q")
+    }
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
+    if (!isMobile) setIsSearchExpanded(false)
+  }
+
   const selectedCity = cities.find((city) => city.id === selectedCityId)
+  const sidebarSelectedCity = cities.find((city) => city.id === sidebarSelectedCityId)
 
   if (isMobile) {
+    // Mobile Layout - Versão 56 restaurada
     return (
       <>
         <nav className="fixed bottom-0 left-0 right-0 bg-background border-t z-50">
