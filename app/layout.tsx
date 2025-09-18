@@ -31,7 +31,16 @@ export default async function RootLayout({
 
   let userProfile = null
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select(`
+        *,
+        experiences,
+        education,
+        courses
+      `)
+      .eq("id", user.id)
+      .single()
     userProfile = profile
   }
 
@@ -42,7 +51,10 @@ export default async function RootLayout({
           <ReactQueryProvider>
             <div className="min-h-screen bg-background">
               <Navigation isLoggedIn={!!user} userProfile={userProfile} />
-              <main className="md:ml-64 pb-16 md:pb-0">{children}</main>
+              {/* Layout Desktop: Coluna central ao lado do sidebar */}
+              <main className="md:ml-80 md:pt-16 pb-16 md:pb-0 md:h-screen md:overflow-y-auto">
+                <div className="md:p-6">{children}</div>
+              </main>
               <PWAInstallPrompt />
             </div>
           </ReactQueryProvider>
