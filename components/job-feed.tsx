@@ -26,14 +26,14 @@ export function JobFeed({
   isLoading,
   hasLoadedOnce,
   highlightedPostId,
-  isDesktopLayout = false, // This prop is now effectively unused for layout here
+  isDesktopLayout = false,
 }: JobFeedProps) {
   const isMobile = useMobile()
   const posts = initialPosts
 
   if (isLoading && !hasLoadedOnce) {
     return (
-      <div className={` ${isMobile ? "space-y-1" : "space-y-4"}`}>
+      <div className={isMobile ? "space-y-0" : "space-y-4"}>
         {[...Array(isMobile ? 3 : 6)].map((_, index) => (
           <EnhancedJobSkeleton key={index} />
         ))}
@@ -50,10 +50,10 @@ export function JobFeed({
     )
   }
 
-  // On mobile, remove the outer div's space-y-4 to let JobPost handle its own margins or lack thereof
-  // On desktop, keep space-y-4 for separation if JobPost doesn't have bottom margin
+  // Mobile: sem espaçamento, cards ocupam 100% da largura
+  // Desktop: mantém espaçamento normal
   return (
-    <div className={isMobile ? "space-y-0.5 bg-muted/20" : "space-y-4"}>
+    <div className={isMobile ? "space-y-0" : "space-y-4"}>
       {posts.map((post, index) => (
         <JobPost
           key={post.id}

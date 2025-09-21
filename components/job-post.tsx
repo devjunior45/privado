@@ -285,12 +285,14 @@ export function JobPost({
   return (
     <>
       <Card
-        className={`w-full ${isMobile ? "rounded-none shadow-none border-0" : "max-w-md mx-auto mb-6 border"} ${className || ""}`}
+        className={`w-full ${
+          isMobile ? "rounded-none shadow-none border-0 border-b border-gray-100 mb-0" : "max-w-md mx-auto mb-6 border"
+        } ${className || ""}`}
         ref={targetRef}
         id={id || `post-${jobPost.id}`}
         style={style}
       >
-        <CardHeader className={`flex flex-row items-center gap-2 pb-3 ${isMobile ? "px-1.5 pt-3 bg-white" : ""}`}>
+        <CardHeader className={`flex flex-row items-center gap-2 pb-3 ${isMobile ? "px-4 pt-4 bg-white" : ""}`}>
           <div className="relative">
             <Avatar className={`${isMobile ? "w-8 h-8" : "w-10 h-10"}`}>
               <AvatarImage src={postProfile.avatar_url || "/placeholder.svg"} alt={postProfile.full_name || ""} />
@@ -304,7 +306,7 @@ export function JobPost({
           <div className="flex-1 min-w-0">
             <Link href={`/profile/${postProfile.username}`} className="hover:underline">
               <div className="flex items-center gap-2">
-                <p className={`font-semibold truncate ${isMobile ? "text-xs" : "text-sm"}`}>
+                <p className={`font-semibold truncate ${isMobile ? "text-sm" : "text-sm"}`}>
                   {postProfile.company_name || postProfile.full_name || postProfile.username}
                 </p>
                 {postProfile.is_verified && (
@@ -352,7 +354,7 @@ export function JobPost({
           )}
         </CardContent>
 
-        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-1.5 pb-3 bg-white" : ""}`}>
+        <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-4 pb-4 bg-white" : ""}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
