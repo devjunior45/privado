@@ -24,9 +24,15 @@ export default async function CreateJobPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header title="Nova Vaga" showSettings={false} isLoggedIn={true} showBackButton={true} />
-      <div className="mx-4 md:mx-0">
+      <div className="md:pt-0 mx-4 md:mx-0">
         <PageContainer>
-          <CreateJobForm />
+          <div className="md:max-w-2xl md:mx-auto">
+            <div className="hidden md:block mb-6">
+              <h1 className="text-2xl font-bold">Nova Vaga</h1>
+              <p className="text-muted-foreground">Crie uma nova vaga para sua empresa</p>
+            </div>
+            <CreateJobForm />
+          </div>
         </PageContainer>
       </div>
     </div>

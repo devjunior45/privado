@@ -16,8 +16,8 @@ export default async function NotificationsPage() {
     return (
       <div className="min-h-screen bg-background">
         <Header title="Notificações" showSettings={false} isLoggedIn={false} />
-        <div className="mx-4 md:mx-0">
-          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-center px-4">
+        <div className="md:pt-0 mx-4 md:mx-0">
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-14rem)] text-center px-4">
             <div className="mb-8">
               <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
                 <Bell className="w-12 h-12 text-primary" />
@@ -57,8 +57,14 @@ export default async function NotificationsPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header title="Notificações" showSettings={false} isLoggedIn={true} />
-      <div className="mx-4 md:mx-0">
-        <NotificationsList />
+      <div className="md:pt-0 mx-4 md:mx-0">
+        <div className="md:max-w-2xl md:mx-auto">
+          <div className="hidden md:block mb-6">
+            <h1 className="text-2xl font-bold">Notificações</h1>
+            <p className="text-muted-foreground">Acompanhe suas notificações e atualizações</p>
+          </div>
+          <NotificationsList />
+        </div>
       </div>
     </div>
   )
