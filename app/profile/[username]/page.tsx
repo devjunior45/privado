@@ -86,11 +86,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black pb-20">
       <Header title={`@${profile.username}`} showBackButton={true} isLoggedIn={isLoggedIn} />
-      <div className="md:pt-0 max-w-md md:max-w-2xl mx-auto px-4 py-6">
-        <div className="hidden md:block mb-6">
-          <h1 className="text-2xl font-bold">@{profile.username}</h1>
-          <p className="text-muted-foreground">Perfil público do candidato</p>
-        </div>
+      <div className="max-w-md mx-auto px-4 py-6">
         <ProfileView profile={profile} isOwnProfile={isOwnProfile} />
       </div>
     </div>
