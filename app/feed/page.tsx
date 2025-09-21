@@ -194,32 +194,48 @@ export default function FeedPage() {
   }
 
   return (
-    <PageContainer
-      header={
-        isMobile ? (
-          <PageHeader
-            showSearch={true}
-            showFilters={true}
-            enableStickyBehavior={true}
-            onSearchChange={handleMobileSearchChange}
-            selectedCityId={searchParams.get("city") ? Number.parseInt(searchParams.get("city")!) : null}
-            onCityChange={handleMobileCityChange}
-            onFilterChange={handleMobileFilterChange}
-            availableSalaryRanges={salaryRanges}
+    <>
+      {/* Mobile Layout */}
+      <div className="md:hidden">
+        <PageContainer
+          header={
+            <PageHeader
+              showSearch={true}
+              showFilters={true}
+              enableStickyBehavior={true}
+              onSearchChange={handleMobileSearchChange}
+              selectedCityId={searchParams.get("city") ? Number.parseInt(searchParams.get("city")!) : null}
+              onCityChange={handleMobileCityChange}
+              onFilterChange={handleMobileFilterChange}
+              availableSalaryRanges={salaryRanges}
+              userProfile={userProfile}
+            />
+          }
+        >
+          <JobFeed
+            isLoggedIn={isLoggedIn}
+            initialPosts={filteredPosts}
             userProfile={userProfile}
+            isLoading={isInitialLoading}
+            hasLoadedOnce={hasLoadedOnce}
+            highlightedPostId={highlightedPostId}
+            isDesktopLayout={false}
           />
-        ) : null
-      }
-    >
-      <JobFeed
-        isLoggedIn={isLoggedIn}
-        initialPosts={filteredPosts}
-        userProfile={userProfile}
-        isLoading={isInitialLoading}
-        hasLoadedOnce={hasLoadedOnce}
-        highlightedPostId={highlightedPostId}
-        isDesktopLayout={!isMobile}
-      />
-    </PageContainer>
+        </PageContainer>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden md:block">
+        <JobFeed
+          isLoggedIn={isLoggedIn}
+          initialPosts={filteredPosts}
+          userProfile={userProfile}
+          isLoading={isInitialLoading}
+          hasLoadedOnce={hasLoadedOnce}
+          highlightedPostId={highlightedPostId}
+          isDesktopLayout={true}
+        />
+      </div>
+    </>
   )
 }

@@ -1,26 +1,21 @@
-"use client"
-
 import type React from "react"
-import useMobile from "@/hooks/use-mobile"
 
 interface PageContainerProps {
-  children: React.ReactNode
   header?: React.ReactNode
-  className?: string
+  children: React.ReactNode
 }
 
-export function PageContainer({ children, header, className = "" }: PageContainerProps) {
-  const isMobile = useMobile()
-
-  if (isMobile) {
-    return (
-      <div className={`min-h-screen bg-background ${className}`}>
-        {header}
-        <div className="px-4">{children}</div>
+export function PageContainer({ header, children }: PageContainerProps) {
+  return (
+    <div className="flex flex-col min-h-full">
+      {" "}
+      {/* Use min-h-full */}
+      {header} {/* Header is now conditionally rendered in consuming pages like feed/page.tsx */}
+      <div className="flex-1">
+        {" "}
+        {/* Removed padding, parent (main in RootLayout) handles it */}
+        {children}
       </div>
-    )
-  }
-
-  // Desktop - conteúdo já está dentro do layout correto
-  return <div className={className}>{children}</div>
+    </div>
+  )
 }

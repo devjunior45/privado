@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server"
 import { ReactQueryProvider } from "@/providers/react-query-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import { DesktopHeader } from "@/components/desktop-header"
+import { ProfileSidebar } from "@/components/profile-sidebar"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -31,16 +33,7 @@ export default async function RootLayout({
 
   let userProfile = null
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select(`
-        *,
-        experiences,
-        education,
-        courses
-      `)
-      .eq("id", user.id)
-      .single()
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
     userProfile = profile
   }
 
@@ -50,11 +43,23 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
             <div className="min-h-screen bg-background">
-              <Navigation isLoggedIn={!!user} userProfile={userProfile} />
-              {/* Layout Desktop: Coluna central ao lado do sidebar */}
-              <main className="md:ml-80 md:pt-16 pb-16 md:pb-0 md:h-screen md:overflow-y-auto">
-                <div className="md:p-6">{children}</div>
-              </main>
+              {/* Mobile Navigation - unchanged */}
+              <div className="md:hidden">
+                <Navigation isLoggedIn={!!user} userProfile={userProfile} />
+                <main className="pb-16">{children}</main>
+              </div>
+
+              {/* Desktop Layout */}
+              <div className="hidden md:block">
+                <DesktopHeader isLoggedIn={!!user} userProfile={userProfile} />
+                <div className="pt-14">
+                  <div className="max-w-6xl mx-auto flex">
+                    <ProfileSidebar isLoggedIn={!!user} userProfile={userProfile} />
+                    <main className="flex-1 px-6 py-6 max-w-3xl">{children}</main>
+                  </div>
+                </div>
+              </div>
+
               <PWAInstallPrompt />
             </div>
           </ReactQueryProvider>

@@ -1,0 +1,206 @@
+"use client"
+import { Button } from "@/components/ui/button"
+import type React from "react"
+
+import { Input } from "@/components/ui/input"
+import { Search, Bookmark, Briefcase, Bell, MapPin } from "lucide-react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { CityModal } from "@/components/ui/city-modal"
+import { useCities } from "@/hooks/use-cities"
+import { formatCityDisplay } from "@/utils/city-utils"
+import { useNotifications } from "@/hooks/use-notifications"
+
+interface DesktopHeaderProps {
+  isLoggedIn: boolean
+  userProfile: {
+    city_id?: number | null
+    user_type?: string | null
+    username?: string | null
+  } | null
+}
+
+export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { cities } = useCities()
+  const { unreadCount } = useNotifications()
+
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("feed")
+
+  // Initialize states from URL params
+  useEffect(() => {
+    const currentSearch = searchParams.get("q") || ""
+    const currentCityParam = searchParams.get("city")
+
+    setSearchTerm(currentSearch)
+
+    let initialCityId = null
+    if (currentCityParam) {
+      initialCityId = Number.parseInt(currentCityParam)
+    } else if (userProfile?.city_id && (pathname === "/feed" || pathname === "/")) {
+      initialCityId = userProfile.city_id
+    }
+    setSelectedCityId(initialCityId)
+  }, [searchParams, userProfile, pathname])
+
+  // Set active tab based on pathname
+  useEffect(() => {
+    if (pathname === "/feed" || pathname === "/" || pathname.startsWith("/job/")) {
+      setActiveTab("feed")
+    } else if (pathname.startsWith("/saved")) {
+      setActiveTab("saved")
+    } else if (pathname.startsWith("/applications")) {
+      setActiveTab("applications")
+    } else if (pathname.startsWith("/notifications")) {
+      setActiveTab("notifications")
+    } else if (pathname.startsWith("/dashboard")) {
+      setActiveTab("dashboard")
+    }
+  }, [pathname])
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const newParams = new URLSearchParams(searchParams.toString())
+    if (searchTerm) {
+      newParams.set("q", searchTerm)
+    } else {
+      newParams.delete("q")
+    }
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
+  }
+
+  const handleCityChange = (cityId: number | null) => {
+    setSelectedCityId(cityId)
+    const newParams = new URLSearchParams(searchParams.toString())
+    if (cityId) {
+      newParams.set("city", cityId.toString())
+    } else {
+      newParams.delete("city")
+    }
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
+  }
+
+  const handleTabClick = (tab: string, path: string) => {
+    setActiveTab(tab)
+    router.push(path)
+  }
+
+  const selectedCity = cities.find((city) => city.id === selectedCityId)
+
+  const tabs = [
+    { id: "feed", label: "Vagas", icon: Search, path: "/feed" },
+    { id: "saved", label: "Salvos", icon: Bookmark, path: "/saved" },
+  ]
+
+  if (isLoggedIn) {
+    if (userProfile?.user_type === "candidate") {
+      tabs.push(
+        { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
+        {
+          id: "notifications",
+          label: "Notificações",
+          icon: Bell,
+          path: "/notifications",
+          badge: unreadCount > 0 ? unreadCount : undefined,
+        },
+      )
+    } else if (userProfile?.user_type === "recruiter") {
+      tabs.push(
+        { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/dashboard" },
+        {
+          id: "notifications",
+          label: "Notificações",
+          icon: Bell,
+          path: "/notifications",
+          badge: unreadCount > 0 ? unreadCount : undefined,
+        },
+      )
+    }
+  } else {
+    // Para usuários não logados
+    tabs.push(
+      { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
+      { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
+    )
+  }
+
+  return (
+    <>
+      <header className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
+            {/* Logo */}
+            <div
+              className="text-lg font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors flex-shrink-0"
+              onClick={() => router.push("/")}
+            >
+              Galeria Empregos
+            </div>
+
+            {/* Search and City */}
+            <div className="flex items-center gap-3 flex-1 max-w-xl mx-6">
+              <form onSubmit={handleSearch} className="flex-1 max-w-sm">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    type="search"
+                    placeholder="Cargo, empresa..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 h-9"
+                  />
+                </div>
+              </form>
+
+              <Button
+                variant="outline"
+                onClick={() => setIsCityModalOpen(true)}
+                className="flex items-center gap-2 min-w-[160px] justify-start h-9"
+              >
+                <MapPin className="w-4 h-4" />
+                <span className="truncate text-sm">{selectedCity ? formatCityDisplay(selectedCity) : "Cidade"}</span>
+              </Button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <nav className="flex items-center gap-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeTab === tab.id
+                return (
+                  <Button
+                    key={tab.id}
+                    variant={isActive ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => handleTabClick(tab.id, tab.path)}
+                    className="flex items-center gap-2 relative px-3 py-1.5 h-9"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm">{tab.label}</span>
+                    {tab.badge && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                        {tab.badge > 99 ? "99+" : tab.badge}
+                      </span>
+                    )}
+                  </Button>
+                )
+              })}
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <CityModal
+        isOpen={isCityModalOpen}
+        onClose={() => setIsCityModalOpen(false)}
+        value={selectedCityId}
+        onValueChange={handleCityChange}
+      />
+    </>
+  )
+}
