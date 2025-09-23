@@ -1,265 +1,162 @@
 "use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Building, Plus, ShieldCheck, Briefcase, GraduationCap } from "lucide-react"
-import Link from "next/link"
-import { CityDisplay } from "@/components/ui/city-display"
+import { MapPin, Briefcase, GraduationCap, User, Building2, Calendar } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useCityName } from "@/hooks/use-city-name"
 
 interface ProfileSidebarProps {
-  isLoggedIn: boolean
-  userProfile: any
+  user?: any
+  profile?: any
 }
 
-export function ProfileSidebar({ isLoggedIn, userProfile }: ProfileSidebarProps) {
-  const [activeJobs, setActiveJobs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+export function ProfileSidebar({ user, profile }: ProfileSidebarProps) {
+  const router = useRouter()
   const supabase = createClient()
+  const cityName = useCityName(profile?.city_id)
 
-  useEffect(() => {
-    if (isLoggedIn && userProfile?.user_type === "recruiter") {
-      fetchActiveJobs()
-    } else {
-      setLoading(false)
-    }
-  }, [isLoggedIn, userProfile])
+  const { data: jobPosts } = useQuery({
+    queryKey: ["user-job-posts", user?.id],
+    queryFn: async () => {
+      if (!user?.id || profile?.user_type !== "recruiter") return []
 
-  const fetchActiveJobs = async () => {
-    try {
       const { data } = await supabase
         .from("job_posts")
-        .select("id, title, location")
-        .eq("author_id", userProfile.id)
-        .eq("status", "active")
+        .select("*")
+        .eq("author_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(5)
+        .limit(3)
 
-      setActiveJobs(data || [])
-    } catch (error) {
-      console.error("Erro ao buscar vagas:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data || []
+    },
+    enabled: !!user?.id && profile?.user_type === "recruiter",
+  })
 
-  if (!isLoggedIn) {
+  if (!user || !profile) {
     return (
-      <aside className="w-64 bg-background border-r">
-        <div className="p-4 space-y-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-muted-foreground mb-3 text-sm">Faça login para ver seu perfil</p>
-              <Button asChild className="w-full" size="sm">
-                <Link href="/login">Entrar</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </aside>
-    )
-  }
-
-  if (loading) {
-    return (
-      <aside className="w-64 bg-background border-r">
-        <div className="p-4">
-          <div className="animate-pulse space-y-3">
-            <div className="h-16 bg-muted rounded"></div>
-            <div className="h-24 bg-muted rounded"></div>
-          </div>
-        </div>
-      </aside>
-    )
-  }
-
-  return (
-    <aside className="w-64 bg-background border-r">
-      <div className="p-4 space-y-4">
-        {/* Profile Card */}
+      <div className="w-64 p-4 space-y-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="relative">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={userProfile.avatar_url || "/placeholder.svg"} alt={userProfile.full_name || ""} />
-                  <AvatarFallback className="text-lg">
-                    {(userProfile.full_name || userProfile.company_name || userProfile.username)
-                      .charAt(0)
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {userProfile.is_verified && (
-                  <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                    <ShieldCheck className="w-3 h-3 text-white" />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-center gap-2">
-                  <h2 className="font-semibold text-sm">
-                    {userProfile.user_type === "recruiter"
-                      ? userProfile.company_name || userProfile.full_name || userProfile.username
-                      : userProfile.full_name || userProfile.username}
-                  </h2>
-                  {userProfile.is_verified && (
-                    <Badge className="bg-green-100 text-green-800 text-xs">
-                      <ShieldCheck className="w-2 h-2 mr-1" />
-                      Verificado
-                    </Badge>
-                  )}
-                </div>
-
-                {userProfile.city_id && (
-                  <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs mt-1">
-                    <MapPin className="w-3 h-3" />
-                    <CityDisplay cityId={userProfile.city_id} />
-                  </div>
-                )}
-              </div>
-
-              {userProfile.professional_summary && (
-                <p className="text-xs text-muted-foreground line-clamp-2">{userProfile.professional_summary}</p>
-              )}
-
-              <Button asChild variant="outline" size="sm" className="w-full bg-transparent text-xs h-8">
-                <Link href="/profile">Ver Perfil Completo</Link>
-              </Button>
+          <CardContent className="p-6 text-center">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 mx-auto">
+              <User className="w-8 h-8 text-gray-400" />
             </div>
+            <h3 className="font-semibold mb-2">Faça login</h3>
+            <p className="text-sm text-muted-foreground mb-4">Acesse seu perfil e encontre as melhores oportunidades</p>
+            <Button onClick={() => router.push("/login")} className="w-full" size="sm">
+              Entrar
+            </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
 
-        {/* Candidate Specific Content */}
-        {userProfile.user_type === "candidate" && (
-          <>
-            {/* Skills */}
-            {userProfile.skills && userProfile.skills.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs">Principais Habilidades</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
+  const isRecruiter = profile.user_type === "recruiter"
+
+  return (
+    <div className="w-64 p-4 space-y-4">
+      {/* Profile Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col items-center text-center">
+            <Avatar className="w-16 h-16 mb-3">
+              <AvatarImage src={profile.avatar_url || "/placeholder.svg"} />
+              <AvatarFallback className="text-lg">
+                {profile.full_name?.charAt(0) || profile.email?.charAt(0) || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="font-semibold text-sm">{profile.full_name || "Usuário"}</h3>
+            {profile.username && <p className="text-xs text-muted-foreground">@{profile.username}</p>}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          {isRecruiter ? (
+            <>
+              {profile.company_name && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Building2 className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate">{profile.company_name}</span>
+                </div>
+              )}
+              {cityName && (
+                <div className="flex items-center gap-2 text-xs">
+                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate">{cityName}</span>
+                </div>
+              )}
+              {profile.bio && <p className="text-xs text-muted-foreground line-clamp-3">{profile.bio}</p>}
+            </>
+          ) : (
+            <>
+              {profile.current_position && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Briefcase className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate">{profile.current_position}</span>
+                </div>
+              )}
+              {cityName && (
+                <div className="flex items-center gap-2 text-xs">
+                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate">{cityName}</span>
+                </div>
+              )}
+              {profile.education && profile.education.length > 0 && (
+                <div className="flex items-center gap-2 text-xs">
+                  <GraduationCap className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate">{profile.education[0].institution}</span>
+                </div>
+              )}
+              {profile.skills && profile.skills.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium">Principais habilidades</p>
                   <div className="flex flex-wrap gap-1">
-                    {userProfile.skills.slice(0, 6).map((skill: string, index: number) => (
-                      <Badge key={index} variant="secondary" className="text-xs py-0 px-2">
+                    {profile.skills.slice(0, 3).map((skill: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs px-2 py-0">
                         {skill}
                       </Badge>
                     ))}
-                    {userProfile.skills.length > 6 && (
-                      <Badge variant="outline" className="text-xs py-0 px-2">
-                        +{userProfile.skills.length - 6}
-                      </Badge>
-                    )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Experience Summary */}
-            {userProfile.experiences && userProfile.experiences.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs flex items-center gap-2">
-                    <Briefcase className="w-3 h-3" />
-                    Experiência
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {userProfile.experiences.slice(0, 2).map((exp: any, index: number) => (
-                      <div key={index} className="text-xs">
-                        <p className="font-medium">{exp.position}</p>
-                        {exp.company && <p className="text-muted-foreground">{exp.company}</p>}
-                      </div>
-                    ))}
-                    {userProfile.experiences.length > 2 && (
-                      <p className="text-xs text-muted-foreground">
-                        +{userProfile.experiences.length - 2} experiências
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Education Summary */}
-            {userProfile.education && userProfile.education.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs flex items-center gap-2">
-                    <GraduationCap className="w-3 h-3" />
-                    Formação
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {userProfile.education.slice(0, 2).map((edu: any, index: number) => (
-                      <div key={index} className="text-xs">
-                        <p className="font-medium">{edu.courseName || edu.level}</p>
-                        <p className="text-muted-foreground">{edu.institution}</p>
-                      </div>
-                    ))}
-                    {userProfile.education.length > 2 && (
-                      <p className="text-xs text-muted-foreground">+{userProfile.education.length - 2} formações</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* First Job Badge */}
-            {userProfile.is_first_job && (
-              <Card>
-                <CardContent className="p-3">
-                  <Badge className="bg-blue-100 text-blue-800 w-full justify-center text-xs">Primeiro Emprego</Badge>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Recruiter Specific Content */}
-        {userProfile.user_type === "recruiter" && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs flex items-center gap-2">
-                <Building className="w-3 h-3" />
-                Vagas Ativas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {activeJobs.length > 0 ? (
-                <div className="space-y-2">
-                  {activeJobs.map((job) => (
-                    <Link href={`/feed?post=${job.id}`} key={job.id}>
-                      <div className="p-2 border rounded hover:bg-muted/50 transition-colors">
-                        <p className="font-medium text-xs">{job.title}</p>
-                        <p className="text-xs text-muted-foreground">{job.location}</p>
-                      </div>
-                    </Link>
-                  ))}
-                  <Button asChild variant="outline" size="sm" className="w-full mt-2 bg-transparent text-xs h-7">
-                    <Link href="/dashboard">Ver Todas</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-2">
-                  <p className="text-xs text-muted-foreground mb-2">Nenhuma vaga ativa</p>
-                  <Button asChild size="sm" className="w-full text-xs h-7">
-                    <Link href="/create-job">
-                      <Plus className="w-3 h-3 mr-1" />
-                      Publicar Vaga
-                    </Link>
-                  </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </aside>
+            </>
+          )}
+          <Button variant="outline" size="sm" onClick={() => router.push("/profile")} className="w-full text-xs">
+            Ver perfil completo
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Recruiter Jobs */}
+      {isRecruiter && jobPosts && jobPosts.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <h4 className="font-semibold text-sm">Vagas ativas</h4>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-3">
+            {jobPosts.map((job: any) => (
+              <div
+                key={job.id}
+                className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => router.push(`/post/${job.id}`)}
+              >
+                <h5 className="font-medium text-xs mb-1 line-clamp-1">{job.title}</h5>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  <span>{new Date(job.created_at).toLocaleDateString("pt-BR")}</span>
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")} className="w-full text-xs">
+              Ver todas as vagas
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
