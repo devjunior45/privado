@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import type React from "react"
 
 import { Input } from "@/components/ui/input"
-import { Search, Bookmark, Briefcase, Bell, MapPin } from "lucide-react"
+import { Search, Bookmark, Briefcase, Bell, MapPin, User } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { CityModal } from "@/components/ui/city-modal"
@@ -31,6 +31,10 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [isCityModalOpen, setIsCityModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("feed")
+
+  // Verificar se está visualizando perfil de outra pessoa
+  const isOwnProfile =
+    pathname === "/profile" || (userProfile?.username && pathname === `/profile/${userProfile.username}`)
 
   // Initialize states from URL params
   useEffect(() => {
@@ -60,8 +64,10 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
       setActiveTab("notifications")
     } else if (pathname.startsWith("/dashboard")) {
       setActiveTab("dashboard")
+    } else if (isOwnProfile) {
+      setActiveTab("profile")
     }
-  }, [pathname])
+  }, [pathname, isOwnProfile])
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -121,11 +127,13 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
         },
       )
     }
+    tabs.push({ id: "profile", label: "Perfil", icon: User, path: "/profile" })
   } else {
     // Para usuários não logados
     tabs.push(
       { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
       { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
+      { id: "profile", label: "Perfil", icon: User, path: "/profile" },
     )
   }
 
