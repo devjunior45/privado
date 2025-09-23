@@ -1,59 +1,134 @@
 "use client"
 
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import type React from "react"
+
+import { Search, Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { SettingsSheet } from "@/components/ui/settings-sheet"
-import { SettingsDropdown } from "@/components/ui/settings-dropdown"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useQuery } from "@tanstack/react-query"
+import { CitySelect } from "@/components/ui/city-select"
 
 interface HeaderProps {
-  title?: string
-  showSettings?: boolean
-  isLoggedIn?: boolean
-  showBackButton?: boolean
+  user?: any
+  className?: string
 }
 
-export function Header({ title, showSettings = false, isLoggedIn = false, showBackButton = false }: HeaderProps) {
+export function Header({ user, className }: HeaderProps) {
   const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("")
+  const supabase = createClient()
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["unread-notifications", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0
+
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("read", false)
+
+      return count || 0
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  })
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/feed?search=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Mobile Header */}
-      <div className="container relative flex h-14 items-center justify-between md:hidden">
-        {/* Left side - Back button or placeholder */}
-        <div className="w-10">
-          {showBackButton && (
-            <Button variant="ghost" size="sm" className="p-2" onClick={() => router.back()}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          )}
+    <header className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}>
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/feed")}
+            className="font-bold text-lg text-blue-600 hover:text-blue-700 p-0"
+          >
+            GaleriaEmpregos
+          </Button>
         </div>
 
-        {/* Centered Title */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <h1 className="text-lg font-semibold whitespace-nowrap">{title}</h1>
+        {/* Search Bar */}
+        <div className="flex-1 max-w-md">
+          <form onSubmit={handleSearch} className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Buscar vagas..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-9 text-sm"
+            />
+          </form>
         </div>
 
-        {/* Right side buttons */}
-        <div className="flex items-center justify-end">{isLoggedIn && showSettings && <SettingsSheet />}</div>
-      </div>
+        {/* City Select */}
+        <div className="hidden md:block">
+          <CitySelect />
+        </div>
 
-      {/* Desktop Header */}
-      <div className="container hidden h-14 items-center md:flex">
-        <div className="flex flex-1 items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {showBackButton && (
-              <Button variant="ghost" size="sm" className="p-2" onClick={() => router.back()}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
+        {/* Navigation Buttons */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/feed")} className="text-sm font-medium">
+            Vagas
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/saved")} className="text-sm font-medium">
+            Salvos
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/applications")}
+            className="text-sm font-medium"
+          >
+            Candidaturas
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/notifications")}
+            className="relative text-sm font-medium"
+          >
+            <Bell className="h-4 w-4" />
+            {unreadCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Badge>
             )}
-            <Link href="/feed" className="flex items-center space-x-2">
-              <img src="/logo.empresa.svg" alt="Logo" className="h-6 w-auto" />
-            </Link>
-          </div>
-          <nav className="flex items-center space-x-4">{isLoggedIn && showSettings && <SettingsDropdown />}</nav>
+          </Button>
         </div>
+
+        {/* User Avatar */}
+        {user ? (
+          <Avatar className="h-8 w-8 cursor-pointer" onClick={() => router.push("/profile")}>
+            <AvatarImage src={user.avatar_url || "/placeholder.svg"} />
+            <AvatarFallback className="text-xs">
+              {user.full_name?.charAt(0) || user.email?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => router.push("/login")} className="text-sm">
+            <User className="h-4 w-4 mr-1" />
+            Entrar
+          </Button>
+        )}
       </div>
     </header>
   )
