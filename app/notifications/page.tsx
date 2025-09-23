@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { Header } from "@/components/header"
+import { DesktopHeader } from "@/components/desktop-header"
 import { NotificationsList } from "@/components/notifications/notifications-list"
 import { Button } from "@/components/ui/button"
 import { Bell, Zap, Target, Briefcase } from "lucide-react"
@@ -12,11 +12,32 @@ export default async function NotificationsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
+  let userProfile = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("city_id, user_type, username")
+      .eq("id", user.id)
+      .single()
+    userProfile = profile
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
-        <Header title="Notificações" showSettings={false} isLoggedIn={false} />
-        <div className="mx-4 md:mx-0">
+        {/* Desktop Header */}
+        <div className="hidden md:block">
+          <DesktopHeader isLoggedIn={false} userProfile={null} />
+        </div>
+
+        {/* Mobile Header */}
+        <div className="md:hidden">
+          <div className="flex items-center justify-center h-14 px-4">
+            <h1 className="text-lg font-semibold">Notificações</h1>
+          </div>
+        </div>
+
+        <div className="pt-14 md:pt-14">
           <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-center px-4">
             <div className="mb-8">
               <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
@@ -56,9 +77,22 @@ export default async function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header title="Notificações" showSettings={false} isLoggedIn={true} />
-      <div className="mx-4 md:mx-0">
-        <NotificationsList />
+      {/* Desktop Header */}
+      <div className="hidden md:block">
+        <DesktopHeader isLoggedIn={true} userProfile={userProfile} />
+      </div>
+
+      {/* Mobile Header */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-center h-14 px-4">
+          <h1 className="text-lg font-semibold">Notificações</h1>
+        </div>
+      </div>
+
+      <div className="pt-14 md:pt-14">
+        <div className="max-w-6xl mx-auto px-4">
+          <NotificationsList />
+        </div>
       </div>
     </div>
   )

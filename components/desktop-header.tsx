@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import type React from "react"
 
 import { Input } from "@/components/ui/input"
-import { Search, Bookmark, Briefcase, Bell, MapPin, User } from "lucide-react"
+import { Search, Bookmark, Briefcase, MapPin, User } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { CityModal } from "@/components/ui/city-modal"
@@ -110,7 +110,6 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
         {
           id: "notifications",
           label: "Notificações",
-          icon: Bell,
           path: "/notifications",
           badge: unreadCount > 0 ? unreadCount : undefined,
         },
@@ -121,7 +120,6 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
         {
           id: "notifications",
           label: "Notificações",
-          icon: Bell,
           path: "/notifications",
           badge: unreadCount > 0 ? unreadCount : undefined,
         },
@@ -132,7 +130,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
     // Para usuários não logados
     tabs.push(
       { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
-      { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
+      { id: "notifications", label: "Notificações", path: "/notifications" },
       { id: "profile", label: "Perfil", icon: User, path: "/profile" },
     )
   }
@@ -188,7 +186,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
                     onClick={() => handleTabClick(tab.id, tab.path)}
                     className="flex items-center gap-2 relative px-3 py-1.5 h-9"
                   >
-                    <Icon className="w-4 h-4" />
+                    {Icon && <Icon className="w-4 h-4" />}
                     <span className="text-sm">{tab.label}</span>
                     {tab.badge && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
