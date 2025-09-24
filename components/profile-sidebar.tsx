@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Building, Plus, ShieldCheck, Briefcase, GraduationCap } from "lucide-react"
+import { MapPin, Building, Plus, ShieldCheck, Briefcase, GraduationCap, Settings } from "lucide-react"
 import Link from "next/link"
 import { CityDisplay } from "@/components/ui/city-display"
 import { createClient } from "@/lib/supabase/client"
@@ -47,7 +47,7 @@ export function ProfileSidebar({ isLoggedIn, userProfile }: ProfileSidebarProps)
 
   if (!isLoggedIn) {
     return (
-      <aside className="w-64 bg-background border-r">
+      <aside className="w-64 bg-background border-r h-full overflow-hidden">
         <div className="p-4 space-y-4">
           <Card>
             <CardContent className="p-4 text-center">
@@ -64,7 +64,7 @@ export function ProfileSidebar({ isLoggedIn, userProfile }: ProfileSidebarProps)
 
   if (loading) {
     return (
-      <aside className="w-64 bg-background border-r">
+      <aside className="w-64 bg-background border-r h-full overflow-hidden">
         <div className="p-4">
           <div className="animate-pulse space-y-3">
             <div className="h-16 bg-muted rounded"></div>
@@ -76,8 +76,8 @@ export function ProfileSidebar({ isLoggedIn, userProfile }: ProfileSidebarProps)
   }
 
   return (
-    <aside className="w-64 bg-background border-r">
-      <div className="p-4 space-y-4">
+    <aside className="w-64 bg-background border-r h-full overflow-hidden">
+      <div className="p-4 space-y-4 h-full overflow-y-auto">
         {/* Profile Card */}
         <Card>
           <CardContent className="p-4">
@@ -125,9 +125,18 @@ export function ProfileSidebar({ isLoggedIn, userProfile }: ProfileSidebarProps)
                 <p className="text-xs text-muted-foreground line-clamp-2">{userProfile.professional_summary}</p>
               )}
 
-              <Button asChild variant="outline" size="sm" className="w-full bg-transparent text-xs h-8">
-                <Link href="/profile">Ver Perfil Completo</Link>
-              </Button>
+              <div className="w-full space-y-2">
+                <Button asChild variant="outline" size="sm" className="w-full bg-transparent text-xs h-8">
+                  <Link href="/profile">Ver Perfil Completo</Link>
+                </Button>
+
+                <Button asChild variant="ghost" size="sm" className="w-full text-xs h-8">
+                  <Link href="/settings">
+                    <Settings className="w-3 h-3 mr-2" />
+                    Configurações da Conta
+                  </Link>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

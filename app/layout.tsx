@@ -50,12 +50,12 @@ export default async function RootLayout({
               </div>
 
               {/* Desktop Layout */}
-              <div className="hidden md:block">
+              <div className="hidden md:block h-screen overflow-hidden">
                 <DesktopHeader isLoggedIn={!!user} userProfile={userProfile} />
-                <div className="pt-14">
-                  <div className="max-w-6xl mx-auto flex">
+                <div className="h-full pt-14">
+                  <div className="max-w-6xl mx-auto flex h-full">
                     <ProfileSidebar isLoggedIn={!!user} userProfile={userProfile} />
-                    <main className="flex-1 px-6 py-6 max-w-3xl">{children}</main>
+                    <main className="flex-1 px-6 py-6 max-w-3xl overflow-y-auto">{children}</main>
                   </div>
                 </div>
               </div>
