@@ -103,7 +103,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
   return (
     <div className="min-h-screen dark:bg-black bg-white">
       {/* Header fixo */}
-      <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm">
+      <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm md:static">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           {isOwnProfile ? (
             <h1 className="font-semibold text-lg flex-1 text-center">Perfil</h1>

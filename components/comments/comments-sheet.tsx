@@ -11,8 +11,10 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Send, Heart, MessageCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import useMobile from "@/hooks/use-mobile"
 
 interface CommentsSheetProps {
   isOpen: boolean
@@ -35,6 +37,8 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
   const [selectedComment, setSelectedComment] = useState<string | null>(null)
   const [editingComment, setEditingComment] = useState<string | null>(null)
   const [editContent, setEditContent] = useState("")
+
+  const isMobile = useMobile()
 
   // Drag to close functionality
   const [isDragging, setIsDragging] = useState(false)
@@ -465,73 +469,87 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
     )
   }
 
-  return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent
-        side="bottom"
-        className="h-[80vh] bg-white dark:bg-black px-0 transition-transform duration-200 ease-out"
-        ref={sheetRef}
-        style={{
-          transform: `translateY(${translateY}px)`,
-          opacity: isDragging ? Math.max(0.5, 1 - translateY / 300) : 1,
-        }}
-      >
-        <div className="flex flex-col h-full">
-          {/* Drag Handle */}
-          <div
-            className="flex justify-center py-2 cursor-grab active:cursor-grabbing"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
-          </div>
-
-          {/* Header */}
-          <SheetHeader className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-            <SheetTitle className="text-lg font-semibold text-gray-900 dark:text-white text-center">
-              Comentários
-            </SheetTitle>
-          </SheetHeader>
-
-          {/* Comments List */}
-          <div className="flex-1 overflow-y-auto px-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">Carregando comentários...</p>
-              </div>
-            ) : comments.length === 0 ? (
-              <div className="flex items-center justify-center h-32">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum comentário ainda</p>
-              </div>
-            ) : (
-              <div className="py-4 space-y-4">{comments.map((comment) => renderCommentWithReplies(comment))}</div>
-            )}
-          </div>
-
-          {/* Comment Input */}
-          <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
-            {user ? (
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Adicione um comentário..."
-                  className="flex-1 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900"
-                  disabled={isSubmitting}
-                />
-                <Button type="submit" size="sm" disabled={!newComment.trim() || isSubmitting} className="px-3">
-                  <Send className="w-4 h-4" />
-                </Button>
-              </form>
-            ) : (
-              <div className="flex items-center justify-center py-4">
-                <p className="text-gray-500 dark:text-gray-400 text-sm text-center">Faça login para comentar</p>
-              </div>
-            )}
-          </div>
+  const commentsContent = (
+    <div className="flex flex-col h-full">
+      {/* Drag Handle - apenas mobile */}
+      {isMobile && (
+        <div
+          className="flex justify-center py-2 cursor-grab active:cursor-grabbing"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
-      </SheetContent>
-    </Sheet>
+      )}
+
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Comentários</h2>
+      </div>
+
+      {/* Comments List */}
+      <div className="flex-1 overflow-y-auto px-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-32">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Carregando comentários...</p>
+          </div>
+        ) : comments.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum comentário ainda</p>
+          </div>
+        ) : (
+          <div className="py-4 space-y-4">{comments.map((comment) => renderCommentWithReplies(comment))}</div>
+        )}
+      </div>
+
+      {/* Comment Input */}
+      <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
+        {user ? (
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Adicione um comentário..."
+              className="flex-1 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900"
+              disabled={isSubmitting}
+            />
+            <Button type="submit" size="sm" disabled={!newComment.trim() || isSubmitting} className="px-3">
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
+        ) : (
+          <div className="flex items-center justify-center py-4">
+            <p className="text-gray-500 dark:text-gray-400 text-sm text-center">Faça login para comentar</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // Mobile: Sheet (bottom drawer)
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent
+          side="bottom"
+          className="h-[80vh] bg-white dark:bg-black px-0 transition-transform duration-200 ease-out"
+          ref={sheetRef}
+          style={{
+            transform: `translateY(${translateY}px)`,
+            opacity: isDragging ? Math.max(0.5, 1 - translateY / 300) : 1,
+          }}
+        >
+          {commentsContent}
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  // Desktop: Dialog (centered modal)
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl h-[80vh] p-0 bg-white dark:bg-black">{commentsContent}</DialogContent>
+    </Dialog>
   )
 }

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import type React from "react"
 
 import { Input } from "@/components/ui/input"
-import { Search, Bookmark, Briefcase, MapPin, User } from "lucide-react"
+import { Search, Bookmark, Briefcase, MapPin, User, X } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { CityModal } from "@/components/ui/city-modal"
@@ -27,7 +27,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
   const { cities } = useCities()
   const { unreadCount } = useNotifications()
 
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchValue, setSearchValue] = useState("")
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [isCityModalOpen, setIsCityModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("feed")
@@ -41,7 +41,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
     const currentSearch = searchParams.get("q") || ""
     const currentCityParam = searchParams.get("city")
 
-    setSearchTerm(currentSearch)
+    setSearchValue(currentSearch)
 
     let initialCityId = null
     if (currentCityParam) {
@@ -69,14 +69,24 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
     }
   }, [pathname, isOwnProfile])
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchValue(value)
+
+    // Atualizar URL em tempo real
     const newParams = new URLSearchParams(searchParams.toString())
-    if (searchTerm) {
-      newParams.set("q", searchTerm)
+    if (value.trim()) {
+      newParams.set("q", value)
     } else {
       newParams.delete("q")
     }
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
+  }
+
+  const handleClearSearch = () => {
+    setSearchValue("")
+    const newParams = new URLSearchParams(searchParams.toString())
+    newParams.delete("q")
     router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
   }
 
@@ -150,18 +160,26 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
 
             {/* Search and City */}
             <div className="flex items-center gap-3 flex-1 max-w-xl mx-6">
-              <form onSubmit={handleSearch} className="flex-1 max-w-sm">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    type="search"
-                    placeholder="Cargo, empresa..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 h-9"
-                  />
-                </div>
-              </form>
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Buscar vagas..."
+                  value={searchValue}
+                  onChange={handleSearchChange}
+                  className="pl-10 pr-10 h-9"
+                />
+                {searchValue && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearSearch}
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-transparent"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
 
               <Button
                 variant="outline"
