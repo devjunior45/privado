@@ -181,6 +181,7 @@ export function PageHeader({
   return (
     <div
       className={`
+        md:hidden
         bg-white dark:bg-background transition-all duration-300 ease-out
         ${enableStickyBehavior ? "md:sticky md:top-0" : ""}
         ${enableStickyBehavior && isSticky ? "fixed top-0 left-0 right-0 w-full z-50 border-b border-gray-200" : "relative"}

@@ -152,10 +152,10 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
             <div
-              className="text-lg font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors flex-shrink-0"
+              className="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
               onClick={() => router.push("/")}
             >
-              Galeria Empregos
+              <img src="/logo.png" alt="Galeria Empregos" className="h-8 w-auto" />
             </div>
 
             {/* Search and City */}
