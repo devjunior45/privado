@@ -294,7 +294,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-background border-b">
+      <div className="md:static sticky top-0 z-50 bg-background border-b">
         <div className="flex items-center justify-between p-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
             <ArrowLeft className="w-5 h-5" />

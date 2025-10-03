@@ -40,7 +40,7 @@ export function PostPageClientHeader() {
   }
 
   return (
-    <div className="bg-white dark:bg-black border-b sticky top-0 z-50 px-4 py-3">
+    <div className="bg-white dark:bg-black border-b md:static sticky top-0 z-50 px-4 py-3">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={handleBack} className="p-2">
           <ArrowLeft className="w-5 h-5" />

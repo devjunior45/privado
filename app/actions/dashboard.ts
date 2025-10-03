@@ -366,33 +366,12 @@ export async function trackJobView(jobId: string, userId?: string) {
   const supabase = await createClient()
 
   try {
-    // Se há usuário, verificar se já visualizou hoje
-    if (userId) {
-      const today = new Date().toISOString().split("T")[0]
-      const { data: existingView } = await supabase
-        .from("job_views")
-        .select("id")
-        .eq("job_id", jobId)
-        .eq("user_id", userId)
-        .gte("created_at", today)
-        .single()
-
-      if (existingView) {
-        return // Já visualizou hoje
-      }
-
-      // Registrar nova visualização
-      await supabase.from("job_views").insert({
-        job_id: jobId,
-        user_id: userId,
-      })
-    }
-
-    // Incrementar contador
+    // Apenas incrementar contador de views
+    // Não tentar registrar visualização individual para evitar problemas com a tabela
     await supabase.rpc("increment_job_views", { job_id: jobId })
   } catch (error) {
+    // Falha silenciosa - não afetar experiência do usuário
     console.error("Erro ao rastrear visualização:", error)
-    // Não falhar silenciosamente para não afetar a experiência do usuário
   }
 }
 

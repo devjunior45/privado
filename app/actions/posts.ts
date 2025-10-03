@@ -193,13 +193,23 @@ export async function incrementJobViews(jobId: string) {
       return // Já visualizou hoje
     }
 
-    // Registrar nova visualização
-    await supabase.from("job_views").insert({
+    // Registrar nova visualização (se a tabela existir)
+    const { error: insertError } = await supabase.from("job_views").insert({
       job_id: jobId,
       user_id: user.id,
     })
+
+    if (insertError) {
+      console.error("Erro ao registrar visualização:", insertError)
+    }
   }
 
-  // Incrementar contador
-  await supabase.rpc("increment_job_views", { job_id: jobId })
+  // Tentar incrementar contador usando a função SQL
+  const { error } = await supabase.rpc("increment_job_views", { job_id: jobId })
+
+  // Se a função não existir ainda, apenas logue o erro sem quebrar a aplicação
+  if (error) {
+    console.error("Função increment_job_views não encontrada. Execute o script SQL primeiro:", error.message)
+    // Não lançar erro para não quebrar a aplicação
+  }
 }
