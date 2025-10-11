@@ -190,27 +190,8 @@ export async function getJobViews(jobId: string) {
       throw new Error("Vaga não encontrada ou você não tem permissão")
     }
 
-    // Buscar visualizações detalhadas
-    const { data: views, error } = await supabase
-      .from("job_views")
-      .select(`
-      *,
-      profiles (
-        id,
-        username,
-        full_name,
-        avatar_url
-      )
-    `)
-      .eq("job_id", jobId)
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("Erro ao buscar visualizações:", error)
-      return []
-    }
-
-    return views || []
+    // Retornar array vazio por enquanto até que a tabela job_views seja criada
+    return []
   } catch (error) {
     console.error("Erro ao buscar visualizações:", error)
     return []
@@ -366,9 +347,15 @@ export async function trackJobView(jobId: string, userId?: string) {
   const supabase = await createClient()
 
   try {
-    // Apenas incrementar contador de views
-    // Não tentar registrar visualização individual para evitar problemas com a tabela
-    await supabase.rpc("increment_job_views", { job_id: jobId })
+    // Incrementar diretamente no banco de dados sem usar RPC
+    const { data: currentJob } = await supabase.from("job_posts").select("views_count").eq("id", jobId).single()
+
+    if (currentJob) {
+      await supabase
+        .from("job_posts")
+        .update({ views_count: (currentJob.views_count || 0) + 1 })
+        .eq("id", jobId)
+    }
   } catch (error) {
     // Falha silenciosa - não afetar experiência do usuário
     console.error("Erro ao rastrear visualização:", error)

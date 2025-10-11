@@ -133,24 +133,6 @@ export function CreateJobForm() {
     setImagePreview(null)
   }
 
-  // Função de formatação de texto simplificada
-  const insertText = (before: string, after = "") => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = description.substring(start, end)
-    const newText = description.substring(0, start) + before + selectedText + after + description.substring(end)
-    setDescription(newText)
-
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length)
-      ensureCursorVisible()
-    }, 0)
-  }
-
   const validateForm = () => {
     const newErrors: typeof errors = {}
     if (!title.trim()) newErrors.title = "O título da vaga é obrigatório."
@@ -227,7 +209,7 @@ export function CreateJobForm() {
         {/* Upload de Imagem */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
               <ImageIcon className="w-5 h-5" />
               Imagem da Vaga (Opcional)
             </CardTitle>
@@ -235,17 +217,17 @@ export function CreateJobForm() {
           <CardContent>
             <div className="space-y-4">
               {!imagePreview ? (
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                  <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                  <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                   <div className="space-y-2">
                     <Label htmlFor="image" className="cursor-pointer">
-                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm">
                         <Upload className="w-4 h-4" />
                         Escolher Imagem
                       </div>
                     </Label>
                     <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    <p className="text-sm text-muted-foreground">PNG, JPG até 5MB - Torna sua vaga mais atrativa</p>
+                    <p className="text-xs text-muted-foreground">PNG, JPG até 5MB - Torna sua vaga mais atrativa</p>
                   </div>
                 </div>
               ) : (
@@ -253,7 +235,7 @@ export function CreateJobForm() {
                   <img
                     src={imagePreview || "/placeholder.svg"}
                     alt="Preview da vaga"
-                    className="w-full h-48 object-cover rounded-lg"
+                    className="w-full h-40 object-cover rounded-lg"
                   />
                   <Button
                     type="button"
@@ -273,63 +255,81 @@ export function CreateJobForm() {
         {/* Informações Básicas */}
         <Card>
           <CardHeader>
-            <CardTitle>Informações da Vaga</CardTitle>
+            <CardTitle className="text-base">Informações da Vaga</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="title">Título da Vaga *</Label>
-              <Input
-                id="title"
-                name="title"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value)
-                  if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
-                }}
-                placeholder="Ex: Desenvolvedor Frontend"
-                className="text-lg font-medium"
-              />
-              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
+            {/* Título e Empresa lado a lado */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title" className="text-sm">
+                  Título da Vaga *
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value)
+                    if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
+                  }}
+                  placeholder="Ex: Desenvolvedor Frontend"
+                  className="text-base h-9"
+                />
+                {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="company" className="text-sm">
+                  Nome da Empresa
+                </Label>
+                <Input
+                  id="company"
+                  name="company"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Nome da empresa"
+                  className="text-base h-9"
+                />
+              </div>
+            </div>
+
+            {/* Salário e Localização lado a lado */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="salary" className="text-sm">
+                  Salário (Opcional)
+                </Label>
+                <Input
+                  id="salary"
+                  name="salary"
+                  value={salary}
+                  onChange={(e) => setSalary(e.target.value)}
+                  placeholder="Ex: R$ 5.000 - R$ 8.000"
+                  className="text-base h-9"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cityId" className="text-sm">
+                  Localização *
+                </Label>
+                <CitySelect
+                  value={selectedCityId}
+                  onValueChange={(value) => {
+                    setSelectedCityId(value)
+                    if (errors.cityId) setErrors((prev) => ({ ...prev, cityId: undefined }))
+                  }}
+                  placeholder="Selecione a cidade da vaga"
+                  name="cityId"
+                />
+                {errors.cityId && <p className="text-xs text-red-500 mt-1">{errors.cityId}</p>}
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="company">Nome da Empresa</Label>
-              <Input
-                id="company"
-                name="company"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Nome da empresa"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="salary">Salário (Opcional)</Label>
-              <Input
-                id="salary"
-                name="salary"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value)}
-                placeholder="Ex: R$ 5.000 - R$ 8.000"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cityId">Localização *</Label>
-              <CitySelect
-                value={selectedCityId}
-                onValueChange={(value) => {
-                  setSelectedCityId(value)
-                  if (errors.cityId) setErrors((prev) => ({ ...prev, cityId: undefined }))
-                }}
-                placeholder="Selecione a cidade da vaga"
-                name="cityId"
-              />
-              {errors.cityId && <p className="text-sm text-red-500 mt-1">{errors.cityId}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="sectors">Setor(es) *</Label>
+              <Label htmlFor="sectors" className="text-sm">
+                Setor(es) *
+              </Label>
               <MultiSelect
                 options={sectorOptions}
                 selected={selectedSectors}
@@ -339,7 +339,7 @@ export function CreateJobForm() {
                 }}
                 placeholder={isLoadingSectors ? "Carregando..." : "Selecione um ou mais setores"}
               />
-              {errors.sectors && <p className="text-sm text-red-500 mt-1">{errors.sectors}</p>}
+              {errors.sectors && <p className="text-xs text-red-500 mt-1">{errors.sectors}</p>}
             </div>
           </CardContent>
         </Card>
@@ -347,7 +347,7 @@ export function CreateJobForm() {
         {/* Descrição com Editor Expansível */}
         <Card>
           <CardHeader>
-            <CardTitle>Descrição da Vaga</CardTitle>
+            <CardTitle className="text-base">Descrição da Vaga</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="relative">
@@ -404,7 +404,7 @@ export function CreateJobForm() {
         {/* Configurações de Candidatura */}
         <Card>
           <CardHeader>
-            <CardTitle>Configurações de Candidatura</CardTitle>
+            <CardTitle className="text-base">Configurações de Candidatura</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-start space-x-3">
@@ -448,19 +448,19 @@ export function CreateJobForm() {
         {!selectedImage && (
           <Card>
             <CardHeader>
-              <CardTitle>Cor do Post</CardTitle>
+              <CardTitle className="text-base">Cor de Fundo</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Escolha uma cor escura para destacar sua vaga no feed</p>
-                <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Escolha uma cor para o fundo da vaga</p>
+                <div className="flex gap-2 flex-wrap">
                   {DARK_COLORS.map((color) => (
                     <button
                       key={color.value}
                       type="button"
                       onClick={() => setSelectedColor(color.value)}
                       className={`
-                        relative w-12 h-12 rounded-full border-2 transition-all mx-auto
+                        relative w-8 h-8 rounded-full border-2 transition-all
                         ${
                           selectedColor === color.value
                             ? "border-primary ring-2 ring-primary/20 scale-110"
@@ -471,7 +471,7 @@ export function CreateJobForm() {
                     >
                       {selectedColor === color.value && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 bg-white rounded-full" />
+                          <div className="w-2 h-2 bg-white rounded-full" />
                         </div>
                       )}
                       <span className="sr-only">{color.name}</span>
