@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import type React from "react"
 
 import { Input } from "@/components/ui/input"
-import { Search, Bookmark, Briefcase, MapPin, User, X } from "lucide-react"
+import { Search, Bookmark, Briefcase, MapPin, User, X, Bell } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { CityModal } from "@/components/ui/city-modal"
@@ -120,6 +120,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
         {
           id: "notifications",
           label: "Notificações",
+          icon: Bell,
           path: "/notifications",
           badge: unreadCount > 0 ? unreadCount : undefined,
         },
@@ -130,6 +131,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
         {
           id: "notifications",
           label: "Notificações",
+          icon: Bell,
           path: "/notifications",
           badge: unreadCount > 0 ? unreadCount : undefined,
         },
@@ -140,7 +142,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
     // Para usuários não logados
     tabs.push(
       { id: "applications", label: "Candidaturas", icon: Briefcase, path: "/applications" },
-      { id: "notifications", label: "Notificações", path: "/notifications" },
+      { id: "notifications", label: "Notificações", icon: Bell, path: "/notifications" },
       { id: "profile", label: "Perfil", icon: User, path: "/profile" },
     )
   }

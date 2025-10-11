@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Building, MapPin, Pause, X, Briefcase, Clock, CheckCircle } from "lucide-react"
+import { Calendar, MapPin, Pause, X, Briefcase, Clock, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { PageContainer } from "@/components/page-container"
 import { PageHeader } from "@/components/page-header"
@@ -73,6 +73,8 @@ export default async function ApplicationsPage() {
         title,
         company,
         location,
+        salary,
+        description,
         image_url,
         background_color,
         city_id,
@@ -87,14 +89,14 @@ export default async function ApplicationsPage() {
     switch (status) {
       case "paused":
         return (
-          <Badge variant="secondary" className="text-yellow-700 bg-yellow-100">
+          <Badge variant="secondary" className="text-yellow-700 bg-yellow-100 text-xs">
             <Pause className="w-3 h-3 mr-1" />
             Pausada
           </Badge>
         )
       case "closed":
         return (
-          <Badge variant="secondary" className="text-red-700 bg-red-100">
+          <Badge variant="secondary" className="text-red-700 bg-red-100 text-xs">
             <X className="w-3 h-3 mr-1" />
             Encerrada
           </Badge>
@@ -115,52 +117,77 @@ export default async function ApplicationsPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4 mx-4">
-          {applications.map((application) => (
-            <Card key={application.id} className={`${application.job_posts.status !== "active" ? "opacity-75" : ""}`}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <CardTitle className="text-lg">{application.job_posts.title}</CardTitle>
-                  {getStatusBadge(application.job_posts.status)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Building className="w-4 h-4" />
-                    <span>{application.job_posts.company}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <CityDisplay cityId={application.job_posts.city_id} fallback={application.job_posts.location} />
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>Candidatura em {new Date(application.created_at).toLocaleDateString("pt-BR")}</span>
-                  </div>
-
-                  {application.message && (
-                    <div className="mt-3 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-medium mb-1">Sua mensagem:</p>
-                      <p className="text-sm">{application.message}</p>
+        <div className="mx-4 md:mx-0">
+          {/* Grade de 3 colunas no desktop, lista no mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {applications.map((application) => (
+              <Card
+                key={application.id}
+                className={`hover:shadow-md transition-shadow aspect-square md:aspect-square flex flex-col ${
+                  application.job_posts.status !== "active" ? "opacity-75" : ""
+                }`}
+              >
+                <CardHeader className="pb-2 flex-shrink-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CardTitle className="text-sm md:text-base truncate">{application.job_posts.title}</CardTitle>
+                        {getStatusBadge(application.job_posts.status)}
+                      </div>
+                      <p className="text-blue-600 font-medium text-sm truncate">{application.job_posts.company}</p>
                     </div>
-                  )}
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col justify-between">
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">
+                        <CityDisplay cityId={application.job_posts.city_id} fallback={application.job_posts.location} />
+                      </span>
+                    </div>
 
-                  <div className="flex justify-between mt-4">
+                    {application.job_posts.salary && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium">Salário:</span>
+                        <span className="truncate">{application.job_posts.salary}</span>
+                      </div>
+                    )}
+
+                    {application.job_posts.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{application.job_posts.description}</p>
+                    )}
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">
+                        Candidatou-se em {new Date(application.created_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+
+                    {application.message && (
+                      <div className="mt-2 p-2 bg-muted rounded-md">
+                        <p className="text-xs font-medium mb-1">Sua mensagem:</p>
+                        <p className="text-xs line-clamp-2">{application.message}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-2 mt-auto">
                     {application.job_posts.status === "active" ? (
-                      <Button variant="outline" size="sm" asChild>
+                      <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent text-xs">
                         <Link href={`/post/${application.job_posts.id}`}>Ver Vaga</Link>
                       </Button>
                     ) : (
-                      <Button variant="outline" size="sm" disabled>
+                      <Button variant="outline" size="sm" disabled className="flex-1 bg-transparent text-xs">
                         {application.job_posts.status === "paused" ? "Vaga Pausada" : "Vaga Encerrada"}
                       </Button>
                     )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
     </PageContainer>
