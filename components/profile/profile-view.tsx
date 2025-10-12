@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -10,22 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  MapPin,
-  Phone,
-  Mail,
-  Share2,
-  Briefcase,
-  GraduationCap,
-  Award,
-  Car,
-  Calendar,
-  Edit,
-  Plus,
-  Trash2,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react"
+import { MapPin, Phone, Mail, Share2, Car, Calendar, Edit, Plus, Trash2, Loader2, ShieldCheck } from "lucide-react"
 import type { UserProfile, Experience, Education, Course } from "@/types/profile"
 import { ResumePDF } from "./resume-pdf"
 import {
@@ -404,8 +389,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
     <div className="max-w-md mx-auto space-y-6 pb-20">
       {/* Header do Perfil */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Perfil</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-end pb-2">
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsProfileEditOpen(true)} className="h-8 w-8 p-0">
               <Edit className="w-4 h-4" />
@@ -553,7 +537,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       {/* Habilidades */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Habilidades</CardTitle>
+          <div />
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsSkillsEditOpen(true)} className="h-8 w-8 p-0">
               <Edit className="w-4 h-4" />
@@ -580,10 +564,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       {/* Experiências */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Briefcase className="w-5 h-5" />
-            Experiência Profissional
-          </CardTitle>
+          <div />
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsExperienceOpen(true)} className="h-8 w-8 p-0">
               <Plus className="w-4 h-4" />
@@ -667,10 +648,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       {/* Formação */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <GraduationCap className="w-5 h-5" />
-            Formação
-          </CardTitle>
+          <div />
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsEducationOpen(true)} className="h-8 w-8 p-0">
               <Plus className="w-4 h-4" />
@@ -728,10 +706,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       {/* Cursos */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Award className="w-5 h-5" />
-            Cursos
-          </CardTitle>
+          <div />
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsCourseOpen(true)} className="h-8 w-8 p-0">
               <Plus className="w-4 h-4" />

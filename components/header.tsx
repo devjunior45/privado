@@ -48,7 +48,7 @@ export function Header({
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
       <div className="max-w-md mx-auto flex h-14 items-center px-4">
         {showBack && (
           <Button variant="ghost" size="sm" onClick={handleBack} className="mr-2 h-8 w-8 p-0">
