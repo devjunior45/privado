@@ -17,6 +17,7 @@ import {
   X,
   Share,
   Shield,
+  Settings,
 } from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import type { JobPostWithProfile } from "@/types/database"
@@ -106,7 +107,12 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
       <div className="bg-white dark:bg-black border-b sticky top-0 z-40 shadow-sm md:hidden">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           {isOwnProfile ? (
-            <h1 className="font-semibold text-lg flex-1 text-center">Perfil</h1>
+            <>
+              <h1 className="font-semibold text-lg flex-1">Perfil</h1>
+              <Button variant="ghost" size="sm" onClick={() => router.push("/settings")} className="h-8 w-8 p-0">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </>
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8 w-8 p-0">

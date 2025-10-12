@@ -5,7 +5,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, ArrowLeft, Bell } from "lucide-react"
+import { Search, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { SettingsSheet } from "@/components/ui/settings-sheet"
@@ -50,11 +50,9 @@ export function Header({
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
       <div className="max-w-md mx-auto flex h-14 items-center px-4">
-        {showBack && (
-          <Button variant="ghost" size="sm" onClick={handleBack} className="mr-2 h-8 w-8 p-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        )}
+        <Button variant="ghost" size="sm" onClick={handleBack} className="mr-2 h-8 w-8 p-0">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
 
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-lg font-semibold truncate">{title}</h1>
@@ -77,20 +75,6 @@ export function Header({
 
             {isLoggedIn && (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/notifications")}
-                  className="relative h-8 w-8 p-0"
-                >
-                  <Bell className="h-4 w-4" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </Button>
-
                 {userProfile && (
                   <Avatar className="h-8 w-8 cursor-pointer" onClick={() => router.push("/profile")}>
                     <AvatarImage src={userProfile.avatar_url || "/placeholder.svg"} />
