@@ -1,21 +1,21 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useRouter } from "next/navigation"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Building, Eye, MapPin, Users } from "lucide-react"
-import type { UserType } from "@/types/profile"
+import { Building, Eye, MapPin, User } from "lucide-react"
 import { CitySelect } from "@/components/ui/city-select"
+import { generateUniqueUsername } from "@/utils/username-generator"
+import type { UserType } from "@/types/profile"
 import Image from "next/image"
-import { useTheme } from "next-themes"
-import { useMobile } from "@/hooks/use-mobile"
 
-type CompleteProfileStep = "user-type" | "city-selection" | "personal-info" | "company-info"
+type CompleteProfileStep = "user-type" | "city-selection" | "personal-info"
 
 interface CompleteProfileFormProps {
   user: any
@@ -26,35 +26,12 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   const [currentStep, setCurrentStep] = useState<CompleteProfileStep>("user-type")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [username, setUsername] = useState(existingProfile?.username || "")
-  const [fullName, setFullName] = useState(existingProfile?.full_name || user?.user_metadata?.full_name || "")
-  const [companyName, setCompanyName] = useState("")
-  const [companyLocation, setCompanyLocation] = useState("")
-  const [userType, setUserType] = useState<UserType>(existingProfile?.user_type || "candidate")
-  const [selectedCityId, setSelectedCityId] = useState<number | null>(existingProfile?.city_id || null)
+  const [userType, setUserType] = useState<UserType>("candidate")
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+  const [fullName, setFullName] = useState(
+    existingProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "",
+  )
   const router = useRouter()
-  const { theme } = useTheme()
-  const isMobile = useMobile()
-
-  useEffect(() => {
-    // Se já tem user_type, pula para city-selection
-    if (existingProfile?.user_type) {
-      setUserType(existingProfile.user_type)
-      setCurrentStep("city-selection")
-    }
-    // Se já tem city_id também, pula para personal/company info
-    if (existingProfile?.user_type && existingProfile?.city_id) {
-      setSelectedCityId(existingProfile.city_id)
-      setCurrentStep(existingProfile.user_type === "recruiter" ? "company-info" : "personal-info")
-    }
-  }, [existingProfile])
-
-  const getLogoSrc = () => {
-    if (isMobile) {
-      return theme === "dark" ? "/temaescuro.png" : "/temaclaro.png"
-    }
-    return "/logo.empresa.png"
-  }
 
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type)
@@ -62,11 +39,7 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   }
 
   const handleCityNext = () => {
-    if (userType === "recruiter") {
-      setCurrentStep("company-info")
-    } else {
-      setCurrentStep("personal-info")
-    }
+    setCurrentStep("personal-info")
   }
 
   const handleCompleteProfile = async (e: React.FormEvent) => {
@@ -77,27 +50,36 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
     const supabase = createClient()
 
     try {
-      const updateData: any = {
+      // Gerar username único se não existir
+      let username = existingProfile?.username
+      if (!username) {
+        username = await generateUniqueUsername(fullName)
+      }
+
+      // Atualizar ou criar perfil
+      const profileData = {
+        id: user.id,
+        username,
+        full_name: fullName,
+        email: user.email,
         user_type: userType,
         city_id: selectedCityId,
-        full_name: fullName,
-        username: username,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        created_at: existingProfile?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
 
-      if (userType === "recruiter") {
-        updateData.company_name = companyName
-        updateData.company_location = companyLocation
+      const { error: profileError } = await supabase.from("profiles").upsert(profileData, { onConflict: "id" })
+
+      if (profileError) {
+        throw profileError
       }
-
-      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id)
-
-      if (error) throw error
 
       router.push("/feed")
       router.refresh()
     } catch (error: any) {
       console.error("Erro ao completar perfil:", error)
-      setError(error.message || "Erro ao completar perfil")
+      setError(error.message || "Erro ao salvar perfil")
     } finally {
       setIsLoading(false)
     }
@@ -106,8 +88,8 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   const renderUserTypeStep = () => (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="mb-12 flex justify-end pr-12 pt-8">
-          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        <div className="mb-6">
+          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Complete seu Perfil</h2>
         <p className="text-muted-foreground">O que você pretende fazer?</p>
@@ -133,7 +115,7 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
         >
           <Building className="w-6 h-6" />
           <div className="text-center">
-            <p className="font-medium">Postar vagas</p>
+            <p className="font-medium">Postar vagas na minha cidade</p>
             <p className="text-xs text-muted-foreground">Divulgar oportunidades de trabalho</p>
           </div>
         </Button>
@@ -144,8 +126,8 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   const renderCitySelectionStep = () => (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="mb-12 flex justify-end pr-12 pt-8">
-          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        <div className="mb-6">
+          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
           <MapPin className="w-6 h-6" />
@@ -161,7 +143,7 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
       <div className="space-y-4">
         <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-2">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Não se preocupe!</p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
@@ -192,11 +174,14 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   const renderPersonalInfoStep = () => (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="mb-12 flex justify-end pr-12 pt-8">
-          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        <div className="mb-6">
+          <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
-        <h2 className="text-2xl font-bold">Seus Dados</h2>
-        <p className="text-muted-foreground">Complete as informações do seu perfil</p>
+        <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
+          <User className="w-6 h-6" />
+          Seus Dados
+        </h2>
+        <p className="text-muted-foreground">Finalize seu perfil</p>
       </div>
 
       {error && (
@@ -208,65 +193,35 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
       <form onSubmit={handleCompleteProfile} className="space-y-4">
         <div>
           <Label htmlFor="fullName">Nome Completo</Label>
-          <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        </div>
-
-        <div>
-          <Label htmlFor="username">Nome de Usuário</Label>
-          <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Salvando..." : "Completar Perfil"}
-        </Button>
-      </form>
-    </div>
-  )
-
-  const renderCompanyInfoStep = () => (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="mb-12 flex justify-end pr-12 pt-8">
-          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
-        </div>
-        <h2 className="text-2xl font-bold">Dados da Empresa</h2>
-        <p className="text-muted-foreground">Complete as informações da sua empresa</p>
-      </div>
-
-      {error && (
-        <Alert className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <form onSubmit={handleCompleteProfile} className="space-y-4">
-        <div>
-          <Label htmlFor="fullName">Nome do Responsável</Label>
-          <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        </div>
-
-        <div>
-          <Label htmlFor="companyName">Nome da Empresa</Label>
-          <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
-        </div>
-
-        <div>
-          <Label htmlFor="companyLocation">Localização da Empresa</Label>
           <Input
-            id="companyLocation"
-            value={companyLocation}
-            onChange={(e) => setCompanyLocation(e.target.value)}
+            id="fullName"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
             required
+            placeholder="Digite seu nome completo"
           />
         </div>
 
-        <div>
-          <Label htmlFor="username">Nome de Usuário</Label>
-          <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <p className="text-sm font-medium">Resumo do seu perfil:</p>
+          </div>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>
+              <strong>Tipo:</strong> {userType === "candidate" ? "Candidato" : "Recrutador"}
+            </p>
+            <p>
+              <strong>Cidade:</strong> {selectedCityId ? "Selecionada" : "Não selecionada"}
+            </p>
+            <p>
+              <strong>Email:</strong> {user.email}
+            </p>
+          </div>
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Salvando..." : "Completar Perfil"}
+          {isLoading ? "Salvando..." : "Finalizar Cadastro"}
         </Button>
       </form>
     </div>
@@ -280,8 +235,6 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
         return renderCitySelectionStep()
       case "personal-info":
         return renderPersonalInfoStep()
-      case "company-info":
-        return renderCompanyInfoStep()
       default:
         return renderUserTypeStep()
     }

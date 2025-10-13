@@ -2,32 +2,31 @@ import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get("code")
-  const origin = requestUrl.origin
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get("code")
+  const next = searchParams.get("next") ?? "/feed"
 
   if (code) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Verificar se o perfil já está completo
-      const { data: profile } = await supabase
+      // Verificar se o usuário já tem um perfil completo
+      const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("user_type, city_id")
+        .select("id, username, user_type, city_id")
         .eq("id", data.user.id)
         .single()
 
-      // Se não tem user_type ou city_id, precisa completar o cadastro
-      if (!profile?.user_type || !profile?.city_id) {
-        return NextResponse.redirect(`${origin}/complete-profile`)
+      // Se não existe perfil ou está incompleto, redirecionar para setup inicial
+      if (!existingProfile || !existingProfile.user_type || !existingProfile.city_id) {
+        return NextResponse.redirect(`${origin}/setup-account`)
       }
 
-      // Se já está completo, vai para o feed
-      return NextResponse.redirect(`${origin}/feed`)
+      // Se tudo está completo, ir para o feed
+      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Se houver erro, volta para login
-  return NextResponse.redirect(`${origin}/login?error=Erro ao autenticar com Google`)
+  return NextResponse.redirect(`${origin}/login?error=Could not authenticate user`)
 }

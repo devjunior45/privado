@@ -43,3 +43,6 @@ export async function generateUniqueUsername(fullName: string): Promise<string> 
   const timestamp = Date.now().toString().slice(-3)
   return `${baseName}${timestamp}`
 }
+
+// Alias para compatibilidade
+export const generateUsername = generateUniqueUsername
