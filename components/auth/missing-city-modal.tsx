@@ -19,8 +19,16 @@ export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const handleCityChange = (newCityId: number | null) => {
+    console.log("City changed to:", newCityId)
+    setCityId(newCityId)
+  }
+
   const handleSave = async () => {
-    if (!cityId) return
+    if (!cityId) {
+      alert("Por favor, selecione uma cidade")
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -31,8 +39,11 @@ export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
 
       if (!user) {
         console.error("No user found")
+        alert("Erro: Usuário não encontrado")
         return
       }
+
+      console.log("Saving city:", cityId, "for user:", user.id)
 
       // Buscar informações da cidade
       const { data: cityData, error: cityError } = await supabase
@@ -48,8 +59,11 @@ export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
 
       if (!cityData) {
         console.error("City not found")
+        alert("Erro: Cidade não encontrada")
         return
       }
+
+      console.log("City data:", cityData)
 
       // Atualizar perfil com city_id, city e state
       const { error: updateError } = await supabase
@@ -65,6 +79,8 @@ export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
         console.error("Error updating profile:", updateError)
         throw updateError
       }
+
+      console.log("Profile updated successfully")
 
       // Refresh e chamar callback
       router.refresh()
@@ -102,13 +118,12 @@ export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
             <Label htmlFor="city-select">Cidade *</Label>
             <CitySelect
               value={cityId}
-              onValueChange={(value) => {
-                console.log("City selected:", value)
-                setCityId(value)
-              }}
+              onValueChange={handleCityChange}
               disabled={isLoading}
               placeholder="Selecione sua cidade"
+              className="w-full"
             />
+            {cityId && <p className="text-xs text-muted-foreground">Cidade selecionada: ID {cityId}</p>}
           </div>
         </div>
 
