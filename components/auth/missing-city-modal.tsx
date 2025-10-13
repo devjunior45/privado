@@ -3,85 +3,63 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { CitySelect } from "@/components/ui/city-select"
-import { MapPin } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 interface MissingCityModalProps {
   open: boolean
-  userId: string
-  onComplete: () => void
+  onSaved: () => void
 }
 
-export function MissingCityModal({ open, userId, onComplete }: MissingCityModalProps) {
-  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
+  const [cityId, setCityId] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
   const handleSave = async () => {
-    if (!selectedCityId) return
+    if (!cityId) return
 
     setIsLoading(true)
-    const supabase = createClient()
-
     try {
-      // Buscar informações da cidade
-      const { data: cityData } = await supabase.from("cities").select("name, state").eq("id", selectedCityId).single()
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-      if (cityData) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            city_id: selectedCityId,
-            city: cityData.name,
-            state: cityData.state,
-          })
-          .eq("id", userId)
+      if (!user) return
 
-        if (error) throw error
+      const { error } = await supabase.from("profiles").update({ city_id: cityId }).eq("id", user.id)
 
-        router.refresh()
-        onComplete()
-      }
+      if (error) throw error
+
+      onSaved()
     } catch (error) {
-      console.error("Erro ao salvar cidade:", error)
-      alert("Erro ao salvar cidade. Tente novamente.")
+      console.error("Error saving city:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <Dialog open={open}>
-      <DialogContent className="sm:max-w-md" hideClose>
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent hideClose className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl flex items-center justify-center gap-2">
-            <MapPin className="w-6 h-6" />
-            Complete seu Perfil
-          </DialogTitle>
-          <DialogDescription className="text-center">Precisamos saber sua cidade para continuar</DialogDescription>
+          <DialogTitle>Selecione sua cidade</DialogTitle>
+          <DialogDescription>
+            Escolha sua cidade principal. Você poderá ver e postar vagas em outras cidades depois.
+          </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-4 py-4">
-          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              💡 <strong>Dica:</strong> Você poderá ver e postar vagas em outras cidades também. Esta é apenas sua
-              cidade principal.
-            </p>
+          <div className="space-y-2">
+            <Label>Cidade</Label>
+            <CitySelect value={cityId} onValueChange={setCityId} disabled={isLoading} />
           </div>
-
-          <div>
-            <CitySelect
-              value={selectedCityId}
-              onValueChange={setSelectedCityId}
-              placeholder="Escolha sua cidade"
-              className="w-full"
-            />
-          </div>
-
-          <Button onClick={handleSave} className="w-full" disabled={!selectedCityId || isLoading}>
-            {isLoading ? "Salvando..." : "Salvar e Continuar"}
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={!cityId || isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Continuar
           </Button>
         </div>
       </DialogContent>

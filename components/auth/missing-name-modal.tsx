@@ -1,82 +1,79 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { User } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 interface MissingNameModalProps {
   open: boolean
-  userId: string
-  onComplete: () => void
+  onSaved: () => void
 }
 
-export function MissingNameModal({ open, userId, onComplete }: MissingNameModalProps) {
-  const [fullName, setFullName] = useState("")
+export function MissingNameModal({ open, onSaved }: MissingNameModalProps) {
+  const [name, setName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
   const handleSave = async () => {
-    if (!fullName.trim()) return
+    if (!name.trim()) return
 
     setIsLoading(true)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: fullName.trim(),
-        })
-        .eq("id", userId)
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) return
+
+      const { error } = await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", user.id)
 
       if (error) throw error
 
-      router.refresh()
-      onComplete()
+      onSaved()
     } catch (error) {
-      console.error("Erro ao salvar nome:", error)
-      alert("Erro ao salvar nome. Tente novamente.")
+      console.error("Error saving name:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <Dialog open={open}>
-      <DialogContent className="sm:max-w-md" hideClose>
-        <DialogHeader>
-          <DialogTitle className="text-center text-xl flex items-center justify-center gap-2">
-            <User className="w-6 h-6" />
-            Complete seu Perfil
-          </DialogTitle>
-          <DialogDescription className="text-center">Como devemos te chamar?</DialogDescription>
-        </DialogHeader>
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && name.trim()) {
+      handleSave()
+    }
+  }
 
+  return (
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent hideClose className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Complete seu perfil</DialogTitle>
+          <DialogDescription>Para continuar, precisamos saber seu nome completo.</DialogDescription>
+        </DialogHeader>
         <div className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="fullName">Nome Completo</Label>
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome completo</Label>
             <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              id="name"
               placeholder="Digite seu nome completo"
-              className="w-full"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={handleKeyDown}
               autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && fullName.trim()) {
-                  handleSave()
-                }
-              }}
+              disabled={isLoading}
             />
           </div>
-
-          <Button onClick={handleSave} className="w-full" disabled={!fullName.trim() || isLoading}>
-            {isLoading ? "Salvando..." : "Salvar e Continuar"}
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={!name.trim() || isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Continuar
           </Button>
         </div>
       </DialogContent>
