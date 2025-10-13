@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState, useMemo } from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -26,26 +26,25 @@ export function CitySelect({
   disabled = false,
   name,
 }: CitySelectProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useState(false)
   const { cities, isLoading } = useCities()
 
-  const selectedCity = React.useMemo(() => {
+  const selectedCity = useMemo(() => {
     return value ? cities.find((city) => city.id === value) : null
   }, [value, cities])
 
-  const groupedCities = React.useMemo(() => {
+  const groupedCities = useMemo(() => {
     return groupCitiesByRegion(cities)
   }, [cities])
 
   const handleSelect = (cityId: number | null) => {
-    console.log("City selected in CitySelect:", cityId)
     onValueChange(cityId)
     setOpen(false)
   }
 
   if (isLoading) {
     return (
-      <Button variant="outline" className={cn("w-full justify-between", className)} disabled>
+      <Button variant="outline" className={cn("justify-between", className)} disabled>
         Carregando cidades...
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
@@ -61,7 +60,7 @@ export function CitySelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className={cn("w-full justify-between", className)}
+            className={cn("justify-between", className)}
             disabled={disabled}
           >
             {selectedCity ? formatCityDisplay(selectedCity) : placeholder}

@@ -1,11 +1,11 @@
 import type React from "react"
-import { Inter } from "next/font/google"
 import "./globals.css"
+import { Inter } from "next/font/google"
 import { Navigation } from "@/components/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { ReactQueryProvider } from "@/providers/react-query-provider"
 import { ThemeProvider } from "@/components/theme-provider"
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import { Toaster } from "@/components/ui/toaster"
+import { ReactQueryProvider } from "@/providers/react-query-provider"
+import { createClient } from "@/lib/supabase/server"
 import { DesktopHeader } from "@/components/desktop-header"
 import { ProfileSidebar } from "@/components/profile-sidebar"
 import { ProfileCompletionCheck } from "@/components/auth/profile-completion-check"
@@ -14,28 +14,20 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
   title: "Galeria de Empregos",
-  description: "Encontre as melhores oportunidades de trabalho",
-  manifest: "/manifest.json",
-  themeColor: "#000000",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+  description: "Encontre as melhores oportunidades de emprego",
     generator: 'v0.app'
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  let userProfile = null
+  let profile = null
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-    userProfile = profile
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+    profile = data
   }
 
   return (
@@ -43,29 +35,26 @@ export default async function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
-            <div className="min-h-screen bg-background">
-              {/* Mobile Navigation - unchanged */}
-              <div className="md:hidden">
-                <Navigation isLoggedIn={!!user} userProfile={userProfile} />
-                <main className="pb-16">{children}</main>
+            <ProfileCompletionCheck />
+            <div className="flex flex-col md:h-screen md:overflow-hidden">
+              {/* Header Desktop */}
+              <DesktopHeader user={user} profile={profile} />
+
+              {/* Container principal */}
+              <div className="flex-1 md:flex md:h-full md:overflow-hidden">
+                {/* Sidebar Desktop - Perfil do usuário */}
+                <ProfileSidebar user={user} profile={profile} />
+
+                {/* Conteúdo principal */}
+                <main className="flex-1 md:overflow-y-auto pb-16 md:pb-0">
+                  <div className="max-w-3xl mx-auto px-4 py-6">{children}</div>
+                </main>
               </div>
 
-              {/* Desktop Layout */}
-              <div className="hidden md:block h-screen overflow-hidden">
-                <DesktopHeader isLoggedIn={!!user} userProfile={userProfile} />
-                <div className="h-full pt-14">
-                  <div className="max-w-6xl mx-auto flex h-full">
-                    <ProfileSidebar isLoggedIn={!!user} userProfile={userProfile} />
-                    <main className="flex-1 px-6 py-6 max-w-3xl overflow-y-auto">{children}</main>
-                  </div>
-                </div>
-              </div>
-
-              <PWAInstallPrompt />
-
-              {/* Profile Completion Check */}
-              {user && <ProfileCompletionCheck />}
+              {/* Navegação Mobile */}
+              <Navigation />
             </div>
+            <Toaster />
           </ReactQueryProvider>
         </ThemeProvider>
       </body>

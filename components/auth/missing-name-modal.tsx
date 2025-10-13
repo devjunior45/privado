@@ -1,79 +1,75 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { User } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface MissingNameModalProps {
   open: boolean
-  onSaved: () => void
+  userId: string
 }
 
-export function MissingNameModal({ open, onSaved }: MissingNameModalProps) {
-  const [name, setName] = useState("")
+export function MissingNameModal({ open, userId }: MissingNameModalProps) {
+  const [fullName, setFullName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleSave = async () => {
-    if (!name.trim()) return
+    if (!fullName.trim()) return
 
     setIsLoading(true)
+    const supabase = createClient()
+
     try {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
-      const { error } = await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", user.id)
+      const { error } = await supabase.from("profiles").update({ full_name: fullName.trim() }).eq("id", userId)
 
       if (error) throw error
 
-      onSaved()
+      router.refresh()
     } catch (error) {
-      console.error("Error saving name:", error)
+      console.error("Erro ao salvar nome:", error)
+      alert("Erro ao salvar nome. Tente novamente.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && name.trim()) {
-      handleSave()
-    }
-  }
-
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent hideClose className="sm:max-w-md">
+    <Dialog open={open}>
+      <DialogContent className="sm:max-w-md" hideClose>
         <DialogHeader>
-          <DialogTitle>Complete seu perfil</DialogTitle>
-          <DialogDescription>Para continuar, precisamos saber seu nome completo.</DialogDescription>
+          <DialogTitle className="text-center text-xl flex items-center justify-center gap-2">
+            <User className="w-6 h-6" />
+            Qual é o seu nome?
+          </DialogTitle>
+          <DialogDescription className="text-center">
+            Para continuar, precisamos saber como devemos te chamar
+          </DialogDescription>
         </DialogHeader>
+
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome completo</Label>
+          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-900 dark:text-blue-100">💡 Este nome será exibido no seu perfil público</p>
+          </div>
+
+          <div>
+            <Label htmlFor="fullName">Nome Completo</Label>
             <Input
-              id="name"
+              id="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               placeholder="Digite seu nome completo"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              autoFocus
-              disabled={isLoading}
+              className="w-full"
             />
           </div>
-        </div>
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={!name.trim() || isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Continuar
+
+          <Button onClick={handleSave} className="w-full" disabled={!fullName.trim() || isLoading}>
+            {isLoading ? "Salvando..." : "Continuar"}
           </Button>
         </div>
       </DialogContent>

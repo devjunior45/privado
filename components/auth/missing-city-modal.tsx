@@ -3,90 +3,47 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { CitySelect } from "@/components/ui/city-select"
+import { MapPin } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, MapPin } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface MissingCityModalProps {
   open: boolean
-  onSaved: () => void
+  userId: string
 }
 
-export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
-  const [cityId, setCityId] = useState<number | null>(null)
+export function MissingCityModal({ open, userId }: MissingCityModalProps) {
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleCityChange = (newCityId: number | null) => {
-    console.log("City changed to:", newCityId)
-    setCityId(newCityId)
-  }
-
   const handleSave = async () => {
-    if (!cityId) {
-      alert("Por favor, selecione uma cidade")
-      return
-    }
+    if (!selectedCityId) return
 
     setIsLoading(true)
+    const supabase = createClient()
+
     try {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        console.error("No user found")
-        alert("Erro: Usuário não encontrado")
-        return
-      }
-
-      console.log("Saving city:", cityId, "for user:", user.id)
-
       // Buscar informações da cidade
-      const { data: cityData, error: cityError } = await supabase
-        .from("cities")
-        .select("name, state")
-        .eq("id", cityId)
-        .single()
+      const { data: cityData } = await supabase.from("cities").select("name, state").eq("id", selectedCityId).single()
 
-      if (cityError) {
-        console.error("Error fetching city:", cityError)
-        throw cityError
+      const updateData: any = {
+        city_id: selectedCityId,
       }
 
-      if (!cityData) {
-        console.error("City not found")
-        alert("Erro: Cidade não encontrada")
-        return
+      if (cityData) {
+        updateData.city = cityData.name
+        updateData.state = cityData.state
       }
 
-      console.log("City data:", cityData)
+      const { error } = await supabase.from("profiles").update(updateData).eq("id", userId)
 
-      // Atualizar perfil com city_id, city e state
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          city_id: cityId,
-          city: cityData.name,
-          state: cityData.state,
-        })
-        .eq("id", user.id)
+      if (error) throw error
 
-      if (updateError) {
-        console.error("Error updating profile:", updateError)
-        throw updateError
-      }
-
-      console.log("Profile updated successfully")
-
-      // Refresh e chamar callback
       router.refresh()
-      onSaved()
     } catch (error) {
-      console.error("Error saving city:", error)
+      console.error("Erro ao salvar cidade:", error)
       alert("Erro ao salvar cidade. Tente novamente.")
     } finally {
       setIsLoading(false)
@@ -94,43 +51,36 @@ export function MissingCityModal({ open, onSaved }: MissingCityModalProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent hideClose className="sm:max-w-md">
+    <Dialog open={open}>
+      <DialogContent className="sm:max-w-md" hideClose>
         <DialogHeader>
           <DialogTitle className="text-center text-xl flex items-center justify-center gap-2">
             <MapPin className="w-6 h-6" />
-            Selecione sua cidade
+            Escolha sua cidade
           </DialogTitle>
           <DialogDescription className="text-center">
-            Escolha sua cidade principal. Você poderá ver e postar vagas em outras cidades depois.
+            Para continuar, precisamos saber em qual cidade você está
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              💡 <strong>Dica:</strong> Esta será sua cidade principal, mas você poderá interagir com vagas de outras
-              cidades também.
+              💡 Esta informação é necessária para personalizar sua experiência
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="city-select">Cidade *</Label>
+          <div>
             <CitySelect
-              value={cityId}
-              onValueChange={handleCityChange}
-              disabled={isLoading}
-              placeholder="Selecione sua cidade"
+              value={selectedCityId}
+              onValueChange={setSelectedCityId}
+              placeholder="Escolha sua cidade"
               className="w-full"
             />
-            {cityId && <p className="text-xs text-muted-foreground">Cidade selecionada: ID {cityId}</p>}
           </div>
-        </div>
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button onClick={handleSave} disabled={!cityId || isLoading} className="w-full">
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? "Salvando..." : "Salvar e Continuar"}
+          <Button onClick={handleSave} className="w-full" disabled={!selectedCityId || isLoading}>
+            {isLoading ? "Salvando..." : "Continuar"}
           </Button>
         </div>
       </DialogContent>
