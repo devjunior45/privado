@@ -1,67 +1,71 @@
 import type React from "react"
-import { Inter } from "next/font/google"
+import type { Metadata, Viewport } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { Toaster } from "@/components/ui/toaster"
 import { ReactQueryProvider } from "@/providers/react-query-provider"
 import { ThemeProvider } from "@/components/theme-provider"
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { DesktopHeader } from "@/components/desktop-header"
 import { ProfileSidebar } from "@/components/profile-sidebar"
+import { ProfileCompletionCheck } from "@/components/auth/profile-completion-check"
 
-const inter = Inter({ subsets: ["latin"] })
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+})
 
-export const metadata = {
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+})
+
+export const metadata: Metadata = {
   title: "Galeria de Empregos",
   description: "Encontre as melhores oportunidades de trabalho",
-  manifest: "/manifest.json",
-  themeColor: "#000000",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+  icons: {
+    icon: "/favicon.ico",
+  },
     generator: 'v0.app'
 }
 
-export default async function RootLayout({
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#ffffff",
+}
+
+export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  let userProfile = null
-  if (user) {
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-    userProfile = profile
-  }
-
+}>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
-            <div className="min-h-screen bg-background">
-              {/* Mobile Navigation - unchanged */}
-              <div className="md:hidden">
-                <Navigation isLoggedIn={!!user} userProfile={userProfile} />
-                <main className="pb-16">{children}</main>
+            {/* Desktop Layout */}
+            <div className="hidden md:block h-screen overflow-hidden">
+              <DesktopHeader />
+              <div className="flex h-[calc(100vh-3.5rem)] max-w-6xl mx-auto">
+                <ProfileSidebar />
+                <main className="flex-1 overflow-y-auto">{children}</main>
               </div>
-
-              {/* Desktop Layout */}
-              <div className="hidden md:block h-screen overflow-hidden">
-                <DesktopHeader isLoggedIn={!!user} userProfile={userProfile} />
-                <div className="h-full pt-14">
-                  <div className="max-w-6xl mx-auto flex h-full">
-                    <ProfileSidebar isLoggedIn={!!user} userProfile={userProfile} />
-                    <main className="flex-1 px-6 py-6 max-w-3xl overflow-y-auto">{children}</main>
-                  </div>
-                </div>
-              </div>
-
-              <PWAInstallPrompt />
             </div>
+
+            {/* Mobile Layout */}
+            <div className="md:hidden min-h-screen pb-16">
+              {children}
+              <Navigation />
+            </div>
+
+            {/* Profile Completion Check */}
+            <ProfileCompletionCheck />
+
+            <Toaster />
           </ReactQueryProvider>
         </ThemeProvider>
       </body>

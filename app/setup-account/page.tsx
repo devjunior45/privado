@@ -1,185 +1,107 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { UserTypeModal } from "@/components/auth/user-type-modal"
 import { CitySelectionModal } from "@/components/auth/city-selection-modal"
-import { NameInputModal } from "@/components/auth/name-input-modal"
-import type { UserType } from "@/types/profile"
 import { generateUsername } from "@/utils/username-generator"
+
+type SetupStep = "user-type" | "city" | "completing"
 
 export default function SetupAccountPage() {
   const router = useRouter()
+  const [currentStep, setCurrentStep] = useState<SetupStep>("user-type")
+  const [selectedUserType, setSelectedUserType] = useState<"candidate" | "recruiter" | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showNameModal, setShowNameModal] = useState(false)
-  const [showUserTypeModal, setShowUserTypeModal] = useState(false)
-  const [showCityModal, setShowCityModal] = useState(false)
-  const [userName, setUserName] = useState<string>("")
-  const [userType, setUserType] = useState<UserType | null>(null)
 
   useEffect(() => {
-    checkUserProfile()
+    checkAuthAndProfile()
   }, [])
 
-  const checkUserProfile = async () => {
+  const checkAuthAndProfile = async () => {
     const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push("/login")
-        return
-      }
-
-      // Buscar perfil existente
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-      // Verificar o que está faltando
-      const needsName = !profile?.full_name
-      const needsUserType = !profile?.user_type
-      const needsCity = !profile?.city_id
-
-      if (!needsName && !needsUserType && !needsCity) {
-        // Perfil completo, redirecionar
-        router.push("/feed")
-        return
-      }
-
-      // Mostrar modais na ordem: nome -> tipo -> cidade
-      if (needsName) {
-        setShowNameModal(true)
-      } else if (needsUserType) {
-        setUserName(profile?.full_name || "")
-        setShowUserTypeModal(true)
-      } else if (needsCity) {
-        setUserName(profile?.full_name || "")
-        setUserType(profile?.user_type || null)
-        setShowCityModal(true)
-      }
-    } catch (error) {
-      console.error("Erro ao verificar perfil:", error)
+    if (!user) {
       router.push("/login")
-    } finally {
-      setIsLoading(false)
+      return
     }
+
+    // Verificar se já tem perfil completo
+    const { data: profile } = await supabase.from("profiles").select("user_type, city_id").eq("id", user.id).single()
+
+    if (profile?.user_type && profile?.city_id) {
+      // Perfil já completo, redirecionar
+      router.push("/feed")
+      return
+    }
+
+    setIsLoading(false)
   }
 
-  const handleNameSubmit = async (name: string) => {
-    const supabase = createClient()
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
-      // Atualizar nome no perfil
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: name,
-        })
-        .eq("id", user.id)
-
-      if (error) throw error
-
-      setUserName(name)
-      setShowNameModal(false)
-
-      // Verificar se precisa de tipo de usuário
-      const { data: profile } = await supabase.from("profiles").select("user_type, city_id").eq("id", user.id).single()
-
-      if (!profile?.user_type) {
-        setShowUserTypeModal(true)
-      } else if (!profile?.city_id) {
-        setUserType(profile.user_type)
-        setShowCityModal(true)
-      } else {
-        router.push("/feed")
-      }
-    } catch (error) {
-      console.error("Erro ao salvar nome:", error)
-    }
-  }
-
-  const handleUserTypeSelect = async (type: UserType) => {
-    const supabase = createClient()
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
-      // Atualizar tipo de usuário no perfil
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          user_type: type,
-        })
-        .eq("id", user.id)
-
-      if (error) throw error
-
-      setUserType(type)
-      setShowUserTypeModal(false)
-
-      // Verificar se precisa de cidade
-      const { data: profile } = await supabase.from("profiles").select("city_id").eq("id", user.id).single()
-
-      if (!profile?.city_id) {
-        setShowCityModal(true)
-      } else {
-        router.push("/feed")
-      }
-    } catch (error) {
-      console.error("Erro ao salvar tipo de usuário:", error)
-    }
+  const handleUserTypeSelect = async (userType: "candidate" | "recruiter") => {
+    setSelectedUserType(userType)
+    setCurrentStep("city")
   }
 
   const handleCitySelect = async (cityId: number) => {
+    if (!selectedUserType) return
+
+    setCurrentStep("completing")
     const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push("/login")
+      return
+    }
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
       // Buscar informações da cidade
       const { data: cityData } = await supabase.from("cities").select("name, state").eq("id", cityId).single()
 
       // Gerar username se não existir
-      const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single()
-
-      let username = profile?.username
+      let username = user.user_metadata?.username
       if (!username) {
-        username = await generateUsername(userName)
+        const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "user"
+        username = await generateUsername(fullName)
       }
 
-      // Atualizar perfil com cidade e username
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          city_id: cityId,
-          city: cityData?.name || null,
-          state: cityData?.state || null,
-          username,
-        })
-        .eq("id", user.id)
+      // Atualizar perfil com tipo de usuário e cidade
+      const updateData: any = {
+        user_type: selectedUserType,
+        city_id: cityId,
+        username,
+        full_name: user.user_metadata?.full_name || username,
+        email: user.email,
+      }
 
-      if (error) throw error
+      if (cityData) {
+        updateData.city = cityData.name
+        updateData.state = cityData.state
+      }
 
+      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id)
+
+      if (error) {
+        console.error("Erro ao atualizar perfil:", error)
+        alert("Erro ao configurar conta. Tente novamente.")
+        setCurrentStep("user-type")
+        return
+      }
+
+      // Redirecionar para o feed
       router.push("/feed")
+      router.refresh()
     } catch (error) {
-      console.error("Erro ao salvar cidade:", error)
+      console.error("Erro no setup:", error)
+      alert("Erro ao configurar conta. Tente novamente.")
+      setCurrentStep("user-type")
     }
   }
 
@@ -187,6 +109,7 @@ export default function SetupAccountPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
@@ -195,9 +118,20 @@ export default function SetupAccountPage() {
 
   return (
     <>
-      <NameInputModal open={showNameModal} onSubmit={handleNameSubmit} />
-      <UserTypeModal open={showUserTypeModal} onSelect={handleUserTypeSelect} />
-      {userType && <CitySelectionModal open={showCityModal} userType={userType} onSelect={handleCitySelect} />}
+      <UserTypeModal open={currentStep === "user-type"} onSelect={handleUserTypeSelect} />
+
+      {selectedUserType && (
+        <CitySelectionModal open={currentStep === "city"} userType={selectedUserType} onSelect={handleCitySelect} />
+      )}
+
+      {currentStep === "completing" && (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Configurando sua conta...</p>
+          </div>
+        </div>
+      )}
     </>
   )
 }
