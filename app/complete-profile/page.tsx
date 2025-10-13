@@ -19,7 +19,8 @@ export default async function CompleteProfilePage() {
     .eq("id", user.id)
     .single()
 
-  if (profile && profile.user_type && profile.city_id) {
+  // Se já tem user_type e city_id, vai para o feed
+  if (profile?.user_type && profile?.city_id) {
     redirect("/feed")
   }
 
