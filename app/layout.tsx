@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { DesktopHeader } from "@/components/desktop-header"
 import { ProfileSidebar } from "@/components/profile-sidebar"
-import { ProfileChecker } from "@/components/profile-checker"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -43,7 +42,6 @@ export default async function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
-            <ProfileChecker />
             <div className="min-h-screen bg-background">
               {/* Mobile Navigation - unchanged */}
               <div className="md:hidden">

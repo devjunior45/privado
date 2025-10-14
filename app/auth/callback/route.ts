@@ -11,19 +11,19 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Verificar se o usuário já tem um perfil completo
+      // Verificar se o usuário já tem um perfil
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, username, user_type, city_id")
+        .select("id, username, user_type, city_id, full_name")
         .eq("id", data.user.id)
         .single()
 
-      // Se não existe perfil ou está incompleto, redirecionar para setup inicial
-      if (!existingProfile || !existingProfile.user_type || !existingProfile.city_id) {
-        return NextResponse.redirect(`${origin}/setup-account`)
+      // Se não existe perfil ou falta informações essenciais, redirecionar para completar
+      if (!existingProfile || !existingProfile.user_type || !existingProfile.city_id || !existingProfile.full_name) {
+        return NextResponse.redirect(`${origin}/complete-profile`)
       }
 
-      // Se tudo está completo, ir para o feed
+      // Se tudo está completo, ir para o próximo destino
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

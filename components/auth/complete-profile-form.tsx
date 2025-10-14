@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -39,11 +38,26 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   }
 
   const handleCityNext = () => {
+    if (!selectedCityId) {
+      setError("Por favor, selecione uma cidade")
+      return
+    }
     setCurrentStep("personal-info")
   }
 
   const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!fullName.trim()) {
+      setError("Por favor, preencha seu nome completo")
+      return
+    }
+
+    if (!selectedCityId) {
+      setError("Por favor, selecione uma cidade")
+      return
+    }
+
     setIsLoading(true)
     setError("")
 
@@ -56,14 +70,19 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
         username = await generateUniqueUsername(fullName)
       }
 
+      // Buscar informações da cidade
+      const { data: cityData } = await supabase.from("cities").select("name, state").eq("id", selectedCityId).single()
+
       // Atualizar ou criar perfil
       const profileData = {
         id: user.id,
         username,
-        full_name: fullName,
+        full_name: fullName.trim(),
         email: user.email,
         user_type: userType,
         city_id: selectedCityId,
+        city: cityData?.name || null,
+        state: cityData?.state || null,
         avatar_url: user.user_metadata?.avatar_url || null,
         created_at: existingProfile?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -140,6 +159,12 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
         </p>
       </div>
 
+      {error && (
+        <Alert className="mb-4" variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-4">
         <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-2">
@@ -185,7 +210,7 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
       </div>
 
       {error && (
-        <Alert className="mb-4">
+        <Alert className="mb-4" variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -212,7 +237,7 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
               <strong>Tipo:</strong> {userType === "candidate" ? "Candidato" : "Recrutador"}
             </p>
             <p>
-              <strong>Cidade:</strong> {selectedCityId ? "Selecionada" : "Não selecionada"}
+              <strong>Cidade:</strong> {selectedCityId ? "Selecionada ✓" : "Não selecionada"}
             </p>
             <p>
               <strong>Email:</strong> {user.email}
