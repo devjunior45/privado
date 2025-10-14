@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -34,12 +34,22 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
   )
   const router = useRouter()
 
+  useEffect(() => {
+    console.log("CompleteProfileForm - Props:", {
+      user: user?.id,
+      existingProfile,
+      isGoogleAuth,
+    })
+  }, [user, existingProfile, isGoogleAuth])
+
   const handleUserTypeSelect = (type: UserType) => {
+    console.log("Tipo de usuário selecionado:", type)
     setUserType(type)
     setCurrentStep("city-selection")
   }
 
   const handleCityNext = () => {
+    console.log("Cidade selecionada:", selectedCityId)
     setCurrentStep("personal-info")
   }
 
@@ -48,6 +58,12 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
     setIsLoading(true)
     setError("")
 
+    console.log("Completando perfil com dados:", {
+      userType,
+      selectedCityId,
+      fullName,
+    })
+
     const supabase = createClient()
 
     try {
@@ -55,6 +71,7 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
       let username = existingProfile?.username
       if (!username) {
         username = await generateUniqueUsername(fullName)
+        console.log("Username gerado:", username)
       }
 
       // Atualizar ou criar perfil
@@ -70,11 +87,21 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
         updated_at: new Date().toISOString(),
       }
 
-      const { error: profileError } = await supabase.from("profiles").upsert(profileData, { onConflict: "id" })
+      console.log("Dados do perfil a serem salvos:", profileData)
+
+      const { data: savedProfile, error: profileError } = await supabase
+        .from("profiles")
+        .upsert(profileData, { onConflict: "id" })
+        .select()
+        .single()
 
       if (profileError) {
+        console.error("Erro ao salvar perfil:", profileError)
         throw profileError
       }
+
+      console.log("Perfil salvo com sucesso:", savedProfile)
+      console.log("Redirecionando para feed...")
 
       router.push("/feed")
       router.refresh()
@@ -196,7 +223,7 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
       </div>
 
       {error && (
-        <Alert className="mb-4">
+        <Alert className="mb-4" variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
