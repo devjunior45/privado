@@ -44,7 +44,6 @@ export function AuthForm() {
       setCurrentStep("city-selection")
     }
 
-    // Verificar se há erro na URL
     const errorParam = searchParams.get("error")
     if (errorParam) {
       setError(errorParam)
@@ -66,31 +65,37 @@ export function AuthForm() {
     const supabase = createClient()
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Criar o usuário
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            username,
-            full_name: fullName,
-            user_type: userType,
-            city_id: selectedCityId,
-            company_name: userType === "recruiter" ? companyName : null,
-            company_location: userType === "recruiter" ? companyLocation : null,
-          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
-      if (error) throw error
+      if (authError) throw authError
+      if (!authData.user) throw new Error("Erro ao criar usuário")
 
-      // Se o usuário foi criado mas precisa confirmar email
-      if (data.user && !data.user.email_confirmed_at) {
-        router.push("/confirm-email")
-      } else {
-        // Se o email já foi confirmado (caso raro), ir direto para o feed
-        router.push("/feed")
+      // Criar o perfil do usuário
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: authData.user.id,
+        username,
+        full_name: fullName,
+        user_type: userType,
+        city_id: selectedCityId,
+        email: email,
+        company_name: userType === "recruiter" ? companyName : null,
+        company_location: userType === "recruiter" ? companyLocation : null,
+      })
+
+      if (profileError) {
+        console.error("Erro ao criar perfil:", profileError)
+        throw new Error("Erro ao salvar dados do perfil")
       }
 
+      // Redirecionar para confirmação de email
+      router.push("/confirm-email")
       router.refresh()
     } catch (error: any) {
       console.error("Erro no cadastro:", error)
