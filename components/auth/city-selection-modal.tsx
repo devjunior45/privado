@@ -16,6 +16,10 @@ export function CitySelectionModal({ open, userType, onSelect }: CitySelectionMo
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const handleCityChange = (cityId: number | null) => {
+    setSelectedCityId(cityId)
+  }
+
   const handleContinue = async () => {
     if (selectedCityId && !isSubmitting) {
       setIsSubmitting(true)
@@ -26,11 +30,6 @@ export function CitySelectionModal({ open, userType, onSelect }: CitySelectionMo
         setIsSubmitting(false)
       }
     }
-  }
-
-  const handleCityChange = (value: number | null) => {
-    console.log("Cidade selecionada:", value)
-    setSelectedCityId(value)
   }
 
   return (
@@ -56,17 +55,20 @@ export function CitySelectionModal({ open, userType, onSelect }: CitySelectionMo
             </p>
           </div>
 
-          <div>
-            <CitySelect
-              value={selectedCityId}
-              onValueChange={handleCityChange}
-              placeholder="Escolha sua cidade"
-              className="w-full"
-            />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Selecione sua cidade</label>
+            <CitySelect value={selectedCityId} onValueChange={handleCityChange} placeholder="Escolha sua cidade" />
           </div>
 
-          <Button onClick={handleContinue} className="w-full" disabled={!selectedCityId || isSubmitting}>
-            {isSubmitting ? "Salvando..." : "Continuar"}
+          <Button onClick={handleContinue} className="w-full" disabled={!selectedCityId || isSubmitting} size="lg">
+            {isSubmitting ? (
+              <>
+                <span className="mr-2">Salvando...</span>
+                <span className="animate-spin">⏳</span>
+              </>
+            ) : (
+              "Continuar"
+            )}
           </Button>
         </div>
       </DialogContent>

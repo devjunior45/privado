@@ -24,9 +24,18 @@ export function CitySelect({ value, onValueChange, placeholder = "Selecione uma 
   }, [cities, value])
 
   const handleSelect = (cityId: number) => {
-    console.log("CitySelect handleSelect:", cityId)
-    onValueChange(cityId === value ? null : cityId)
+    onValueChange(cityId)
     setOpen(false)
+  }
+
+  if (isLoading) {
+    return (
+      <Button variant="outline" className={cn("w-full justify-between", className)} disabled>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Carregando cidades...
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    )
   }
 
   return (
@@ -37,31 +46,27 @@ export function CitySelect({ value, onValueChange, placeholder = "Selecione uma 
           role="combobox"
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
-          disabled={isLoading}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Carregando cidades...
-            </>
-          ) : selectedCity ? (
-            `${selectedCity.name} - ${selectedCity.state}`
-          ) : (
-            placeholder
-          )}
+          {selectedCity ? `${selectedCity.name} - ${selectedCity.state}` : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[400px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Buscar cidade..." />
+          <CommandInput placeholder="Buscar cidade..." className="h-9" />
           <CommandList>
             <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
             <CommandGroup>
               {cities.map((city) => (
-                <CommandItem key={city.id} value={`${city.name} ${city.state}`} onSelect={() => handleSelect(city.id)}>
-                  <Check className={cn("mr-2 h-4 w-4", value === city.id ? "opacity-100" : "opacity-0")} />
+                <CommandItem
+                  key={city.id}
+                  value={city.id.toString()}
+                  onSelect={() => {
+                    handleSelect(city.id)
+                  }}
+                >
                   {city.name} - {city.state}
+                  <Check className={cn("ml-auto h-4 w-4", value === city.id ? "opacity-100" : "opacity-0")} />
                 </CommandItem>
               ))}
             </CommandGroup>
