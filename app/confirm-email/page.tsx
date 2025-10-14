@@ -24,7 +24,7 @@ export default function ConfirmEmailPage() {
       if (user) {
         setUserEmail(user.email || "")
 
-        // Se o email já foi confirmado, redirecionar para o feed
+        // Se o email já foi confirmado, redirecionar DIRETO para o feed
         if (user.email_confirmed_at) {
           router.push("/feed")
           return
@@ -43,7 +43,7 @@ export default function ConfirmEmailPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user?.email_confirmed_at) {
-        // Email confirmado, redirecionar para o feed
+        // Email confirmado, redirecionar DIRETO para o feed
         router.push("/feed")
       }
     })

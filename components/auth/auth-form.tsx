@@ -65,33 +65,60 @@ export function AuthForm() {
     const supabase = createClient()
 
     try {
-      // Criar o usuário
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          data: {
+            username,
+            full_name: fullName,
+            user_type: userType,
+            city_id: selectedCityId?.toString(),
+            company_name: userType === "recruiter" ? companyName : null,
+            company_location: userType === "recruiter" ? companyLocation : null,
+          },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
-      if (authError) throw authError
-      if (!authData.user) throw new Error("Erro ao criar usuário")
+      if (signUpError) {
+        console.error("Erro ao criar usuário:", signUpError)
+        throw signUpError
+      }
 
-      // Criar o perfil do usuário
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: authData.user.id,
-        username,
-        full_name: fullName,
-        user_type: userType,
-        city_id: selectedCityId,
-        email: email,
-        company_name: userType === "recruiter" ? companyName : null,
-        company_location: userType === "recruiter" ? companyLocation : null,
-      })
+      if (!data.user) {
+        throw new Error("Usuário não foi criado")
+      }
 
-      if (profileError) {
-        console.error("Erro ao criar perfil:", profileError)
-        throw new Error("Erro ao salvar dados do perfil")
+      // Aguarda um pouco para o trigger criar o perfil
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Verifica se o perfil foi criado
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .single()
+
+      if (profileError || !profile) {
+        console.error("Perfil não foi criado automaticamente, criando manualmente...")
+
+        // Tenta criar o perfil manualmente se o trigger falhou
+        const { error: insertError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          email: email,
+          username: username,
+          full_name: fullName,
+          user_type: userType,
+          city_id: selectedCityId,
+          company_name: userType === "recruiter" ? companyName : null,
+          company_location: userType === "recruiter" ? companyLocation : null,
+        })
+
+        if (insertError) {
+          console.error("Erro ao criar perfil manualmente:", insertError)
+          throw new Error("Erro ao criar perfil: " + insertError.message)
+        }
       }
 
       // Redirecionar para confirmação de email
@@ -99,7 +126,7 @@ export function AuthForm() {
       router.refresh()
     } catch (error: any) {
       console.error("Erro no cadastro:", error)
-      setError(error.message || "Erro ao criar conta")
+      setError(error.message || "Erro ao criar conta. Tente novamente.")
     } finally {
       setIsLoading(false)
     }

@@ -14,16 +14,21 @@ export async function GET(request: Request) {
       // Verificar se o usuário já tem um perfil completo
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, username, user_type, city_id")
+        .select("id, username, user_type, city_id, full_name")
         .eq("id", data.user.id)
         .single()
 
-      // Se não existe perfil ou está incompleto, redirecionar para completar
-      if (!existingProfile || !existingProfile.user_type || !existingProfile.city_id) {
-        return NextResponse.redirect(`${origin}/complete-profile`)
+      // Verificar se é login social (Google) sem perfil completo
+      const isGoogleLogin = data.user.app_metadata.provider === "google"
+
+      if (isGoogleLogin) {
+        // Para login social, só redireciona para complete-profile se não tiver dados básicos
+        if (!existingProfile || !existingProfile.user_type || !existingProfile.city_id || !existingProfile.username) {
+          return NextResponse.redirect(`${origin}/complete-profile`)
+        }
       }
 
-      // Se tudo está completo, ir para o feed
+      // Para login com email ou perfil já completo, ir para o feed
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
