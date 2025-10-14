@@ -131,8 +131,10 @@ export function CompleteProfileModal({
                   className="w-full justify-start text-left font-normal bg-transparent"
                   onClick={() => setIsCityModalOpen(true)}
                 >
-                  <MapPin className="mr-2 h-4 w-4" />
-                  {selectedCity ? formatCityDisplay(selectedCity) : "Selecione sua cidade"}
+                  <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">
+                    {selectedCity ? formatCityDisplay(selectedCity) : "Selecione sua cidade"}
+                  </span>
                 </Button>
               </div>
             )}

@@ -89,9 +89,10 @@ export function CityModal({ isOpen, onClose, value, onValueChange }: CityModalPr
               {/* Opção "Todas as cidades" */}
               <div className="mb-2">
                 <button
+                  type="button"
                   onClick={() => handleSelect(null)}
                   className={cn(
-                    "w-full flex items-center px-3 py-2 text-left hover:bg-accent rounded-md transition-colors",
+                    "w-full flex items-center px-3 py-2 text-left hover:bg-accent rounded-md transition-colors cursor-pointer",
                     value === null && "bg-accent",
                   )}
                 >
@@ -113,14 +114,20 @@ export function CityModal({ isOpen, onClose, value, onValueChange }: CityModalPr
                       {group.cities.map((city) => (
                         <button
                           key={city.value}
+                          type="button"
                           onClick={() => handleSelect(city.value)}
                           className={cn(
-                            "w-full flex items-center px-3 py-2 text-left hover:bg-accent rounded-md transition-colors",
+                            "w-full flex items-center px-3 py-2 text-left hover:bg-accent rounded-md transition-colors cursor-pointer",
                             value === city.value && "bg-accent",
                           )}
                         >
-                          <Check className={cn("mr-2 h-4 w-4", value === city.value ? "opacity-100" : "opacity-0")} />
-                          <span>{city.label}</span>
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4 flex-shrink-0",
+                              value === city.value ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          <span className="flex-1">{city.label}</span>
                         </button>
                       ))}
                     </div>
