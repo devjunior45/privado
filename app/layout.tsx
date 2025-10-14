@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { DesktopHeader } from "@/components/desktop-header"
 import { ProfileSidebar } from "@/components/profile-sidebar"
+import { ProfileCompletionCheck } from "@/components/auth/profile-completion-check"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -43,6 +44,15 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
             <div className="min-h-screen bg-background">
+              {/* Verificação de perfil incompleto */}
+              {user && userProfile && (
+                <ProfileCompletionCheck
+                  userId={user.id}
+                  fullName={userProfile.full_name}
+                  cityId={userProfile.city_id}
+                />
+              )}
+
               {/* Mobile Navigation - unchanged */}
               <div className="md:hidden">
                 <Navigation isLoggedIn={!!user} userProfile={userProfile} />
