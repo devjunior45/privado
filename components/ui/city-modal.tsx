@@ -54,7 +54,7 @@ export function CityModal({ isOpen, onClose, value, onValueChange }: CityModalPr
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
       <div className="bg-background rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
