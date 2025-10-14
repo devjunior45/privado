@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -19,9 +20,10 @@ type CompleteProfileStep = "user-type" | "city-selection" | "personal-info"
 interface CompleteProfileFormProps {
   user: any
   existingProfile: any
+  isGoogleAuth?: boolean
 }
 
-export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFormProps) {
+export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = false }: CompleteProfileFormProps) {
   const [currentStep, setCurrentStep] = useState<CompleteProfileStep>("user-type")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,26 +40,11 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
   }
 
   const handleCityNext = () => {
-    if (!selectedCityId) {
-      setError("Por favor, selecione uma cidade")
-      return
-    }
     setCurrentStep("personal-info")
   }
 
   const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!fullName.trim()) {
-      setError("Por favor, preencha seu nome completo")
-      return
-    }
-
-    if (!selectedCityId) {
-      setError("Por favor, selecione uma cidade")
-      return
-    }
-
     setIsLoading(true)
     setError("")
 
@@ -70,20 +57,15 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
         username = await generateUniqueUsername(fullName)
       }
 
-      // Buscar informações da cidade
-      const { data: cityData } = await supabase.from("cities").select("name, state").eq("id", selectedCityId).single()
-
       // Atualizar ou criar perfil
       const profileData = {
         id: user.id,
         username,
-        full_name: fullName.trim(),
+        full_name: fullName,
         email: user.email,
         user_type: userType,
         city_id: selectedCityId,
-        city: cityData?.name || null,
-        state: cityData?.state || null,
-        avatar_url: user.user_metadata?.avatar_url || null,
+        avatar_url: existingProfile?.avatar_url || user.user_metadata?.avatar_url || null,
         created_at: existingProfile?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -111,8 +93,18 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
           <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Complete seu Perfil</h2>
-        <p className="text-muted-foreground">O que você pretende fazer?</p>
+        <p className="text-muted-foreground">
+          {isGoogleAuth ? "Bem-vindo! O que você pretende fazer?" : "O que você pretende fazer?"}
+        </p>
       </div>
+
+      {isGoogleAuth && (
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+          <p className="text-sm text-green-800 dark:text-green-200 text-center">
+            ✓ Conta Google conectada com sucesso!
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4">
         <Button
@@ -159,12 +151,6 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
         </p>
       </div>
 
-      {error && (
-        <Alert className="mb-4" variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       <div className="space-y-4">
         <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-2">
@@ -210,7 +196,7 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
       </div>
 
       {error && (
-        <Alert className="mb-4" variant="destructive">
+        <Alert className="mb-4">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -225,6 +211,9 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
             required
             placeholder="Digite seu nome completo"
           />
+          {isGoogleAuth && (
+            <p className="text-xs text-muted-foreground mt-1">Você pode editar o nome que veio do Google se preferir</p>
+          )}
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border">
@@ -237,11 +226,16 @@ export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFo
               <strong>Tipo:</strong> {userType === "candidate" ? "Candidato" : "Recrutador"}
             </p>
             <p>
-              <strong>Cidade:</strong> {selectedCityId ? "Selecionada ✓" : "Não selecionada"}
+              <strong>Cidade:</strong> {selectedCityId ? "Selecionada" : "Não selecionada"}
             </p>
             <p>
               <strong>Email:</strong> {user.email}
             </p>
+            {isGoogleAuth && (
+              <p className="text-green-600 dark:text-green-400">
+                <strong>✓ Conectado via Google</strong>
+              </p>
+            )}
           </div>
         </div>
 

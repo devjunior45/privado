@@ -15,18 +15,20 @@ export default async function CompleteProfilePage() {
   // Verificar se o perfil já está completo
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, user_type, city_id, full_name")
+    .select("id, username, user_type, city_id, full_name, email, avatar_url")
     .eq("id", user.id)
     .single()
 
-  // Se o perfil está completo, redirecionar para o feed
-  if (profile && profile.user_type && profile.city_id && profile.full_name) {
+  if (profile && profile.user_type && profile.city_id) {
     redirect("/feed")
   }
 
+  // Determinar se veio do Google OAuth
+  const isGoogleAuth = user.app_metadata?.provider === "google"
+
   return (
     <div className="min-h-screen bg-background">
-      <CompleteProfileForm user={user} existingProfile={profile} />
+      <CompleteProfileForm user={user} existingProfile={profile} isGoogleAuth={isGoogleAuth} />
     </div>
   )
 }
