@@ -90,38 +90,7 @@ export function AuthForm() {
         throw new Error("Usuário não foi criado")
       }
 
-      // Aguarda um pouco para o trigger criar o perfil
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Verifica se o perfil foi criado
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", data.user.id)
-        .single()
-
-      if (profileError || !profile) {
-        console.error("Perfil não foi criado automaticamente, criando manualmente...")
-
-        // Tenta criar o perfil manualmente se o trigger falhou
-        const { error: insertError } = await supabase.from("profiles").insert({
-          id: data.user.id,
-          email: email,
-          username: username,
-          full_name: fullName,
-          user_type: userType,
-          city_id: selectedCityId,
-          company_name: userType === "recruiter" ? companyName : null,
-          company_location: userType === "recruiter" ? companyLocation : null,
-        })
-
-        if (insertError) {
-          console.error("Erro ao criar perfil manualmente:", insertError)
-          throw new Error("Erro ao criar perfil: " + insertError.message)
-        }
-      }
-
-      // Redirecionar para confirmação de email
+      // SEMPRE redirecionar para a página de confirmação de email após cadastro
       router.push("/confirm-email")
       router.refresh()
     } catch (error: any) {
