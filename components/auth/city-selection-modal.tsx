@@ -14,11 +14,23 @@ interface CitySelectionModalProps {
 
 export function CitySelectionModal({ open, userType, onSelect }: CitySelectionModalProps) {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleContinue = () => {
-    if (selectedCityId) {
-      onSelect(selectedCityId)
+  const handleContinue = async () => {
+    if (selectedCityId && !isSubmitting) {
+      setIsSubmitting(true)
+      try {
+        await onSelect(selectedCityId)
+      } catch (error) {
+        console.error("Erro ao selecionar cidade:", error)
+        setIsSubmitting(false)
+      }
     }
+  }
+
+  const handleCityChange = (value: number | null) => {
+    console.log("Cidade selecionada:", value)
+    setSelectedCityId(value)
   }
 
   return (
@@ -47,14 +59,14 @@ export function CitySelectionModal({ open, userType, onSelect }: CitySelectionMo
           <div>
             <CitySelect
               value={selectedCityId}
-              onValueChange={setSelectedCityId}
+              onValueChange={handleCityChange}
               placeholder="Escolha sua cidade"
               className="w-full"
             />
           </div>
 
-          <Button onClick={handleContinue} className="w-full" disabled={!selectedCityId}>
-            Continuar
+          <Button onClick={handleContinue} className="w-full" disabled={!selectedCityId || isSubmitting}>
+            {isSubmitting ? "Salvando..." : "Continuar"}
           </Button>
         </div>
       </DialogContent>
