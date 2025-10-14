@@ -12,38 +12,50 @@ export default function ConfirmEmailPage() {
   const [isResending, setIsResending] = useState(false)
   const [resendMessage, setResendMessage] = useState("")
   const [userEmail, setUserEmail] = useState("")
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    // Verificar se há um usuário logado mas não confirmado
     const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (user) {
-        setUserEmail(user.email || "")
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
 
-        // Se o email já foi confirmado, redirecionar DIRETO para o feed
-        if (user.email_confirmed_at) {
-          router.push("/feed")
-          return
+        if (user) {
+          setUserEmail(user.email || "")
+
+          // Se o email já foi confirmado, redirecionar para o feed
+          if (user.email_confirmed_at) {
+            router.push("/feed")
+            return
+          }
+        } else {
+          // Se não há usuário na sessão, verificar se há um email salvo localmente
+          const savedEmail = localStorage.getItem("pending_confirmation_email")
+          if (savedEmail) {
+            setUserEmail(savedEmail)
+          } else {
+            // Se não há email salvo, redirecionar para login
+            router.push("/login")
+            return
+          }
         }
-      } else {
-        // Se não há usuário, redirecionar para login
-        router.push("/login")
-        return
+      } finally {
+        setIsCheckingAuth(false)
       }
     }
 
     checkUser()
 
-    // Escutar mudanças no estado de autenticação
+    // Escutar mudanças no estado de autenticação (quando o usuário clicar no link do email)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user?.email_confirmed_at) {
-        // Email confirmado, redirecionar DIRETO para o feed
+        // Email confirmado via link, limpar localStorage e redirecionar
+        localStorage.removeItem("pending_confirmation_email")
         router.push("/feed")
       }
     })
@@ -76,7 +88,19 @@ export default function ConfirmEmailPage() {
   }
 
   const handleBackToLogin = () => {
+    localStorage.removeItem("pending_confirmation_email")
     router.push("/login")
+  }
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
