@@ -16,6 +16,7 @@ import { GoogleIcon } from "@/components/icons/google-icon"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useMobile } from "@/hooks/use-mobile"
+import { generateUniqueUsername } from "@/utils/username-generator"
 
 type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
 
@@ -26,7 +27,7 @@ export function AuthForm() {
   const [error, setError] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [username, setUsername] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [fullName, setFullName] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [companyLocation, setCompanyLocation] = useState("")
@@ -62,9 +63,26 @@ export function AuthForm() {
     setIsLoading(true)
     setError("")
 
+    // Validar se as senhas coincidem
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem")
+      setIsLoading(false)
+      return
+    }
+
+    // Validar tamanho mínimo da senha
+    if (password.length < 6) {
+      setError("A senha deve ter no mínimo 6 caracteres")
+      setIsLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     try {
+      // Gerar username único baseado no nome
+      const username = await generateUniqueUsername(fullName)
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -421,11 +439,6 @@ export function AuthForm() {
         </div>
 
         <div>
-          <Label htmlFor="signup-username">Nome de Usuário</Label>
-          <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </div>
-
-        <div>
           <Label htmlFor="signup-email">Email</Label>
           <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
@@ -439,6 +452,20 @@ export function AuthForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
+            placeholder="Mínimo 6 caracteres"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="signup-confirmPassword">Confirmar Senha</Label>
+          <Input
+            id="signup-confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+            placeholder="Digite a senha novamente"
           />
         </div>
 
@@ -500,11 +527,6 @@ export function AuthForm() {
         </div>
 
         <div>
-          <Label htmlFor="signup-username">Nome de Usuário</Label>
-          <Input id="signup-username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </div>
-
-        <div>
           <Label htmlFor="signup-email">Email</Label>
           <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
@@ -518,6 +540,20 @@ export function AuthForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
+            placeholder="Mínimo 6 caracteres"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="signup-confirmPassword">Confirmar Senha</Label>
+          <Input
+            id="signup-confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+            placeholder="Digite a senha novamente"
           />
         </div>
 
