@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -20,10 +20,9 @@ type CompleteProfileStep = "user-type" | "city-selection" | "personal-info"
 interface CompleteProfileFormProps {
   user: any
   existingProfile: any
-  isGoogleAuth?: boolean
 }
 
-export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = false }: CompleteProfileFormProps) {
+export function CompleteProfileForm({ user, existingProfile }: CompleteProfileFormProps) {
   const [currentStep, setCurrentStep] = useState<CompleteProfileStep>("user-type")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -34,22 +33,12 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
   )
   const router = useRouter()
 
-  useEffect(() => {
-    console.log("CompleteProfileForm - Props:", {
-      user: user?.id,
-      existingProfile,
-      isGoogleAuth,
-    })
-  }, [user, existingProfile, isGoogleAuth])
-
   const handleUserTypeSelect = (type: UserType) => {
-    console.log("Tipo de usuário selecionado:", type)
     setUserType(type)
     setCurrentStep("city-selection")
   }
 
   const handleCityNext = () => {
-    console.log("Cidade selecionada:", selectedCityId)
     setCurrentStep("personal-info")
   }
 
@@ -58,12 +47,6 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
     setIsLoading(true)
     setError("")
 
-    console.log("Completando perfil com dados:", {
-      userType,
-      selectedCityId,
-      fullName,
-    })
-
     const supabase = createClient()
 
     try {
@@ -71,7 +54,6 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
       let username = existingProfile?.username
       if (!username) {
         username = await generateUniqueUsername(fullName)
-        console.log("Username gerado:", username)
       }
 
       // Atualizar ou criar perfil
@@ -82,26 +64,16 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
         email: user.email,
         user_type: userType,
         city_id: selectedCityId,
-        avatar_url: existingProfile?.avatar_url || user.user_metadata?.avatar_url || null,
+        avatar_url: user.user_metadata?.avatar_url || null,
         created_at: existingProfile?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
 
-      console.log("Dados do perfil a serem salvos:", profileData)
-
-      const { data: savedProfile, error: profileError } = await supabase
-        .from("profiles")
-        .upsert(profileData, { onConflict: "id" })
-        .select()
-        .single()
+      const { error: profileError } = await supabase.from("profiles").upsert(profileData, { onConflict: "id" })
 
       if (profileError) {
-        console.error("Erro ao salvar perfil:", profileError)
         throw profileError
       }
-
-      console.log("Perfil salvo com sucesso:", savedProfile)
-      console.log("Redirecionando para feed...")
 
       router.push("/feed")
       router.refresh()
@@ -120,18 +92,8 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
           <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" />
         </div>
         <h2 className="text-2xl font-bold">Complete seu Perfil</h2>
-        <p className="text-muted-foreground">
-          {isGoogleAuth ? "Bem-vindo! O que você pretende fazer?" : "O que você pretende fazer?"}
-        </p>
+        <p className="text-muted-foreground">O que você pretende fazer?</p>
       </div>
-
-      {isGoogleAuth && (
-        <div className="mb-6 p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-          <p className="text-sm text-green-800 dark:text-green-200 text-center">
-            ✓ Conta Google conectada com sucesso!
-          </p>
-        </div>
-      )}
 
       <div className="space-y-4">
         <Button
@@ -223,7 +185,7 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
       </div>
 
       {error && (
-        <Alert className="mb-4" variant="destructive">
+        <Alert className="mb-4">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -238,9 +200,6 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
             required
             placeholder="Digite seu nome completo"
           />
-          {isGoogleAuth && (
-            <p className="text-xs text-muted-foreground mt-1">Você pode editar o nome que veio do Google se preferir</p>
-          )}
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border">
@@ -258,11 +217,6 @@ export function CompleteProfileForm({ user, existingProfile, isGoogleAuth = fals
             <p>
               <strong>Email:</strong> {user.email}
             </p>
-            {isGoogleAuth && (
-              <p className="text-green-600 dark:text-green-400">
-                <strong>✓ Conectado via Google</strong>
-              </p>
-            )}
           </div>
         </div>
 

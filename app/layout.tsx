@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { DesktopHeader } from "@/components/desktop-header"
 import { ProfileSidebar } from "@/components/profile-sidebar"
+import { ProfileCheckWrapper } from "@/components/profile/profile-check-wrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -42,26 +43,28 @@ export default async function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
-            <div className="min-h-screen bg-background">
-              {/* Mobile Navigation - unchanged */}
-              <div className="md:hidden">
-                <Navigation isLoggedIn={!!user} userProfile={userProfile} />
-                <main className="pb-16">{children}</main>
-              </div>
+            <ProfileCheckWrapper userProfile={userProfile}>
+              <div className="min-h-screen bg-background">
+                {/* Mobile Navigation - unchanged */}
+                <div className="md:hidden">
+                  <Navigation isLoggedIn={!!user} userProfile={userProfile} />
+                  <main className="pb-16">{children}</main>
+                </div>
 
-              {/* Desktop Layout */}
-              <div className="hidden md:block h-screen overflow-hidden">
-                <DesktopHeader isLoggedIn={!!user} userProfile={userProfile} />
-                <div className="h-full pt-14">
-                  <div className="max-w-6xl mx-auto flex h-full">
-                    <ProfileSidebar isLoggedIn={!!user} userProfile={userProfile} />
-                    <main className="flex-1 px-6 py-6 max-w-3xl overflow-y-auto">{children}</main>
+                {/* Desktop Layout */}
+                <div className="hidden md:block h-screen overflow-hidden">
+                  <DesktopHeader isLoggedIn={!!user} userProfile={userProfile} />
+                  <div className="h-full pt-14">
+                    <div className="max-w-6xl mx-auto flex h-full">
+                      <ProfileSidebar isLoggedIn={!!user} userProfile={userProfile} />
+                      <main className="flex-1 px-6 py-6 max-w-3xl overflow-y-auto">{children}</main>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <PWAInstallPrompt />
-            </div>
+                <PWAInstallPrompt />
+              </div>
+            </ProfileCheckWrapper>
           </ReactQueryProvider>
         </ThemeProvider>
       </body>
