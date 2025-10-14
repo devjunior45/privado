@@ -42,7 +42,12 @@ export function CompleteProfileModal({
     setCityId(currentCityId)
   }, [currentName, currentCityId])
 
-  const selectedCity = cityId ? cities.find((city) => city.id === cityId) : null
+  useEffect(() => {
+    // Auto-open city modal when it's the missing field
+    if (missingField === "city" && isOpen) {
+      setIsCityModalOpen(true)
+    }
+  }, [missingField, isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +88,8 @@ export function CompleteProfileModal({
   }
 
   const isValid = missingField === "name" ? fullName.trim().length > 0 : cityId !== null
+
+  const selectedCity = cities.find((city) => city.id === cityId)
 
   return (
     <>
@@ -128,13 +135,11 @@ export function CompleteProfileModal({
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full justify-start text-left font-normal bg-transparent"
                   onClick={() => setIsCityModalOpen(true)}
+                  className="w-full justify-between"
                 >
-                  <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
-                  <span className="flex-1 text-left">
-                    {selectedCity ? formatCityDisplay(selectedCity) : "Selecione sua cidade"}
-                  </span>
+                  {selectedCity ? formatCityDisplay(selectedCity) : "Selecione uma cidade"}
+                  <MapPin className="w-4 h-4 ml-2 opacity-50" />
                 </Button>
               </div>
             )}
@@ -148,13 +153,13 @@ export function CompleteProfileModal({
         </DialogContent>
       </Dialog>
 
-      {/* Modal de seleção de cidade */}
+      {/* City Modal - Opens on top of the dialog */}
       <CityModal
         isOpen={isCityModalOpen}
         onClose={() => setIsCityModalOpen(false)}
         value={cityId}
-        onValueChange={(value) => {
-          setCityId(value)
+        onValueChange={(newCityId) => {
+          setCityId(newCityId)
           setIsCityModalOpen(false)
         }}
       />
