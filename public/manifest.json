@@ -7,7 +7,7 @@
   "display": "standalone",
   "scope": "/",
   "background_color": "#000000",
-  "theme_color": "#3b82f6",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "categories": ["business", "productivity", "jobs"],
   "prefer_related_applications": false,
