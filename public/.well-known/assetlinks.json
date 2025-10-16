@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "br.app.buscaempregos.twa",
+        "sha256_cert_fingerprints": ["AC:F9:37:84:58:CC:CC:EB:0C:4D:93:DF:F8:AC:3E:45:77:34:CC:76:C8:1A:F4:A5:D6:21:88:82:0A:3D:38:C7"]
+      }
+    }]
