@@ -2,7 +2,7 @@
       "relation": ["delegate_permission/common.handle_all_urls"],
       "target": {
         "namespace": "android_app",
-        "package_name": "br.app.buscaempregos.twa",
-        "sha256_cert_fingerprints": ["AC:F9:37:84:58:CC:CC:EB:0C:4D:93:DF:F8:AC:3E:45:77:34:CC:76:C8:1A:F4:A5:D6:21:88:82:0A:3D:38:C7"]
+        "package_name": "br.com.nortaoempregos.twa",
+        "sha256_cert_fingerprints": ["F2:63:7A:B6:60:DE:AE:0D:C4:71:95:20:73:B0:0B:D3:39:67:4D:90:66:EB:86:88:9F:83:5E:6F:76:C2:19:D5"]
       }
     }]
