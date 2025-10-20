@@ -275,7 +275,7 @@ export function AuthForm() {
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
-        <p className="text-muted-foreground">Acesse sua conta com seu email</p>
+        <p className="text-muted-foreground">Acesse sua conta com seu email!</p>
       </div>
 
       {error && (
