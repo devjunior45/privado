@@ -271,7 +271,7 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6 flex">
+        <div className="mb-6 flex justify-end pr-6 pt-4">
           <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
         </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
