@@ -250,6 +250,18 @@ export async function generateResumePDF(profile: UserProfile): Promise<string> {
     })
   }
 
+  // Rodapé - adicionar em todas as páginas
+  const pageCount = doc.getNumberOfPages()
+  const today = new Date().toLocaleDateString("pt-BR")
+
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setFont("helvetica", "normal")
+    doc.setTextColor(128, 128, 128) // Cor cinza
+    doc.text(`Gerado em ${today} via Busca Empregos`, 20, 287)
+  }
+
   // Converter para data URL
   const pdfDataUrl = doc.output("dataurlstring")
   return pdfDataUrl
