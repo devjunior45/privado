@@ -18,6 +18,8 @@ export async function updateProfile(formData: FormData) {
   }
 
   const fullName = formData.get("fullName") as string
+  const birthDate = formData.get("birthDate") as string
+  const address = formData.get("address") as string
   const cityId = formData.get("cityId") ? Number.parseInt(formData.get("cityId") as string) : null
   const whatsapp = formData.get("whatsapp") as string
   const email = formData.get("email") as string
@@ -70,6 +72,8 @@ export async function updateProfile(formData: FormData) {
 
   const updateData: any = {
     full_name: fullName,
+    birth_date: birthDate || null,
+    address: address || null,
     city_id: cityId,
     city, // Mantemos para compatibilidade
     state, // Mantemos para compatibilidade

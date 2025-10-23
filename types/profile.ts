@@ -50,6 +50,8 @@ export interface UserProfile {
   cnpj?: string | null
   is_verified?: boolean
   is_first_job?: boolean
+  birth_date?: string | null
+  address?: string | null
 }
 
 export interface JobApplication {

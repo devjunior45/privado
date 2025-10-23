@@ -25,6 +25,8 @@ import {
   Trash2,
   Loader2,
   ShieldCheck,
+  Cake,
+  Home,
 } from "lucide-react"
 import type { UserProfile, Experience, Education, Course } from "@/types/profile"
 import { ResumePDF } from "./resume-pdf"
@@ -61,6 +63,18 @@ const EDUCATION_LEVELS = [
 const EDUCATION_STATUS = ["cursando", "incompleto", "concluído"]
 
 const CNH_TYPES = ["A", "B", "AB", "C", "D", "E"]
+
+// Função para calcular idade
+function calculateAge(birthDate: string): number {
+  const today = new Date()
+  const birth = new Date(birthDate)
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  return age
+}
 
 export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps) {
   const [profileData, setProfileData] = useState<
@@ -147,6 +161,8 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
 
       // Atualização otimista do estado local
       const fullName = formData.get("fullName") as string
+      const birthDate = formData.get("birthDate") as string
+      const address = formData.get("address") as string
       const whatsapp = formData.get("whatsapp") as string
       const email = formData.get("email") as string
       const professionalSummary = formData.get("professionalSummary") as string
@@ -155,6 +171,8 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       setProfileData((prev) => ({
         ...prev,
         full_name: fullName,
+        birth_date: birthDate,
+        address: address,
         whatsapp,
         email,
         professional_summary: professionalSummary,
@@ -450,6 +468,16 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                   </Badge>
                 )}
               </div>
+
+              {/* Idade */}
+              {profileData.birth_date && (
+                <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
+                  <Cake className="w-4 h-4" />
+                  <span className="text-sm">{calculateAge(profileData.birth_date)} anos</span>
+                </div>
+              )}
+
+              {/* Cidade */}
               {profileData.city_id ? (
                 <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
                   <MapPin className="w-4 h-4" />
@@ -468,6 +496,14 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                     <span className="text-sm">+ Adicionar cidade</span>
                   </button>
                 )
+              )}
+
+              {/* Endereço */}
+              {profileData.address && (
+                <div className="flex items-center justify-center gap-1 text-muted-foreground mt-1">
+                  <Home className="w-4 h-4" />
+                  <span className="text-sm">{profileData.address}</span>
+                </div>
               )}
             </div>
 
@@ -804,6 +840,11 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
             </div>
 
             <div>
+              <Label htmlFor="birthDate">Data de Nascimento</Label>
+              <Input id="birthDate" name="birthDate" type="date" defaultValue={profileData.birth_date || ""} />
+            </div>
+
+            <div>
               <Label htmlFor="cityId">Cidade</Label>
               <CitySelect
                 value={selectedCityId}
@@ -811,6 +852,16 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
                 placeholder="Selecione sua cidade"
                 name="cityId"
                 id="cityId"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="address">Endereço</Label>
+              <Input
+                id="address"
+                name="address"
+                defaultValue={profileData.address || ""}
+                placeholder="Rua, número, bairro"
               />
             </div>
 
