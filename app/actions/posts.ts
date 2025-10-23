@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { put } from "@vercel/blob"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { sortJobsByImportance } from "@/utils/job-ranking"
 
 export async function createJobPost(formData: FormData) {
   const supabase = await createClient()
@@ -128,6 +127,7 @@ export async function getPosts(cityId?: number | null, userId?: string) {
       )
     `)
     .eq("status", "active") // Apenas vagas ativas aparecem no feed
+    .order("created_at", { ascending: false })
 
   // Filtrar por cidade se especificado
   if (cityId !== null && cityId !== undefined) {
@@ -147,10 +147,7 @@ export async function getPosts(cityId?: number | null, userId?: string) {
     is_liked: userId ? post.post_likes.some((like: any) => like.user_id === userId) : false,
   }))
 
-  // Ordenar por importância usando o algoritmo de ranking
-  const sortedPosts = sortJobsByImportance(processedPosts || [])
-
-  return sortedPosts
+  return processedPosts || []
 }
 
 export async function updateJobStatus(jobId: string, status: "active" | "paused" | "closed") {
