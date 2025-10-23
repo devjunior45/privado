@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Upload, X, ImageIcon } from "lucide-react"
+import { Loader2, Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
 import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/toast"
 import { createClient } from "@/lib/supabase/client"
 import { useSectors } from "@/hooks/use-sectors"
 import { MultiSelect } from "@/components/ui/multi-select"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const DARK_COLORS = [
   { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
@@ -43,6 +44,8 @@ export function CreateJobForm() {
     cityId?: string
     sectors?: string
   }>({})
+  const [infoMessage, setInfoMessage] = useState<string | null>(null)
+  const [showInfo, setShowInfo] = useState(true)
   const router = useRouter()
   const { showToast, ToastContainer } = useToast()
   const { sectors, isLoading: isLoadingSectors } = useSectors()
@@ -151,6 +154,7 @@ export function CreateJobForm() {
 
     setErrors({})
     setIsLoading(true)
+    setInfoMessage(null)
 
     const formData = new FormData()
     formData.append("title", title)
@@ -175,7 +179,17 @@ export function CreateJobForm() {
       router.push("/dashboard")
     } catch (error) {
       console.error("Erro ao criar vaga:", error)
-      showToast(error instanceof Error ? error.message : "Erro inesperado ao publicar vaga", "error")
+      const errorMessage = error instanceof Error ? error.message : "Erro inesperado ao publicar vaga"
+
+      // Verificar se é o erro de limite de vagas
+      if (errorMessage.includes("podem ter apenas 1 vaga ativa")) {
+        setInfoMessage(errorMessage)
+        setShowInfo(true)
+        // Scroll para o topo para ver a mensagem
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      } else {
+        showToast(errorMessage, "error")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -205,6 +219,25 @@ export function CreateJobForm() {
 
   return (
     <div className="space-y-6 pb-20">
+      {/* Mensagem Informativa */}
+      {infoMessage && showInfo && (
+        <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <div className="flex-1">
+            <AlertTitle className="text-blue-800 dark:text-blue-300">Limite de Vagas Atingido</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-400 mt-2">{infoMessage}</AlertDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowInfo(false)}
+            className="ml-auto h-8 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </Alert>
+      )}
+
       <form onSubmit={handleFormSubmit} noValidate>
         {/* Upload de Imagem */}
         <Card>
