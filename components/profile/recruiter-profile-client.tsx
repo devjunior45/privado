@@ -6,23 +6,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, Shield } from "lucide-react"
+import { Edit, Star, MessageCircle } from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
-import { updateRecruiterProfile, requestVerification } from "@/app/actions/profile"
+import { updateRecruiterProfile } from "@/app/actions/profile"
 import { toast } from "sonner"
 import { SettingsSheet } from "@/components/ui/settings-sheet"
 
 interface RecruiterProfileClientProps {
   profile: UserProfile
-  showVerificationButton?: boolean
+  showSubscriptionButton?: boolean
 }
 
-export function RecruiterProfileClient({ profile, showVerificationButton = false }: RecruiterProfileClientProps) {
+export function RecruiterProfileClient({ profile, showSubscriptionButton = false }: RecruiterProfileClientProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [isVerificationOpen, setIsVerificationOpen] = useState(false)
+  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const whatsappNumber = "5511999999999" // Substitua pelo número real
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Olá! Gostaria de saber mais sobre a assinatura do Busca Empregos.")}`
 
   const handleProfileSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -34,7 +37,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
       await updateRecruiterProfile(formData)
       setIsEditOpen(false)
       toast.success("Perfil atualizado com sucesso!")
-      window.location.reload() // Refresh to show updated data
+      window.location.reload()
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
       toast.error("Erro ao atualizar perfil. Tente novamente.")
@@ -43,116 +46,97 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
     }
   }
 
-  const handleVerificationRequest = async (formData: FormData) => {
-    setIsLoading(true)
-    try {
-      await requestVerification(formData)
-      setIsVerificationOpen(false)
-      toast.success("Solicitação de verificação enviada com sucesso!")
-      window.location.reload() // Refresh to show updated status
-    } catch (error) {
-      console.error("Erro ao solicitar verificação:", error)
-      toast.error("Erro ao solicitar verificação. Tente novamente.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  if (showVerificationButton) {
+  if (showSubscriptionButton) {
     return (
       <>
-        <Button variant="outline" size="sm" onClick={() => setIsVerificationOpen(true)} className="w-full">
-          <Shield className="w-4 h-4 mr-2" />
-          Solicitar Verificação
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setIsSubscriptionOpen(true)}
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
+        >
+          <Star className="w-4 h-4 mr-2 fill-current" />
+          Assine o Busca Empregos
         </Button>
 
-        {/* Dialog para Solicitar Verificação */}
-        <Dialog open={isVerificationOpen} onOpenChange={setIsVerificationOpen}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <Dialog open={isSubscriptionOpen} onOpenChange={setIsSubscriptionOpen}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Solicitar Verificação da Empresa</DialogTitle>
+              <DialogTitle className="text-center text-2xl font-bold text-primary flex items-center justify-center gap-2">
+                <Star className="w-6 h-6 fill-yellow-500 text-yellow-500" />
+                Assine o Busca Empregos
+              </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Por que verificar sua empresa?</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Maior credibilidade no feed de vagas</li>
-                  <li>• Badge de verificação visível</li>
-                  <li>• Mais confiança dos candidatos</li>
-                  <li>• Destaque nas pesquisas</li>
-                </ul>
+            <div className="space-y-6 py-4">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-lg">
+                <h3 className="font-bold text-lg mb-4 text-center">Assine o plano e destaque sua empresa!</h3>
+                <p className="text-center text-muted-foreground mb-6">
+                  Ganhe mais visibilidade e credibilidade no feed de vagas.
+                </p>
+
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium">Publique mais oportunidades</p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium">Receba o selo de verificação</p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium">Transmita confiança aos candidatos</p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium">Tenha suporte sempre disponível</p>
+                  </div>
+                </div>
+
+                <p className="text-center text-sm font-semibold mt-6 text-primary">
+                  Invista no seu crescimento e encontre os melhores talentos mais rápido!
+                </p>
               </div>
 
-              <form action={handleVerificationRequest} className="space-y-4">
-                <div>
-                  <Label htmlFor="companyName">Nome da Empresa *</Label>
-                  <Input
-                    id="companyName"
-                    name="companyName"
-                    defaultValue={profile.company_name || ""}
-                    required
-                    placeholder="Nome da sua empresa"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="cnpj">CNPJ (opcional)</Label>
-                  <Input
-                    id="cnpj"
-                    name="cnpj"
-                    defaultValue={profile.cnpj || ""}
-                    placeholder="00.000.000/0000-00"
-                    maxLength={18}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="contactPhone">Telefone para Contato *</Label>
-                  <Input
-                    id="contactPhone"
-                    name="contactPhone"
-                    defaultValue={profile.whatsapp || ""}
-                    placeholder="(11) 99999-9999"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Número que usaremos para entrar em contato e verificar sua empresa
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="contactEmail">Email para Contato</Label>
-                  <Input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    defaultValue={profile.email || ""}
-                    placeholder="contato@empresa.com.br"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="message">Informações Adicionais (opcional)</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    placeholder="Conte-nos mais sobre sua empresa, área de atuação, etc."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Importante:</strong> Nossa equipe entrará em contato pelo telefone informado em até 2 dias
-                    úteis para verificar sua empresa. Mantenha o telefone disponível.
-                  </p>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Enviando..." : "Solicitar Verificação"}
+              <div className="space-y-3">
+                <Button
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold"
+                  size="lg"
+                  asChild
+                >
+                  <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                    <Star className="w-5 h-5 mr-2 fill-current" />
+                    Assinar Plano
+                  </a>
                 </Button>
-              </form>
+
+                <Button variant="outline" className="w-full bg-transparent" size="lg" asChild>
+                  <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Dúvidas
+                  </a>
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -170,7 +154,6 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
         <SettingsSheet />
       </div>
 
-      {/* Dialog para Editar Perfil */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
