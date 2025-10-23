@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, Shield } from "lucide-react"
+import { Edit, Shield, ShieldCheck, MessageCircle } from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
-import { updateRecruiterProfile, requestVerification } from "@/app/actions/profile"
+import { updateRecruiterProfile } from "@/app/actions/profile"
 import { toast } from "sonner"
 import { SettingsSheet } from "@/components/ui/settings-sheet"
 
@@ -20,9 +20,11 @@ interface RecruiterProfileClientProps {
 
 export function RecruiterProfileClient({ profile, showVerificationButton = false }: RecruiterProfileClientProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [isVerificationOpen, setIsVerificationOpen] = useState(false)
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const whatsappLink = "https://wa.me/5511999999999?text=Olá,%20gostaria%20de%20assinar%20o%20Busca%20Empregos%2B"
 
   const handleProfileSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -34,7 +36,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
       await updateRecruiterProfile(formData)
       setIsEditOpen(false)
       toast.success("Perfil atualizado com sucesso!")
-      window.location.reload() // Refresh to show updated data
+      window.location.reload()
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
       toast.error("Erro ao atualizar perfil. Tente novamente.")
@@ -43,116 +45,68 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
     }
   }
 
-  const handleVerificationRequest = async (formData: FormData) => {
-    setIsLoading(true)
-    try {
-      await requestVerification(formData)
-      setIsVerificationOpen(false)
-      toast.success("Solicitação de verificação enviada com sucesso!")
-      window.location.reload() // Refresh to show updated status
-    } catch (error) {
-      console.error("Erro ao solicitar verificação:", error)
-      toast.error("Erro ao solicitar verificação. Tente novamente.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   if (showVerificationButton) {
     return (
       <>
-        <Button variant="outline" size="sm" onClick={() => setIsVerificationOpen(true)} className="w-full">
+        <Button variant="outline" size="sm" onClick={() => setIsUpgradeModalOpen(true)} className="w-full">
           <Shield className="w-4 h-4 mr-2" />
           Solicitar Verificação
         </Button>
 
-        {/* Dialog para Solicitar Verificação */}
-        <Dialog open={isVerificationOpen} onOpenChange={setIsVerificationOpen}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Modal Busca Empregos+ */}
+        <Dialog open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Solicitar Verificação da Empresa</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                Busca Empregos+
+              </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Por que verificar sua empresa?</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Maior credibilidade no feed de vagas</li>
-                  <li>• Badge de verificação visível</li>
-                  <li>• Mais confiança dos candidatos</li>
-                  <li>• Destaque nas pesquisas</li>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Desbloqueie todos os recursos premium e destaque sua empresa!
+              </p>
+
+              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-3">✨ Benefícios Exclusivos</p>
+                <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500">✓</span>
+                    <span>Vagas ilimitadas</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500">✓</span>
+                    <span>Selo de verificação oficial</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500">✓</span>
+                    <span>Prioridade no feed de vagas</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500">✓</span>
+                    <span>Suporte dedicado via WhatsApp</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500">✓</span>
+                    <span>Destaque para sua empresa</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500">✓</span>
+                    <span>Estatísticas avançadas</span>
+                  </li>
                 </ul>
               </div>
 
-              <form action={handleVerificationRequest} className="space-y-4">
-                <div>
-                  <Label htmlFor="companyName">Nome da Empresa *</Label>
-                  <Input
-                    id="companyName"
-                    name="companyName"
-                    defaultValue={profile.company_name || ""}
-                    required
-                    placeholder="Nome da sua empresa"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="cnpj">CNPJ (opcional)</Label>
-                  <Input
-                    id="cnpj"
-                    name="cnpj"
-                    defaultValue={profile.cnpj || ""}
-                    placeholder="00.000.000/0000-00"
-                    maxLength={18}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="contactPhone">Telefone para Contato *</Label>
-                  <Input
-                    id="contactPhone"
-                    name="contactPhone"
-                    defaultValue={profile.whatsapp || ""}
-                    placeholder="(11) 99999-9999"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Número que usaremos para entrar em contato e verificar sua empresa
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="contactEmail">Email para Contato</Label>
-                  <Input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    defaultValue={profile.email || ""}
-                    placeholder="contato@empresa.com.br"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="message">Informações Adicionais (opcional)</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    placeholder="Conte-nos mais sobre sua empresa, área de atuação, etc."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Importante:</strong> Nossa equipe entrará em contato pelo telefone informado em até 2 dias
-                    úteis para verificar sua empresa. Mantenha o telefone disponível.
-                  </p>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Enviando..." : "Solicitar Verificação"}
+              <div className="flex flex-col gap-2 pt-2">
+                <Button onClick={() => window.open(whatsappLink, "_blank")} className="w-full gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Assinar Busca Empregos+
                 </Button>
-              </form>
+                <Button variant="outline" onClick={() => setIsUpgradeModalOpen(false)} className="w-full">
+                  Voltar
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
