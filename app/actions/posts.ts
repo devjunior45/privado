@@ -15,37 +15,6 @@ export async function createJobPost(formData: FormData) {
     redirect("/auth")
   }
 
-  // Verificar perfil do usuário
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("user_type, is_verified")
-    .eq("id", user.id)
-    .single()
-
-  if (profileError) {
-    throw new Error("Erro ao buscar perfil do usuário")
-  }
-
-  // Se for recrutador NÃO verificado, verificar limite de vagas
-  if (profile.user_type === "recruiter" && !profile.is_verified) {
-    const { data: activeJobs, error: jobsError } = await supabase
-      .from("job_posts")
-      .select("id")
-      .eq("author_id", user.id)
-      .eq("status", "active")
-
-    if (jobsError) {
-      throw new Error("Erro ao verificar vagas ativas")
-    }
-
-    // Se já tem 1 ou mais vagas ativas, não permite criar nova
-    if (activeJobs && activeJobs.length >= 1) {
-      throw new Error(
-        "Recrutadores não verificados podem ter apenas 1 vaga ativa. Solicite a verificação da sua conta ou pause/encerre uma vaga existente para criar uma nova.",
-      )
-    }
-  }
-
   const title = formData.get("title") as string
   const company = formData.get("company") as string
   const cityId = Number.parseInt(formData.get("cityId") as string) || null
@@ -79,14 +48,14 @@ export async function createJobPost(formData: FormData) {
     title,
     company,
     city_id: cityId,
-    location,
+    location, // Mantemos para compatibilidade
     salary: salary || null,
     description,
     image_url: imageUrl,
     background_color: backgroundColor || "#3b82f6",
     allow_platform_applications: allowPlatformApplications,
     author_id: user.id,
-    status: "active",
+    status: "active", // Sempre ativa ao criar
     sector_ids: sectorIds,
   })
 
@@ -157,7 +126,7 @@ export async function getPosts(cityId?: number | null, userId?: string) {
         user_id
       )
     `)
-    .eq("status", "active")
+    .eq("status", "active") // Apenas vagas ativas aparecem no feed
     .order("created_at", { ascending: false })
 
   // Filtrar por cidade se especificado
@@ -191,7 +160,7 @@ export async function updateJobStatus(jobId: string, status: "active" | "paused"
     redirect("/auth")
   }
 
-  const { error } = await supabase.from("job_posts").update({ status }).eq("id", jobId).eq("author_id", user.id)
+  const { error } = await supabase.from("job_posts").update({ status }).eq("id", jobId).eq("author_id", user.id) // Apenas o autor pode alterar
 
   if (error) {
     throw new Error("Erro ao atualizar status da vaga: " + error.message)
@@ -221,7 +190,7 @@ export async function incrementJobViews(jobId: string) {
       .single()
 
     if (existingView) {
-      return
+      return // Já visualizou hoje
     }
 
     // Registrar nova visualização (se a tabela existir)
@@ -238,7 +207,9 @@ export async function incrementJobViews(jobId: string) {
   // Tentar incrementar contador usando a função SQL
   const { error } = await supabase.rpc("increment_job_views", { job_id: jobId })
 
+  // Se a função não existir ainda, apenas logue o erro sem quebrar a aplicação
   if (error) {
-    console.error("Função increment_job_views não encontrada:", error.message)
+    console.error("Função increment_job_views não encontrada. Execute o script SQL primeiro:", error.message)
+    // Não lançar erro para não quebrar a aplicação
   }
 }

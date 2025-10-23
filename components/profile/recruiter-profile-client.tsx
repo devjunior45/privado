@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, Star } from "lucide-react"
+import { Edit, Shield } from "lucide-react"
 import type { UserProfile } from "@/types/profile"
 import { CitySelect } from "@/components/ui/city-select"
 import { updateRecruiterProfile, requestVerification } from "@/app/actions/profile"
@@ -62,8 +62,8 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
     return (
       <>
         <Button variant="outline" size="sm" onClick={() => setIsVerificationOpen(true)} className="w-full">
-          <Star className="w-4 h-4 mr-2" />
-          Assine o Busca Empregos
+          <Shield className="w-4 h-4 mr-2" />
+          Solicitar Verificação
         </Button>
 
         {/* Dialog para Solicitar Verificação */}
@@ -150,7 +150,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Enviando..." : "Assine o Busca Empregos"}
+                  {isLoading ? "Enviando..." : "Solicitar Verificação"}
                 </Button>
               </form>
             </div>
