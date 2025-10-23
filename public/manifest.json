@@ -1,5 +1,5 @@
 {
-  "name": "Busca Empregos",
+  "name": "Galeria de Empregos",
   "short_name": "Empregos",
   "description": "Encontre as melhores oportunidades de emprego na sua região.",
   "lang": "pt-BR",
@@ -7,7 +7,7 @@
   "display": "standalone",
   "scope": "/",
   "background_color": "#000000",
-  "theme_color": "#000000",
+  "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "categories": ["business", "productivity", "jobs"],
   "prefer_related_applications": false,

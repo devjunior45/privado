@@ -13,7 +13,7 @@ import { ProfileCheckWrapper } from "@/components/profile/profile-check-wrapper"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Busca Empregos",
+  title: "Galeria de Empregos",
   description: "Encontre as melhores oportunidades de trabalho",
   manifest: "/manifest.json",
   themeColor: "#000000",
