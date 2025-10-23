@@ -2,273 +2,521 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { CitySelect } from "@/components/ui/city-select"
-import { MultiSelect } from "@/components/ui/multi-select"
-import { useSectors } from "@/hooks/use-sectors"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Loader2, Upload, X, ImageIcon } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
-import { Loader2, Upload, X } from "lucide-react"
-import { VerificationRequiredDialog } from "./verification-required-dialog"
+import { useRouter } from "next/navigation"
+import { CitySelect } from "@/components/ui/city-select"
+import { useToast } from "@/components/ui/toast"
+import { createClient } from "@/lib/supabase/client"
+import { useSectors } from "@/hooks/use-sectors"
+import { MultiSelect } from "@/components/ui/multi-select"
+import { VerificationModal } from "@/components/jobs/verification-modal"
+
+const DARK_COLORS = [
+  { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
+  { name: "Azul Escuro", value: "#1E3A8A", class: "bg-blue-900" },
+  { name: "Verde Escuro", value: "#064E3B", class: "bg-emerald-900" },
+  { name: "Roxo Escuro", value: "#581C87", class: "bg-purple-900" },
+  { name: "Vermelho Escuro", value: "#7F1D1D", class: "bg-red-900" },
+  { name: "Índigo Escuro", value: "#312E81", class: "bg-indigo-900" },
+]
 
 interface CreateJobFormProps {
   isVerified: boolean
-  activeJobsCount: number
+  canCreateJob: boolean
 }
 
-const backgroundColors = [
-  { name: "Azul", value: "#3b82f6" },
-  { name: "Verde", value: "#10b981" },
-  { name: "Roxo", value: "#8b5cf6" },
-  { name: "Rosa", value: "#ec4899" },
-  { name: "Laranja", value: "#f97316" },
-  { name: "Vermelho", value: "#ef4444" },
-  { name: "Índigo", value: "#6366f1" },
-  { name: "Amarelo", value: "#eab308" },
-]
-
-export function CreateJobForm({ isVerified, activeJobsCount }: CreateJobFormProps) {
-  const router = useRouter()
-  const { sectors, loading: loadingSectors } = useSectors()
-  const [loading, setLoading] = useState(false)
-  const [selectedColor, setSelectedColor] = useState(backgroundColors[0].value)
-  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
-  const [selectedSectors, setSelectedSectors] = useState<string[]>([])
-  const [imageFile, setImageFile] = useState<File | null>(null)
+export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+  const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
+  const [title, setTitle] = useState("")
+  const [companyName, setCompanyName] = useState("")
+  const [salary, setSalary] = useState("")
+  const [description, setDescription] = useState("")
   const [allowPlatformApplications, setAllowPlatformApplications] = useState(true)
-  const [showVerificationDialog, setShowVerificationDialog] = useState(false)
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([])
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [errors, setErrors] = useState<{
+    title?: string
+    cityId?: string
+    sectors?: string
+  }>({})
+  const router = useRouter()
+  const { showToast, ToastContainer } = useToast()
+  const { sectors, isLoading: isLoadingSectors } = useSectors()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+
+  // Buscar dados do perfil para preencher empresa
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("company_name, full_name")
+          .eq("id", user.id)
+          .single()
+
+        if (profile) {
+          setCompanyName(profile.company_name || profile.full_name || "")
+        }
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  // Auto-resize textarea
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = "auto"
+      textarea.style.height = `${Math.max(textarea.scrollHeight, 200)}px`
+
+      // Sincronizar altura do preview
+      if (previewRef.current) {
+        previewRef.current.style.height = textarea.style.height
+      }
+    }
+  }
+
+  // Garantir que o cursor esteja sempre visível
+  const ensureCursorVisible = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      const cursorPosition = textarea.selectionStart
+      const textBeforeCursor = textarea.value.substring(0, cursorPosition)
+      const lines = textBeforeCursor.split("\n")
+      const currentLine = lines.length
+      const lineHeight = 24 // Aproximadamente 1.5rem
+      const cursorTop = (currentLine - 1) * lineHeight
+
+      // Se o cursor estiver fora da área visível, fazer scroll
+      if (cursorTop < textarea.scrollTop) {
+        textarea.scrollTop = cursorTop
+      } else if (cursorTop > textarea.scrollTop + textarea.clientHeight - lineHeight) {
+        textarea.scrollTop = cursorTop - textarea.clientHeight + lineHeight * 2
+      }
+
+      // Sincronizar scroll do preview
+      if (previewRef.current) {
+        previewRef.current.scrollTop = textarea.scrollTop
+      }
+    }
+  }
+
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [description])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setImageFile(file)
+      setSelectedImage(file)
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string)
       }
       reader.readAsDataURL(file)
     }
   }
 
   const removeImage = () => {
-    setImageFile(null)
+    setSelectedImage(null)
     setImagePreview(null)
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const validateForm = () => {
+    const newErrors: typeof errors = {}
+    if (!title.trim()) newErrors.title = "O título da vaga é obrigatório."
+    if (!selectedCityId) newErrors.cityId = "A localização é obrigatória."
+    if (selectedSectors.length === 0) newErrors.sectors = "Selecione pelo menos um setor."
+    return newErrors
+  }
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // Verificar limite de vagas para não verificados
-    if (!isVerified && activeJobsCount >= 1) {
-      setShowVerificationDialog(true)
+    // Verificar se pode criar vaga
+    if (!canCreateJob) {
+      setShowVerificationModal(true)
       return
     }
 
-    setLoading(true)
+    const validationErrors = validateForm()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+
+    setErrors({})
+    setIsLoading(true)
+
+    const formData = new FormData()
+    formData.append("title", title)
+    formData.append("company", companyName)
+    formData.append("description", description)
+    formData.append("allowPlatformApplications", allowPlatformApplications.toString())
+    if (selectedCityId) formData.append("cityId", selectedCityId.toString())
+    if (salary.trim()) formData.append("salary", salary)
+    if (selectedSectors.length > 0) {
+      formData.append("sector_ids", JSON.stringify(selectedSectors.map(Number)))
+    }
+
+    if (selectedImage) {
+      formData.append("image", selectedImage)
+    } else {
+      formData.append("postColor", selectedColor)
+    }
 
     try {
-      const formData = new FormData(e.currentTarget)
-      formData.append("backgroundColor", selectedColor)
-      formData.append("cityId", selectedCityId?.toString() || "")
-      formData.append("sector_ids", JSON.stringify(selectedSectors))
-      formData.append("allowPlatformApplications", allowPlatformApplications.toString())
-
-      if (imageFile) {
-        formData.append("image", imageFile)
-      }
-
       await createJobPost(formData)
+      showToast("Vaga publicada com sucesso!", "success")
       router.push("/dashboard")
     } catch (error) {
       console.error("Erro ao criar vaga:", error)
-      alert("Erro ao criar vaga. Tente novamente.")
+      showToast(error instanceof Error ? error.message : "Erro inesperado ao publicar vaga", "error")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
+  // Função para renderizar o texto com formatação em tempo real
+  const renderFormattedText = (text: string) => {
+    return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>")
+  }
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value)
+    setTimeout(() => {
+      adjustTextareaHeight()
+      ensureCursorVisible()
+    }, 0)
+  }
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    // Sincronizar scroll entre textarea e preview
+    if (previewRef.current) {
+      previewRef.current.scrollTop = e.currentTarget.scrollTop
+    }
+  }
+
+  const sectorOptions = sectors.map((s) => ({ value: s.id.toString(), label: s.name }))
+
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            {/* Título e Empresa em grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm">
-                  Título da Vaga
-                </Label>
-                <Input id="title" name="title" placeholder="Ex: Desenvolvedor Full Stack" required className="h-9" />
+      <div className="space-y-6 pb-20">
+        <form onSubmit={handleFormSubmit} noValidate>
+          {/* Upload de Imagem */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ImageIcon className="w-5 h-5" />
+                Imagem da Vaga (Opcional)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {!imagePreview ? (
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                    <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <div className="space-y-2">
+                      <Label htmlFor="image" className="cursor-pointer">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm">
+                          <Upload className="w-4 h-4" />
+                          Escolher Imagem
+                        </div>
+                      </Label>
+                      <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                      <p className="text-xs text-muted-foreground">PNG, JPG até 5MB - Torna sua vaga mais atrativa</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={imagePreview || "/placeholder.svg"}
+                      alt="Preview da vaga"
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={removeImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Informações Básicas */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Informações da Vaga</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Título e Empresa lado a lado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title" className="text-sm">
+                    Título da Vaga *
+                  </Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    value={title}
+                    onChange={(e) => {
+                      setTitle(e.target.value)
+                      if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
+                    }}
+                    placeholder="Ex: Desenvolvedor Frontend"
+                    className="text-base h-9"
+                  />
+                  {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="company" className="text-sm">
+                    Nome da Empresa
+                  </Label>
+                  <Input
+                    id="company"
+                    name="company"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Nome da empresa"
+                    className="text-base h-9"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="company" className="text-sm">
-                  Nome da Empresa
-                </Label>
-                <Input id="company" name="company" placeholder="Nome da sua empresa" required className="h-9" />
+              {/* Salário e Localização lado a lado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="salary" className="text-sm">
+                    Salário (Opcional)
+                  </Label>
+                  <Input
+                    id="salary"
+                    name="salary"
+                    value={salary}
+                    onChange={(e) => setSalary(e.target.value)}
+                    placeholder="Ex: R$ 5.000 - R$ 8.000"
+                    className="text-base h-9"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="cityId" className="text-sm">
+                    Localização *
+                  </Label>
+                  <CitySelect
+                    value={selectedCityId}
+                    onValueChange={(value) => {
+                      setSelectedCityId(value)
+                      if (errors.cityId) setErrors((prev) => ({ ...prev, cityId: undefined }))
+                    }}
+                    placeholder="Selecione a cidade da vaga"
+                    name="cityId"
+                  />
+                  {errors.cityId && <p className="text-xs text-red-500 mt-1">{errors.cityId}</p>}
+                </div>
               </div>
-            </div>
 
-            {/* Salário e Localização em grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="salary" className="text-sm">
-                  Salário (opcional)
-                </Label>
-                <Input id="salary" name="salary" placeholder="Ex: R$ 5.000 - R$ 8.000" className="h-9" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city" className="text-sm">
-                  Localização
-                </Label>
-                <CitySelect value={selectedCityId} onChange={setSelectedCityId} required />
-              </div>
-            </div>
-
-            {/* Setores */}
-            <div className="space-y-2">
-              <Label htmlFor="sectors" className="text-sm">
-                Setores (opcional)
-              </Label>
-              <MultiSelect
-                options={sectors.map((sector) => ({
-                  value: sector.id.toString(),
-                  label: sector.name,
-                }))}
-                selected={selectedSectors}
-                onChange={setSelectedSectors}
-                placeholder="Selecione os setores..."
-                disabled={loadingSectors}
-              />
-            </div>
-
-            {/* Descrição */}
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm">
-                Descrição da Vaga
-              </Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Descreva as responsabilidades, requisitos e benefícios..."
-                required
-                rows={6}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">Você pode usar **negrito** para destacar texto importante</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Imagem da vaga */}
-        <Card>
-          <CardContent className="pt-6 space-y-3">
-            <h3 className="text-base font-semibold">Imagem da Vaga (opcional)</h3>
-
-            {imagePreview ? (
-              <div className="relative">
-                <img
-                  src={imagePreview || "/placeholder.svg"}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={removeImage}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <Label htmlFor="image" className="cursor-pointer text-sm text-primary hover:underline">
-                  Clique para fazer upload
-                </Label>
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou WEBP (máx. 5MB)</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Cor de fundo */}
-        <Card>
-          <CardContent className="pt-6 space-y-2">
-            <h3 className="text-base font-semibold">Cor de Fundo</h3>
-            <p className="text-xs text-muted-foreground">Escolha uma cor para destacar sua vaga</p>
-            <div className="flex gap-2 flex-wrap">
-              {backgroundColors.map((color) => (
-                <button
-                  key={color.value}
-                  type="button"
-                  onClick={() => setSelectedColor(color.value)}
-                  className={`w-8 h-8 rounded-full transition-all ${
-                    selectedColor === color.value ? "ring-2 ring-offset-2 ring-primary scale-110" : "hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: color.value }}
-                  title={color.name}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Candidaturas pela plataforma */}
-        <Card>
-          <CardContent className="pt-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="allowPlatformApplications"
-                checked={allowPlatformApplications}
-                onChange={(e) => setAllowPlatformApplications(e.target.checked)}
-                className="mt-1"
-              />
               <div>
-                <Label htmlFor="allowPlatformApplications" className="text-sm font-medium cursor-pointer">
-                  Permitir candidaturas pela plataforma
+                <Label htmlFor="sectors" className="text-sm">
+                  Setor(es) *
                 </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Os candidatos poderão se candidatar diretamente pela plataforma com WhatsApp e currículo
-                </p>
+                <MultiSelect
+                  options={sectorOptions}
+                  selected={selectedSectors}
+                  onChange={(value) => {
+                    setSelectedSectors(value)
+                    if (errors.sectors) setErrors((prev) => ({ ...prev, sectors: undefined }))
+                  }}
+                  placeholder={isLoadingSectors ? "Carregando..." : "Selecione um ou mais setores"}
+                />
+                {errors.sectors && <p className="text-xs text-red-500 mt-1">{errors.sectors}</p>}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Botão de submit */}
-        <Button type="submit" className="w-full" disabled={loading || !selectedCityId}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Publicando...
-            </>
-          ) : (
-            "Publicar Vaga"
+          {/* Descrição com Editor Expansível */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Descrição da Vaga</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={handleDescriptionChange}
+                  onScroll={handleScroll}
+                  onKeyUp={ensureCursorVisible}
+                  onClick={ensureCursorVisible}
+                  placeholder="Descreva a vaga, responsabilidades, requisitos e benefícios..."
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent font-mono bg-white dark:bg-black text-black dark:text-white overflow-y-auto relative z-10"
+                  style={{
+                    minHeight: "200px",
+                    lineHeight: "1.5rem",
+                    caretColor: "currentColor",
+                  }}
+                />
+
+                {/* Preview sobreposto */}
+                {description && (
+                  <div
+                    ref={previewRef}
+                    className="absolute top-0 left-0 w-full h-full px-3 py-2 pointer-events-none text-sm overflow-y-auto bg-white dark:bg-black text-black dark:text-white rounded-md z-0"
+                    style={{
+                      minHeight: "200px",
+                      lineHeight: "1.5rem",
+                    }}
+                  >
+                    <div
+                      className="prose prose-sm max-w-none dark:prose-invert"
+                      dangerouslySetInnerHTML={{
+                        __html: renderFormattedText(description),
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>
+                  <strong>Dica de Formatação:</strong>
+                </p>
+                <p>
+                  • Use <code>**texto**</code> para negrito
+                </p>
+                <p>• Use emojis para destacar seções (📋 🎯 🎁)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Configurações de Candidatura */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Configurações de Candidatura</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="allowPlatformApplications"
+                  checked={allowPlatformApplications}
+                  onCheckedChange={(checked) => setAllowPlatformApplications(checked as boolean)}
+                />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="allowPlatformApplications"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Permitir candidaturas pela plataforma
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Candidatos poderão se candidatar diretamente pela plataforma usando seus perfis
+                  </p>
+                </div>
+              </div>
+
+              {allowPlatformApplications && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
+                    <div className="text-xs text-blue-700 dark:text-blue-300">
+                      <p className="font-medium mb-1">Benefícios das candidaturas pela plataforma:</p>
+                      <ul className="space-y-0.5 text-xs">
+                        <li>• Receba candidaturas organizadas em um só lugar</li>
+                        <li>• Visualize perfis completos dos candidatos</li>
+                        <li>• Gerencie o processo seletivo de forma eficiente</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Seletor de Cor - Só aparece se não houver imagem */}
+          {!selectedImage && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Cor de Fundo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Escolha uma cor para o fundo da vaga</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {DARK_COLORS.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => setSelectedColor(color.value)}
+                        className={`
+                        relative w-8 h-8 rounded-full border-2 transition-all
+                        ${
+                          selectedColor === color.value
+                            ? "border-primary ring-2 ring-primary/20 scale-110"
+                            : "border-border hover:border-primary/50 hover:scale-105"
+                        }
+                        ${color.class}
+                      `}
+                      >
+                        {selectedColor === color.value && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                          </div>
+                        )}
+                        <span className="sr-only">{color.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </Button>
-      </form>
 
-      {/* Dialog de verificação necessária */}
-      <VerificationRequiredDialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog} />
+          {/* Botão de Publicar */}
+          <div className="flex justify-center">
+            <Button type="submit" disabled={isLoading} className="w-full max-w-md">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Publicando...
+                </>
+              ) : (
+                "Publicar Vaga"
+              )}
+            </Button>
+          </div>
+        </form>
+
+        <ToastContainer />
+      </div>
+
+      <VerificationModal isOpen={showVerificationModal} onClose={() => setShowVerificationModal(false)} />
     </>
   )
 }

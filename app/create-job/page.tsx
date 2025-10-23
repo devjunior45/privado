@@ -1,8 +1,9 @@
+import { Header } from "@/components/header"
+import { CreateJobForm } from "@/components/jobs/create-job-form"
+import { PageContainer } from "@/components/page-container"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { CreateJobForm } from "@/components/jobs/create-job-form"
 import { CreateJobHeader } from "@/components/jobs/create-job-header"
-import { Header } from "@/components/header"
 
 export default async function CreateJobPage() {
   const supabase = await createClient()
@@ -15,37 +16,41 @@ export default async function CreateJobPage() {
     redirect("/login")
   }
 
-  // Buscar perfil do usuário
   const { data: profile } = await supabase.from("profiles").select("user_type, is_verified").eq("id", user.id).single()
 
-  // Verificar se é recrutador
-  if (profile?.user_type !== "recruiter") {
-    redirect("/feed")
+  if (!profile || profile.user_type !== "recruiter") {
+    redirect("/")
   }
 
-  // Contar vagas ativas apenas se não for verificado
+  // Verificar se é não verificado e quantas vagas ativas tem
+  let canCreateJob = true
   let activeJobsCount = 0
-  if (!profile.is_verified) {
-    const { count } = await supabase
+
+  if (profile.is_verified === false) {
+    const { data: activeJobs, error } = await supabase
       .from("job_posts")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" })
       .eq("author_id", user.id)
       .eq("status", "active")
 
-    activeJobsCount = count || 0
+    if (!error && activeJobs) {
+      activeJobsCount = activeJobs.length
+      canCreateJob = activeJobsCount < 1
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header mobile */}
-      <Header title="Nova Vaga" showBack />
+      <Header title="Nova Vaga" showSettings={false} isLoggedIn={true} showBackButton={true} />
 
       {/* Header desktop */}
       <CreateJobHeader />
 
-      {/* Formulário */}
-      <div className="max-w-3xl mx-auto p-4 md:p-6">
-        <CreateJobForm isVerified={profile.is_verified || false} activeJobsCount={activeJobsCount} />
+      <div className="mx-4 md:mx-0">
+        <PageContainer>
+          <CreateJobForm isVerified={profile.is_verified || false} canCreateJob={canCreateJob} />
+        </PageContainer>
       </div>
     </div>
   )
