@@ -1,6 +1,6 @@
 {
   "name": "Busca Empregos",
-  "short_name": "Empregos",
+  "short_name": "Busca Empregos",
   "description": "Encontre as melhores oportunidades de emprego na sua região.",
   "lang": "pt-BR",
   "start_url": "/?source=pwa",
