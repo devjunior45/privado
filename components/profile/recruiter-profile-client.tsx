@@ -50,7 +50,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
       <>
         <Button variant="outline" size="sm" onClick={() => setIsUpgradeModalOpen(true)} className="w-full">
           <Shield className="w-4 h-4 mr-2" />
-          Solicitar Verificação
+          Assine o Busca Empregos+
         </Button>
 
         {/* Modal Busca Empregos+ */}
