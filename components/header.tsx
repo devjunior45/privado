@@ -87,7 +87,8 @@ export function Header({
             )}
 
             <Button variant="ghost" size="sm" onClick={() => router.push("/settings")} className="h-8 w-8 p-0">
-                <Settings className="w-5 h-5" />
+                <Settings className="w-5 h-5" /> 
+              </Button>
 
             {!isLoggedIn && (
               <Button variant="ghost" size="sm" onClick={() => router.push("/login")} className="h-8 px-3 text-sm">
