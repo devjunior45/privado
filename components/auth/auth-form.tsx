@@ -217,9 +217,7 @@ export function AuthForm() {
   const renderWelcomeStep = () => (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="mb-12 flex justify-end pr-12 pt-8">
-          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
-        </div>
+        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
         <p className="text-muted-foreground">Conectando talentos e oportunidades</p>
       </div>
 
