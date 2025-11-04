@@ -173,7 +173,7 @@ export default async function handler(req, res) {
       }
 
       // Resposta padrão do menu
-      await sendWhatsApp(from, "👋 Menu:\n1️⃣ Ver minhas vagas\n2️⃣ Encerrar uma vaga");
+      await sendWhatsApp(from, "👋 Olá ${recruiter.full_name}! escolha uma opção:\n1️⃣ Ver minhas vagas\n2️⃣ Encerrar uma vaga");
       return res.status(200).send("Menu enviado (fallback)");
     }
 
