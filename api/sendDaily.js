@@ -4,18 +4,11 @@ const supabase = createClient(process.env.URL_SUPABASE, process.env.SUPABASE_ANO
 
 export default async function handler(req, res) {
   try {
-    // 🔐 Verifica autorização com token secreto
-    const auth = req.headers.authorization;
-    if (auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
-      return res.status(401).json({ error: "Acesso não autorizado" });
-    }
-
-    // 1️⃣ Busca todos os recrutadores verificados
+    // 1️⃣ Busca todos os recrutadores
     const { data: recruiters, error: recruiterError } = await supabase
       .from("profiles")
       .select("id, full_name, whatsapp")
-      .eq("user_type", "recruiter")
-      .eq("is_verified", true); // Apenas recrutadores verificados
+      .eq("user_type", "recruiter");
 
     if (recruiterError) throw recruiterError;
 
@@ -23,12 +16,12 @@ export default async function handler(req, res) {
     for (const recruiter of recruiters) {
       if (!recruiter.whatsapp) continue;
 
-      // Adiciona o prefixo 55 automaticamente
+      // Adiciona o prefixo 55 se não existir
       const phoneNumber = recruiter.whatsapp.startsWith("55")
         ? recruiter.whatsapp
-        : `55${recruiter.whatsapp.replace(/\D/g, "")}`;
+        : `55${recruiter.whatsapp.replace(/\D/g, "")}`; // remove caracteres não numéricos
 
-      // Busca vagas ativas do recrutador
+      // Busca vagas ativas
       const { data: jobPosts, error: jobError } = await supabase
         .from("job_posts")
         .select("id, title, status, created_at")
@@ -45,13 +38,13 @@ export default async function handler(req, res) {
         .select("*", { count: "exact" })
         .in(
           "job_id",
-          jobPosts.length > 0 ? jobPosts.map((j) => j.id) : [0]
+          jobPosts.length > 0 ? jobPosts.map((j) => j.id) : [0] // evita erro se não houver vagas
         )
         .gte("created_at", yesterday);
 
       if (appError) throw appError;
 
-      // Monta o texto da mensagem
+      // Monta o texto
       const text = `👋 Olá ${recruiter.full_name}!
 
 Aqui está seu resumo diário de vagas 👇
@@ -63,7 +56,7 @@ O que deseja fazer agora?
 1️⃣ Ver minhas vagas
 2️⃣ Encerrar uma vaga`;
 
-      // Envia a mensagem via API do WhatsApp
+      // Envia via WhatsApp
       await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: "POST",
         headers: {
