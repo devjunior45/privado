@@ -6,7 +6,6 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  // 🛡️ Verificação do webhook
   if (req.method === "GET") {
     const verifyToken = process.env.META_VERIFY_TOKEN;
     const mode = req.query["hub.mode"];
@@ -32,23 +31,22 @@ export default async function handler(req, res) {
     const from = message.from;
     const text = message.text?.body?.trim()?.toLowerCase();
 
-    // Busca recrutador verificado
-    const { data: recruiter } = await supabase
+    const { data: recruiter, error: recruiterError } = await supabase
       .from("profiles")
-      .select("id, full_name, last_action")
+      .select("id, full_name, current_action")
       .eq("whatsapp", from.replace(/^55/, ""))
       .eq("user_type", "recruiter")
       .eq("is_verified", true)
       .single();
 
-    if (!recruiter) {
+    if (recruiterError || !recruiter) {
       await sendWhatsApp(from, "⚠️ Seu número não está cadastrado como recrutador verificado.");
       return res.status(200).send("Recrutador não autorizado");
     }
 
-    // MENU PRINCIPAL
     if (text === "menu" || text === "início") {
-      await supabase.from("profiles").update({ last_action: null }).eq("id", recruiter.id);
+      await supabase.from("profiles").update({ current_action: "idle" }).eq("id", recruiter.id);
+
       await sendWhatsApp(
         from,
         `👋 Olá ${recruiter.full_name}! Escolha uma opção:\n\n` +
@@ -58,7 +56,6 @@ export default async function handler(req, res) {
       return res.status(200).send("Menu enviado");
     }
 
-    // OPÇÃO 1 → Ver vagas
     if (text === "1" || text.includes("ver minhas vagas")) {
       const { data: vagas } = await supabase
         .from("job_posts")
@@ -66,21 +63,23 @@ export default async function handler(req, res) {
         .eq("author_id", recruiter.id)
         .eq("status", "active");
 
-      if (!vagas?.length) {
-        await sendWhatsApp(from, "📭 Você não possui vagas ativas no momento.");
+      if (!vagas || vagas.length === 0) {
+        await sendWhatsApp(from, "📭 Você não possui vagas ativas.");
         return res.status(200).send("Sem vagas");
       }
 
+      await supabase.from("profiles").update({ current_action: "viewing_jobs" }).eq("id", recruiter.id);
+
       let resposta = "📋 Suas vagas ativas:\n\n";
-      vagas.forEach((v, i) => (resposta += `${i + 1}️⃣ ${v.title}\n`));
+      vagas.forEach((v, i) => {
+        resposta += `${i + 1}️⃣ ${v.title}\n`;
+      });
       resposta += "\nResponda com o número da vaga para ver os candidatos.";
 
-      await supabase.from("profiles").update({ last_action: "viewing_jobs" }).eq("id", recruiter.id);
       await sendWhatsApp(from, resposta);
       return res.status(200).send("Lista enviada");
     }
 
-    // OPÇÃO 2 → Encerrar vaga
     if (text === "2" || text.includes("encerrar")) {
       const { data: vagas } = await supabase
         .from("job_posts")
@@ -88,68 +87,73 @@ export default async function handler(req, res) {
         .eq("author_id", recruiter.id)
         .eq("status", "active");
 
-      if (!vagas?.length) {
-        await sendWhatsApp(from, "🚫 Nenhuma vaga ativa encontrada para encerrar.");
+      if (!vagas || vagas.length === 0) {
+        await sendWhatsApp(from, "🚫 Nenhuma vaga ativa para encerrar.");
         return res.status(200).send("Sem vagas");
       }
 
-      let resposta = "🛑 Selecione o número da vaga que deseja encerrar:\n\n";
-      vagas.forEach((v, i) => (resposta += `${i + 1}️⃣ ${v.title}\n`));
+      await supabase.from("profiles").update({ current_action: "closing_jobs" }).eq("id", recruiter.id);
 
-      await supabase.from("profiles").update({ last_action: "closing_jobs" }).eq("id", recruiter.id);
+      let resposta = "🛑 Escolha o número da vaga que deseja encerrar:\n\n";
+      vagas.forEach((v, i) => {
+        resposta += `${i + 1}️⃣ ${v.title}\n`;
+      });
+
       await sendWhatsApp(from, resposta);
-      return res.status(200).send("Encerramento iniciado");
+      return res.status(200).send("Encerramento enviado");
     }
 
-    // 🔢 Número da vaga — decidir com base no contexto
     const numeroSelecionado = parseInt(text);
     if (!isNaN(numeroSelecionado)) {
+      const { data: perfil } = await supabase
+        .from("profiles")
+        .select("current_action")
+        .eq("id", recruiter.id)
+        .single();
+
       const { data: vagas } = await supabase
         .from("job_posts")
         .select("id, title")
         .eq("author_id", recruiter.id)
         .eq("status", "active");
 
-      if (!vagas?.length || numeroSelecionado < 1 || numeroSelecionado > vagas.length) {
-        await sendWhatsApp(from, "⚠️ Número inválido. Digite *menu* para voltar.");
+      if (!vagas || numeroSelecionado < 1 || numeroSelecionado > vagas.length) {
+        await sendWhatsApp(from, "⚠️ Número inválido. Tente novamente.");
         return res.status(200).send("Número inválido");
       }
 
       const vaga = vagas[numeroSelecionado - 1];
 
-      if (recruiter.last_action === "viewing_jobs") {
-        // Ver candidatos
+      if (perfil.current_action === "viewing_jobs") {
         const { data: candidatos } = await supabase
           .from("job_applications")
-          .select("resume_pdf_url, profiles(full_name)")
+          .select("id, resume_pdf_url, profiles(full_name)")
           .eq("job_id", vaga.id);
 
-        if (!candidatos?.length) {
-          await sendWhatsApp(from, `📭 Nenhum candidato encontrado para *${vaga.title}*.`);
+        if (!candidatos || candidatos.length === 0) {
+          await sendWhatsApp(from, `📭 Nenhum candidato para *${vaga.title}*.`);
           return res.status(200).send("Sem candidatos");
         }
 
         let resposta = `👥 Candidatos para *${vaga.title}:*\n\n`;
-        candidatos.forEach(
-          (c, i) => (resposta += `${i + 1}️⃣ ${c.profiles.full_name}\n📄 ${c.resume_pdf_url}\n\n`)
-        );
+        candidatos.forEach((c, i) => {
+          resposta += `${i + 1}️⃣ ${c.profiles.full_name}\n📄 ${c.resume_pdf_url}\n\n`;
+        });
 
         await sendWhatsApp(from, resposta);
         return res.status(200).send("Candidatos enviados");
       }
 
-      if (recruiter.last_action === "closing_jobs") {
-        // Encerrar vaga
+      if (perfil.current_action === "closing_jobs") {
         await supabase.from("job_posts").update({ status: "closed" }).eq("id", vaga.id);
-        await sendWhatsApp(from, `✅ A vaga *${vaga.title}* foi encerrada com sucesso.`);
-        await supabase.from("profiles").update({ last_action: null }).eq("id", recruiter.id);
+        await sendWhatsApp(from, `✅ Vaga *${vaga.title}* encerrada com sucesso!`);
+        await supabase.from("profiles").update({ current_action: "idle" }).eq("id", recruiter.id);
         return res.status(200).send("Vaga encerrada");
       }
     }
 
-    // Mensagem padrão
     await sendWhatsApp(from, "❓ Não entendi. Digite *menu* para ver as opções.");
-    res.status(200).send("Mensagem padrão enviada");
+    return res.status(200).send("Mensagem padrão");
   } catch (error) {
     console.error("Erro no webhook:", error);
     res.status(500).send("Erro interno: " + error.message);
@@ -171,3 +175,4 @@ async function sendWhatsApp(to, message) {
     }),
   });
 }
+
