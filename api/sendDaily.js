@@ -37,19 +37,21 @@ export default async function handler(req, res) {
 
       if (jobError) throw jobError;
 
-      // Conta candidaturas das últimas 24h
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      let newApplications = 0;
 
-      const { count: newApplications, error: appError } = await supabase
-        .from("job_applications")
-        .select("*", { count: "exact" })
-        .in(
-          "job_id",
-          jobPosts.length > 0 ? jobPosts.map((j) => j.id) : [0] // evita erro se não houver vagas
-        )
-        .gte("created_at", yesterday);
+      // Só conta candidaturas se houver vagas ativas
+      if (jobPosts.length > 0) {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      if (appError) throw appError;
+        const { count, error: appError } = await supabase
+          .from("job_applications")
+          .select("*", { count: "exact" })
+          .in("job_id", jobPosts.map((j) => j.id))
+          .gte("created_at", yesterday);
+
+        if (appError) throw appError;
+        newApplications = count || 0;
+      }
 
       // Monta o texto
       const text = `👋 Olá ${recruiter.full_name}!
@@ -57,7 +59,7 @@ export default async function handler(req, res) {
 Aqui está seu resumo diário de vagas 👇
 
 📊 Vagas ativas: ${jobPosts.length}
-👤 Novas candidaturas nas últimas 24h: ${newApplications || 0}
+👤 Novas candidaturas nas últimas 24h: ${newApplications}
 
 O que deseja fazer agora?
 1️⃣ Ver minhas vagas
