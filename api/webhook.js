@@ -34,6 +34,11 @@ export default async function handler(req, res) {
       return res.status(200).send("Sem mensagem recebida");
     }
 
+    // 🚫 Impede o bot de responder a si mesmo
+    if (message.from_me) {
+      return res.status(200).send("Mensagem enviada pelo próprio bot — ignorada");
+    }
+
     const from = message.from; // ex: "5591999...."
     const rawText = message.text?.body ?? "";
     const text = rawText.trim().toLowerCase();
@@ -173,7 +178,7 @@ export default async function handler(req, res) {
       }
 
       // Resposta padrão do menu
-      await sendWhatsApp(from, "👋 Olá ${recruiter.full_name}! escolha uma opção:\n1️⃣ Ver minhas vagas\n2️⃣ Encerrar uma vaga");
+      await sendWhatsApp(from, `👋 Olá ${recruiter.full_name}! escolha uma opção:\n1️⃣ Ver minhas vagas\n2️⃣ Encerrar uma vaga`);
       return res.status(200).send("Menu enviado (fallback)");
     }
 
