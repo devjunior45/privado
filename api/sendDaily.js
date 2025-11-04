@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         .from("job_posts")
         .select("id, title, status, created_at")
         .eq("author_id", recruiter.id)
-        .eq("status", "ativa");
+        .eq("status", "active");
 
       if (jobError) throw jobError;
 
