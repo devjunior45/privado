@@ -257,52 +257,62 @@ export default async function handler(req, res) {
       }
 
       // Encerrar vaga
-      if (session.current_state === "list_vacancies_close") {
-        console.log("Encerrando vaga:", chosen);
+if (session.current_state === "list_vacancies_close") {
+  console.log("🛠 Encerrando vaga selecionada:", chosen);
 
-        const jobId = String(chosen.job_id).trim();
-        const { data: updatedJob, error: closeErr } = await supabase
-          .from("job_posts")
-          .update({ status: "closed" })
-          .eq("id", jobId)
-          .select("id, title, status")
-          .maybeSingle();
+  if (!chosen?.job_id) {
+    console.error("❌ job_id não encontrado em chosen:", chosen);
+    await sendWhatsApp(from, "⚠️ Erro interno — id da vaga não encontrado.");
+    return res.status(200).send("job_id ausente");
+  }
 
-        console.log("Resultado update:", { updatedJob, closeErr });
+  // Limpa caracteres estranhos do UUID (como o ponto)
+  const jobId = chosen.job_id.toString().trim().replace(/[^\w-]/g, "");
+  console.log("🆔 ID da vaga a encerrar (limpo):", jobId);
 
-        if (closeErr) {
-          console.error("Erro ao encerrar vaga:", closeErr);
-          return res.status(500).send("Erro ao encerrar vaga");
-        }
+  const { data: updatedJob, error: closeErr } = await supabase
+    .from("job_posts")
+    .update({ status: "closed" })
+    .eq("id", jobId)
+    .select("id, title, status")
+    .maybeSingle();
 
-        if (!updatedJob) {
-          await sendWhatsApp(
-            from,
-            "⚠️ Não foi possível encontrar essa vaga para encerrar."
-          );
-          return res.status(200).send("Vaga não encontrada");
-        }
+  console.log("🔍 Resultado update:", { updatedJob, closeErr });
 
-        await supabase
-          .from("bot_sessions")
-          .update({
-            current_state: "menu",
-            last_vacancies: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", session.id);
+  if (closeErr) {
+    console.error("Erro ao encerrar vaga:", closeErr);
+    await sendWhatsApp(from, "❌ Ocorreu um erro ao tentar encerrar a vaga.");
+    return res.status(500).send("Erro update job");
+  }
 
-        await sendWhatsApp(
-          from,
-          `✅ Vaga "${updatedJob.title}" encerrada com sucesso!`
-        );
-        await sendWhatsApp(
-          from,
-          "🔙 Voltando ao menu...\n1️⃣ Ver minhas vagas\n2️⃣ Encerrar uma vaga"
-        );
-        return res.status(200).send("Vaga encerrada");
-      }
-    }
+  if (!updatedJob) {
+    await sendWhatsApp(
+      from,
+      "⚠️ Não foi possível encontrar essa vaga ou ela já foi encerrada."
+    );
+    return res.status(200).send("Vaga não encontrada no banco");
+  }
+
+  await supabase
+    .from("bot_sessions")
+    .update({
+      current_state: "menu",
+      last_vacancies: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", session.id);
+
+  await sendWhatsApp(
+    from,
+    `✅ Vaga "${updatedJob.title}" encerrada com sucesso!`
+  );
+  await sendWhatsApp(
+    from,
+    "🔙 Voltando ao menu...\n1️⃣ Ver minhas vagas\n2️⃣ Encerrar uma vaga"
+  );
+  return res.status(200).send("Vaga encerrada");
+}
+
 
     // fallback geral
     await sendWhatsApp(from, "❓ Não entendi. Digite *menu* para ver as opções.");
