@@ -232,7 +232,9 @@ export default async function handler(req, res) {
       }
 
       // --- ENCERRAR VAGA ---
-      if (session.current_state === "list_vacancies_close") {
+      if (session.current_state === "list_vacancies_close") {  
+        console.log("Encerrando vaga ID:", chosen.job_id, "para recruiter");
+
         const { error: closeErr } = await supabase
           .from("job_posts")
           .update({ status: "closed" })
