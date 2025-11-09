@@ -114,7 +114,7 @@ export default async function handler(req, res) {
           })
           .eq("id", session.id);
 
-        await sendButtons(from, "📋 Suas vagas ativas:", listButtons.slice(0, 3));
+        await sendButtons(from, "📋 Selecione uma vaga para exibir candidatos:", listButtons.slice(0, 3));
         return res.status(200).send("Lista de vagas enviada");
       }
 
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
           })
           .eq("id", session.id);
 
-        await sendButtons(from, "🛑 Escolha uma vaga para encerrar:", listButtons.slice(0, 3));
+        await sendButtons(from, "Escolha uma vaga para encerrar:", listButtons.slice(0, 3));
         return res.status(200).send("Encerramento de vaga iniciado");
       }
 
@@ -212,8 +212,8 @@ async function sendText(to, text) {
 
 async function sendMenu(to, name) {
   const buttons = [
-    { type: "reply", reply: { id: "view_jobs", title: "📋 Ver minhas vagas" } },
-    { type: "reply", reply: { id: "close_jobs", title: "🛑 Encerrar uma vaga" } },
+    { type: "reply", reply: { id: "view_jobs", title: "Ver minhas vagas" } },
+    { type: "reply", reply: { id: "close_jobs", title: "Encerrar uma vaga" } },
   ];
 
   await sendMessage(to, {
