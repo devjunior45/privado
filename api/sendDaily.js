@@ -80,7 +80,7 @@ module.exports = async function handler(req, res) {
           }),
         }
       );
-      */
+      
 
       output.push(`🧪 Simulação: mensagem com botões seria enviada para ${phoneNumber}`);
       output.push(`📋 Corpo: ${JSON.stringify({ text, buttons }, null, 2)}`);
