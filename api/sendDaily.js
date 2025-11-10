@@ -7,12 +7,6 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   try {
-    // 🔒 PROTEÇÃO — DESATIVADA PARA TESTES
-    // const auth = req.headers.authorization;
-    // if (auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
-    //   return res.status(401).json({ error: "Acesso não autorizado" });
-    // }
-
     let output = [];
     output.push("🚀 Iniciando execução do script...");
 
@@ -24,7 +18,6 @@ export default async function handler(req, res) {
       .eq("is_verified", true);
 
     if (recruiterError) throw recruiterError;
-
     output.push(`👥 Recrutadores verificados encontrados: ${recruiters.length}`);
 
     // 2️⃣ Percorre cada recrutador
@@ -48,7 +41,6 @@ export default async function handler(req, res) {
         .eq("status", "active");
 
       if (jobError) throw jobError;
-
       output.push(`📄 Vagas ativas encontradas: ${jobPosts.length}`);
 
       let newApplications = 0;
@@ -71,19 +63,29 @@ export default async function handler(req, res) {
         output.push("ℹ️ Nenhuma vaga ativa — pulando contagem de candidaturas.");
       }
 
-      // 5️⃣ Monta o texto da mensagem
-      const text = `👋 Olá ${recruiter.full_name}!
+      // 5️⃣ Texto e botões da mensagem
+      const text = `👋 Olá ${recruiter.full_name}!\n\n📊 Vagas ativas: ${jobPosts.length}\n👤 Novas candidaturas nas últimas 24h: ${newApplications}\n\nO que deseja fazer agora?`;
 
-📊 Vagas ativas: ${jobPosts.length}
-👤 Novas candidaturas nas últimas 24h: ${newApplications}
+      const buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: "ver_vagas",
+            title: "Ver minhas vagas",
+          },
+        },
+        {
+          type: "reply",
+          reply: {
+            id: "encerrar_vaga",
+            title: "Encerrar uma vaga",
+          },
+        },
+      ];
 
-O que deseja fazer agora?
-1️⃣ Ver minhas vagas
-2️⃣ Encerrar uma vaga`;
-
-      // 6️⃣ Envio via WhatsApp (comentado para testes)
-      /*
-      output.push(`📤 Enviando mensagem para ${phoneNumber}...`);
+      // 6️⃣ Envio via WhatsApp (comentado por segurança)
+      
+      output.push(`📤 Enviando mensagem com botões para ${phoneNumber}...`);
       const response = await fetch(
         `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
         {
@@ -95,27 +97,32 @@ O que deseja fazer agora?
           body: JSON.stringify({
             messaging_product: "whatsapp",
             to: phoneNumber,
-            type: "text",
-            text: { body: text },
+            type: "interactive",
+            interactive: {
+              type: "button",
+              body: { text },
+              action: { buttons },
+            },
           }),
         }
       );
 
+      const result = await response.text();
       if (!response.ok) {
-        const errorText = await response.text();
-        output.push(`❌ Erro ao enviar mensagem: ${errorText}`);
+        output.push(`❌ Erro ao enviar mensagem: ${result}`);
       } else {
         output.push(`✅ Mensagem enviada com sucesso para ${recruiter.full_name}`);
       }
       */
 
-      // 🔹 Apenas simula o envio
-      output.push(`🧪 Simulação: mensagem seria enviada para ${phoneNumber}`);
+      // 🔹 Simulação no navegador
+      output.push(`🧪 Simulação: mensagem com botões seria enviada para ${phoneNumber}`);
+      output.push(`📋 Corpo: ${JSON.stringify({ text, buttons }, null, 2)}`);
     }
 
     output.push("\n🏁 Execução concluída.");
 
-    // Retorna tudo como texto legível no navegador
+    // Retorna texto no navegador
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.status(200).send(output.join("\n"));
   } catch (error) {
