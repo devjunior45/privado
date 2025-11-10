@@ -1,16 +1,15 @@
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     let output = [];
     output.push("🚀 Iniciando execução do script...");
 
-    // 1️⃣ Busca recrutadores verificados
     const { data: recruiters, error: recruiterError } = await supabase
       .from("profiles")
       .select("id, full_name, whatsapp")
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
     if (recruiterError) throw recruiterError;
     output.push(`👥 Recrutadores verificados encontrados: ${recruiters.length}`);
 
-    // 2️⃣ Percorre cada recrutador
     for (const recruiter of recruiters) {
       output.push(`\n📌 Recrutador: ${recruiter.full_name} (${recruiter.id})`);
 
@@ -33,7 +31,6 @@ export default async function handler(req, res) {
         ? recruiter.whatsapp
         : `55${recruiter.whatsapp.replace(/\D/g, "")}`;
 
-      // 3️⃣ Busca vagas ativas
       const { data: jobPosts, error: jobError } = await supabase
         .from("job_posts")
         .select("id, title, status, created_at")
@@ -44,8 +41,6 @@ export default async function handler(req, res) {
       output.push(`📄 Vagas ativas encontradas: ${jobPosts.length}`);
 
       let newApplications = 0;
-
-      // 4️⃣ Conta candidaturas das últimas 24h
       if (jobPosts.length > 0) {
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -59,33 +54,16 @@ export default async function handler(req, res) {
 
         newApplications = count || 0;
         output.push(`🧾 Novas candidaturas nas últimas 24h: ${newApplications}`);
-      } else {
-        output.push("ℹ️ Nenhuma vaga ativa — pulando contagem de candidaturas.");
       }
 
-      // 5️⃣ Texto e botões da mensagem
       const text = `👋 Olá ${recruiter.full_name}!\n\n📊 Vagas ativas: ${jobPosts.length}\n👤 Novas candidaturas nas últimas 24h: ${newApplications}\n\nO que deseja fazer agora?`;
 
       const buttons = [
-        {
-          type: "reply",
-          reply: {
-            id: "ver_vagas",
-            title: "Ver minhas vagas",
-          },
-        },
-        {
-          type: "reply",
-          reply: {
-            id: "encerrar_vaga",
-            title: "Encerrar uma vaga",
-          },
-        },
+        { type: "reply", reply: { id: "ver_vagas", title: "Ver minhas vagas" } },
+        { type: "reply", reply: { id: "encerrar_vaga", title: "Encerrar uma vaga" } },
       ];
 
-      // 6️⃣ Envio via WhatsApp (comentado por segurança)
       
-      output.push(`📤 Enviando mensagem com botões para ${phoneNumber}...`);
       const response = await fetch(
         `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
         {
@@ -98,35 +76,22 @@ export default async function handler(req, res) {
             messaging_product: "whatsapp",
             to: phoneNumber,
             type: "interactive",
-            interactive: {
-              type: "button",
-              body: { text },
-              action: { buttons },
-            },
+            interactive: { type: "button", body: { text }, action: { buttons } },
           }),
         }
       );
-
-      const result = await response.text();
-      if (!response.ok) {
-        output.push(`❌ Erro ao enviar mensagem: ${result}`);
-      } else {
-        output.push(`✅ Mensagem enviada com sucesso para ${recruiter.full_name}`);
-      }
       */
 
-      // 🔹 Simulação no navegador
       output.push(`🧪 Simulação: mensagem com botões seria enviada para ${phoneNumber}`);
       output.push(`📋 Corpo: ${JSON.stringify({ text, buttons }, null, 2)}`);
     }
 
     output.push("\n🏁 Execução concluída.");
 
-    // Retorna texto no navegador
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.status(200).send(output.join("\n"));
   } catch (error) {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.status(500).send("💥 Erro ao executar script:\n" + error.message);
   }
-}
+};
