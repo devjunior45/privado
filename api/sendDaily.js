@@ -20,8 +20,31 @@ module.exports = async function handler(req, res) {
     output.push(`👥 Recrutadores verificados encontrados: ${recruiters.length}`);
 
     for (const recruiter of recruiters) {
-      output.push(`\n📌 Recrutador: ${recruiter.full_name} (${recruiter.id})`);
+      // Criar ou atualizar sessão do bot
+const { data: existingSession } = await supabase
+  .from("bot_sessions")
+  .select("*")
+  .eq("whatsapp", phoneNumber)
+  .maybeSingle();
 
+if (!existingSession) {
+  await supabase.from("bot_sessions").insert({
+    recruiter_id: recruiter.id,
+    whatsapp: phoneNumber,
+    current_state: "menu",
+    last_vacancies: null,
+    updated_at: new Date().toISOString()
+  });
+} else {
+  await supabase.from("bot_sessions").update({
+    current_state: "menu",
+    last_vacancies: null,
+    updated_at: new Date().toISOString()
+  })
+  .eq("id", existingSession.id);
+}
+      output.push(`\n📌 Recrutador: ${recruiter.full_name} (${recruiter.id})`);
+       
       if (!recruiter.whatsapp) {
         output.push("⚠️ Nenhum número de WhatsApp — pulando.");
         continue;
