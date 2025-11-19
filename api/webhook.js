@@ -1,263 +1,235 @@
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
-  if (req.method === "GET") {
-    const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
-    const mode = req.query["hub.mode"];
-    const token = req.query["hub.verify_token"];
-    const challenge = req.query["hub.challenge"];
-    if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      return res.status(200).send(challenge);
-    } else {
-      return res.status(403).send("Token inválido");
-    }
-  }
-
-  if (req.method !== "POST") return res.status(200).send("Webhook ativo ✅");
-
+module.exports = async function handler(req, res) {
   try {
-    const body = req.body;
-    const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    if (!message) return res.status(200).send("Sem mensagem recebida");
+    const data = req.body;
+    const message = data.messages?.[0];
 
-    // --- Ignora mensagens enviadas pelo próprio bot ---
-    if (message.from === process.env.WHATSAPP_PHONE_NUMBER_ID) {
-      return res.status(200).send("Ignorado: mensagem do próprio bot");
+    if (!message) {
+      return res.status(200).send("ok");
     }
 
-    const from = message.from;
-    const text = message.text?.body?.trim()?.toLowerCase() || "";
-    const buttonReply = message.interactive?.button_reply?.id || null;
+    const from = message.from; // telefone do usuário
+    const text = message.text?.body?.trim();
+    const buttonId = message.button?.payload;
 
-    // --- Busca recrutador ---
-    const { data: recruiter } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("whatsapp", from.replace(/^55/, ""))
-      .eq("user_type", "recruiter")
-      .eq("is_verified", true)
-      .maybeSingle();
+    // NORMALIZAÇÃO DO ID DO WHATSAPP
+    const whatsapp = from.replace(/\D/g, "");
 
-    if (!recruiter) {
-      await sendText(from, "⚠️ Seu número não está cadastrado como recrutador verificado.");
-      return res.status(200).send("Recrutador não encontrado");
-    }
-
-    // --- Busca ou cria sessão ---
+    //-----------------------------------------------------
+    // 🔥 BUSCA OU CRIA SESSÃO
+    //-----------------------------------------------------
     let { data: session } = await supabase
       .from("bot_sessions")
       .select("*")
-      .eq("whatsapp", from)
-      .maybeSingle();
+      .eq("whatsapp", whatsapp)
+      .single();
 
+    // Se não existe sessão → cria
     if (!session) {
       const { data: newSession } = await supabase
         .from("bot_sessions")
         .insert({
-          recruiter_id: recruiter.id,
-          whatsapp: from,
+          whatsapp,
           current_state: "menu",
-          last_vacancies: null,
-          updated_at: new Date().toISOString(),
+          updated_at: new Date()
         })
         .select()
-        .maybeSingle();
+        .single();
+
       session = newSession;
     }
 
-    // --- Expira sessão após 10 minutos sem resposta ---
-    const lastUpdate = new Date(session.updated_at);
-    if (Date.now() - lastUpdate.getTime() > 10 * 60 * 1000) {
+    //-----------------------------------------------------
+    // 🔥 EXPIRAÇÃO DE SESSÃO (opcional)
+    //-----------------------------------------------------
+    const updatedAt = new Date(session.updated_at);
+    const now = new Date();
+    const diffMinutes = (now - updatedAt) / 1000 / 60;
+
+    if (diffMinutes > 30) {
+      // Sessão expirada → reset
       await supabase
         .from("bot_sessions")
-        .update({ current_state: "menu", last_vacancies: null })
+        .update({
+          current_state: "menu",
+          last_vacancies: null,
+          updated_at: now
+        })
         .eq("id", session.id);
-      await sendMenu(from, recruiter.full_name);
-      return res.status(200).send("Sessão expirada e reiniciada");
+
+      session.current_state = "menu";
     }
 
-    // --- Helper para vagas ---
-    async function getVacancies() {
-      const { data } = await supabase
-        .from("job_posts")
-        .select("id, title")
-        .eq("author_id", recruiter.id)
-        .eq("status", "active");
-      return data || [];
+    //-----------------------------------------------------
+    // 🔥 TRATAMENTO DE BOTÕES
+    //-----------------------------------------------------
+    let userCommand = null;
+
+    if (buttonId) {
+      userCommand = buttonId;
+    } else if (text) {
+      // fallback: texto digitado
+      const lower = text.toLowerCase();
+      if (lower.includes("vaga") || lower.includes("ver vagas")) {
+        userCommand = "ver_vagas";
+      }
     }
 
-    // --- MENU PRINCIPAL ---
+    //-----------------------------------------------------
+    // 🔥 AÇÕES POR ESTADO
+    //-----------------------------------------------------
     if (session.current_state === "menu") {
-      if (buttonReply === "view_jobs" || text === "1") {
-        const vacancies = await getVacancies();
-        if (!vacancies.length) {
-          await sendText(from, "📭 Você não tem vagas ativas.");
-          return res.status(200).send("Sem vagas");
-        }
-
-        const listButtons = vacancies.map((v, i) => ({
-          type: "reply",
-          reply: { id: `job_${v.id}`, title: v.title.substring(0, 20) },
-        }));
-
-        await supabase
-          .from("bot_sessions")
-          .update({
-            current_state: "list_vacancies",
-            last_vacancies: vacancies,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", session.id);
-
-        await sendButtons(from, "📋 Selecione uma vaga para exibir candidatos:", listButtons.slice(0, 3));
-        return res.status(200).send("Lista de vagas enviada");
+      if (userCommand === "ver_vagas") {
+        return await handleVerVagas(session, whatsapp, res);
       }
 
-      if (buttonReply === "close_jobs" || text === "2") {
-        const vacancies = await getVacancies();
-        if (!vacancies.length) {
-          await sendText(from, "🚫 Nenhuma vaga ativa para encerrar.");
-          return res.status(200).send("Sem vagas");
-        }
-
-        const listButtons = vacancies.map((v) => ({
-          type: "reply",
-          reply: { id: `close_${v.id}`, title: v.title.substring(0, 20) },
-        }));
-
-        await supabase
-          .from("bot_sessions")
-          .update({
-            current_state: "list_vacancies_close",
-            last_vacancies: vacancies,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", session.id);
-
-        await sendButtons(from, "Escolha uma vaga para encerrar:", listButtons.slice(0, 3));
-        return res.status(200).send("Encerramento de vaga iniciado");
-      }
-
-      // Exibe menu inicial com botões
-      await sendMenu(from, recruiter.full_name);
-      return res.status(200).send("Menu enviado");
+      // Se nada reconhecido → reenviar menu
+      return await sendMenu(session, whatsapp, res);
     }
 
-    // --- VISUALIZAR CANDIDATOS ---
-    if (session.current_state === "list_vacancies" && buttonReply?.startsWith("job_")) {
-      const jobId = buttonReply.replace("job_", "").trim();
-      const { data: candidates } = await supabase
-        .from("job_applications")
-        .select("profiles(full_name), resume_pdf_url")
-        .eq("job_id", jobId);
+    // Caso o bot fique em um estado inválido, resetamos.
+    return await sendMenu(session, whatsapp, res);
 
-      if (!candidates?.length) {
-        await sendText(from, "📭 Nenhum candidato para esta vaga.");
-      } else {
-        const list = candidates
-          .map((c, i) => `${i + 1}. ${c.profiles.full_name} — ${c.resume_pdf_url || "sem currículo"}`)
-          .join("\n\n");
-        await sendText(from, `👥 Candidatos:\n\n${list}`);
-      }
-
-      await supabase
-        .from("bot_sessions")
-        .update({ current_state: "menu", last_vacancies: null })
-        .eq("id", session.id);
-      await sendMenu(from, recruiter.full_name);
-      return res.status(200).send("Candidatos listados");
-    }
-
-    // --- ENCERRAR VAGA ---
-    if (session.current_state === "list_vacancies_close" && buttonReply?.startsWith("close_")) {
-      const jobId = buttonReply.replace("close_", "").trim();
-      const { error: closeErr } = await supabase
-        .from("job_posts")
-        .update({ status: "closed" })
-        .eq("id", jobId);
-
-      if (closeErr) {
-        console.error("Erro ao encerrar vaga:", closeErr);
-        await sendText(from, "❌ Erro ao encerrar a vaga.");
-      } else {
-        await sendText(from, "✅ Vaga encerrada com sucesso!");
-      }
-
-      await supabase
-        .from("bot_sessions")
-        .update({ current_state: "menu", last_vacancies: null })
-        .eq("id", session.id);
-      await sendMenu(from, recruiter.full_name);
-      return res.status(200).send("Vaga encerrada");
-    }
-
-    await sendMenu(from, recruiter.full_name);
-    return res.status(200).send("Fallback: menu reenviado");
   } catch (err) {
-    console.error("Erro no webhook:", err);
-    return res.status(500).send("Erro interno: " + err.message);
+    console.error("❌ ERRO:", err);
+    res.status(500).send("Erro interno");
   }
-}
+};
 
-/* ------------------ FUNÇÕES AUXILIARES ------------------ */
+// ======================================================
+// 📌 FUNÇÃO: ENVIAR MENU
+// ======================================================
+async function sendMenu(session, whatsapp, res) {
+  await supabase
+    .from("bot_sessions")
+    .update({
+      current_state: "menu",
+      updated_at: new Date()
+    })
+    .eq("id", session.id);
 
-async function sendText(to, text) {
-  await sendMessage(to, { type: "text", text: { body: text } });
-}
-
-async function sendMenu(to, name) {
-  const buttons = [
-    { type: "reply", reply: { id: "view_jobs", title: "Ver minhas vagas" } },
-    { type: "reply", reply: { id: "close_jobs", title: "Encerrar uma vaga" } },
-  ];
-
-  await sendMessage(to, {
-    type: "interactive",
-    interactive: {
-      type: "button",
-      body: { text: `👋 Olá ${name}! Escolha uma opção:` },
-      action: { buttons },
-    },
-  });
-}
-
-async function sendButtons(to, text, buttons) {
-  await sendMessage(to, {
-    type: "interactive",
-    interactive: {
-      type: "button",
-      body: { text },
-      action: { buttons },
-    },
-  });
-}
-
-async function sendMessage(to, payload) {
-  const url = `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
-  const toNumber = to.startsWith("55") ? to : `55${to}`;
-
-  const body = {
+  const messageBody = {
     messaging_product: "whatsapp",
-    to: toNumber,
-    ...payload,
+    to: whatsapp,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: "O que deseja fazer agora?" },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "ver_vagas", title: "Ver minhas vagas" } },
+          { type: "reply", reply: { id: "encerrar_vaga", title: "Encerrar vaga" } }
+        ]
+      }
+    }
   };
 
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
+  await fetch(
+    `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(messageBody)
+    }
+  );
+
+  return res.status(200).send("menu enviado");
+}
+
+// ======================================================
+// 📌 FUNÇÃO: LISTAR VAGAS DO RECRUTADOR
+// ======================================================
+async function handleVerVagas(session, whatsapp, res) {
+  // Primeiro, busca o recruiter vinculado
+  const { data: recruiter } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("whatsapp", whatsapp)
+    .single();
+
+  if (!recruiter) {
+    return res.status(200).send("Nenhum recruiter encontrado.");
+  }
+
+  const { data: jobPosts } = await supabase
+    .from("job_posts")
+    .select("id, title, status")
+    .eq("author_id", recruiter.id)
+    .eq("status", "active");
+
+  if (!jobPosts || jobPosts.length === 0) {
+    await sendSimpleWhatsApp(
+      whatsapp,
+      "Você não possui vagas ativas no momento."
+    );
+
+    // volta ao menu
+    await supabase
+      .from("bot_sessions")
+      .update({
+        current_state: "menu",
+        updated_at: new Date()
+      })
+      .eq("id", session.id);
+
+    return res.status(200).send("sem vagas");
+  }
+
+  // Salva temporariamente a lista
+  await supabase
+    .from("bot_sessions")
+    .update({
+      current_state: "listando_vagas",
+      last_vacancies: jobPosts,
+      updated_at: new Date()
+    })
+    .eq("id", session.id);
+
+  let msg = "📋 *Suas vagas ativas:*\n\n";
+  jobPosts.forEach((v, i) => {
+    msg += `*${i + 1}.* ${v.title}\nID: ${v.id}\n\n`;
   });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    console.error("Erro ao enviar mensagem:", err);
-  }
+  await sendSimpleWhatsApp(whatsapp, msg);
+
+  // Após listar, volta ao menu automaticamente
+  await supabase
+    .from("bot_sessions")
+    .update({
+      current_state: "menu",
+      updated_at: new Date()
+    })
+    .eq("id", session.id);
+
+  return res.status(200).send("vagas enviadas");
+}
+
+// ======================================================
+// 📌 FUNÇÃO: ENVIAR TEXTO SIMPLES
+// ======================================================
+async function sendSimpleWhatsApp(to, text) {
+  await fetch(
+    `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        text: { body: text }
+      })
+    }
+  );
 }
