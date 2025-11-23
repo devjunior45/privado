@@ -431,7 +431,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       {/* Header do Perfil */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Perfil</CardTitle>
+          <CardTitle className="text-lg"></CardTitle>
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsProfileEditOpen(true)} className="h-8 w-8 p-0">
               <Edit className="w-4 h-4" />
