@@ -44,6 +44,7 @@ import {
 import { CitySelect } from "@/components/ui/city-select"
 import { CityDisplay } from "@/components/ui/city-display"
 import { useToast } from "@/components/ui/toast"
+import { compressImage } from "@/utils/compress-image"
 
 interface ProfileViewProps {
   profile: UserProfile & { is_verified?: boolean; phone_visible?: boolean; email_visible?: boolean }
@@ -153,6 +154,13 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
   const handleProfileSubmit = async (formData: FormData) => {
     setIsProfileLoading(true)
     try {
+      // Comprimir avatar se foi enviado
+      const avatarFile = formData.get("avatar") as File
+      if (avatarFile && avatarFile.size > 0) {
+        const compressedAvatar = await compressImage(avatarFile, 400)
+        formData.set("avatar", compressedAvatar)
+      }
+
       if (selectedCityId) {
         formData.append("cityId", selectedCityId.toString())
       }

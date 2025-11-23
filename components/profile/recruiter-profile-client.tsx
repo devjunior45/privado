@@ -12,6 +12,7 @@ import { CitySelect } from "@/components/ui/city-select"
 import { updateRecruiterProfile } from "@/app/actions/profile"
 import { toast } from "sonner"
 import { SettingsSheet } from "@/components/ui/settings-sheet"
+import { compressImage } from "@/utils/compress-image"
 
 interface RecruiterProfileClientProps {
   profile: UserProfile
@@ -29,6 +30,13 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
   const handleProfileSubmit = async (formData: FormData) => {
     setIsLoading(true)
     try {
+      // Comprimir avatar se foi enviado
+      const avatarFile = formData.get("avatar") as File
+      if (avatarFile && avatarFile.size > 0) {
+        const compressedAvatar = await compressImage(avatarFile, 400)
+        formData.set("avatar", compressedAvatar)
+      }
+
       if (selectedCityId) {
         formData.append("cityId", selectedCityId.toString())
       }

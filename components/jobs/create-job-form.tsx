@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useSectors } from "@/hooks/use-sectors"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { VerificationModal } from "@/components/jobs/verification-modal"
+import { compressImage } from "@/utils/compress-image"
 
 const DARK_COLORS = [
   { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
@@ -123,15 +124,29 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     adjustTextareaHeight()
   }, [description])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setSelectedImage(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string)
+      try {
+        // Comprimir imagem para máximo 400KB
+        const compressedFile = await compressImage(file, 400)
+        setSelectedImage(compressedFile)
+
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string)
+        }
+        reader.readAsDataURL(compressedFile)
+      } catch (error) {
+        console.error("Erro ao comprimir imagem:", error)
+        // Em caso de erro, usar imagem original
+        setSelectedImage(file)
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string)
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
     }
   }
 
