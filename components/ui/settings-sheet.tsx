@@ -18,7 +18,7 @@ export function SettingsSheet() {
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="sm" className="p-2">
-            {/* Settings icon removed */}
+         <Settings className="w-5 h-5" />
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="h-auto">
