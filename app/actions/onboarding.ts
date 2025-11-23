@@ -18,6 +18,10 @@ export async function saveOnboardingStep(step: string, data: Record<string, any>
   const updateData: Record<string, any> = {}
 
   switch (step) {
+    case "whatsapp":
+      updateData.whatsapp = data.whatsapp
+      break
+
     case "full_name":
       updateData.full_name = data.full_name
       break
@@ -39,12 +43,25 @@ export async function saveOnboardingStep(step: string, data: Record<string, any>
       updateData.education = [...currentEducation, data.education]
       break
 
-    case "experience":
+    case "experiences":
       if (data.is_first_job) {
         updateData.experiences = []
         updateData.is_first_job = true
       } else {
         updateData.experiences = data.experiences
+        updateData.is_first_job = false
+      }
+      break
+
+    case "experience":
+      if (data.is_first_job) {
+        updateData.experiences = []
+        updateData.is_first_job = true
+      } else {
+        // Buscar experiências atuais
+        const { data: profileExp } = await supabase.from("profiles").select("experiences").eq("id", user.id).single()
+        const currentExperiences = (profileExp?.experiences as any[]) || []
+        updateData.experiences = [...currentExperiences, data.experience]
         updateData.is_first_job = false
       }
       break
@@ -63,10 +80,6 @@ export async function saveOnboardingStep(step: string, data: Record<string, any>
 
     case "address":
       updateData.address = data.address
-      break
-
-    case "whatsapp":
-      updateData.whatsapp = data.whatsapp
       break
 
     case "courses":

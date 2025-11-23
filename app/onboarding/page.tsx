@@ -3,8 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { OnboardingQuiz } from "@/components/onboarding/onboarding-quiz"
 import { isProfileComplete } from "@/utils/check-profile-complete"
 import { JobFeed } from "@/components/job-feed"
-import { Suspense } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
+import { sortJobsByImportance } from "@/utils/ranking"
 
 export default async function OnboardingPage() {
   const supabase = await createClient()
@@ -25,40 +24,37 @@ export default async function OnboardingPage() {
     redirect("/feed")
   }
 
-  const { data: previewPosts } = await supabase
+  const { data: fetchedPosts } = await supabase
     .from("job_posts")
     .select(
       `*, sector_ids, profiles (id, username, full_name, avatar_url, whatsapp, user_type, company_name, is_verified)`,
     )
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(5)
+    .limit(10)
+
+  const sortedPosts = fetchedPosts ? sortJobsByImportance(fetchedPosts) : []
 
   return (
-    <div className="relative min-h-screen">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="blur-md opacity-30 pointer-events-none p-4">
-          <Suspense
-            fallback={
-              <div className="space-y-4">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-48 w-full" />
-              </div>
-            }
-          >
-            <JobFeed
-              isLoggedIn={false}
-              initialPosts={previewPosts || []}
-              userProfile={null}
-              isLoading={false}
-              hasLoadedOnce={true}
-              isDesktopLayout={false}
-            />
-          </Suspense>
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Background com feed blur */}
+      <div className="absolute inset-0 blur-sm opacity-30 pointer-events-none overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-4 pt-20">
+          <JobFeed
+            isLoggedIn={false}
+            initialPosts={sortedPosts}
+            userProfile={null}
+            isLoading={false}
+            hasLoadedOnce={true}
+            isDesktopLayout={false}
+          />
         </div>
       </div>
 
+      {/* Overlay semi-transparente */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/90 to-indigo-100/90 backdrop-blur-sm" />
+
+      {/* Quiz em primeiro plano */}
       <div className="relative z-10">
         <OnboardingQuiz />
       </div>

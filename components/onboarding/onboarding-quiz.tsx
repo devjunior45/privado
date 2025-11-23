@@ -26,7 +26,11 @@ const EDUCATION_LEVELS = [
   "Doutorado",
 ]
 
-const EDUCATION_STATUS = ["Cursando", "Incompleto", "Concluído"]
+const EDUCATION_STATUS_OPTIONS = [
+  { value: "concluído", label: "Concluído" },
+  { value: "cursando", label: "Cursando" },
+  { value: "incompleto", label: "Incompleto" },
+]
 
 const SKILLS_OPTIONS = [
   "Atendimento ao cliente",
@@ -45,57 +49,68 @@ const SKILLS_OPTIONS = [
 
 const CNH_OPTIONS = ["A", "B", "AB", "C", "D", "E"]
 
-interface Experience {
-  position: string
-  company: string
-  startDate?: string
-  endDate?: string
-  activities: string
-}
-
-interface Course {
-  name: string
-  duration: string
-  isComplete: boolean
-  institution: string
-  completionYear?: string
-}
-
 export function OnboardingQuiz() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Estados dos formulários
+  const [whatsapp, setWhatsapp] = useState("")
   const [fullName, setFullName] = useState("")
   const [city, setCity] = useState("")
   const [state, setState] = useState("")
   const [cityId, setCityId] = useState<number | null>(null)
   const [birthDate, setBirthDate] = useState("")
+
   const [educationLevel, setEducationLevel] = useState("")
-  const [educationStatus, setEducationStatus] = useState("")
+  const [educationStatus, setEducationStatus] = useState<"concluído" | "cursando" | "incompleto">("concluído")
+  const [educationCourseName, setEducationCourseName] = useState("")
   const [educationInstitution, setEducationInstitution] = useState("")
   const [educationYear, setEducationYear] = useState("")
+
   const [hasExperience, setHasExperience] = useState<"yes" | "no" | null>(null)
-  const [experiences, setExperiences] = useState<Experience[]>([
-    { position: "", company: "", startDate: "", endDate: "", activities: "" },
+  const [experiences, setExperiences] = useState([
+    {
+      position: "",
+      company: "",
+      activities: "",
+      startDate: "",
+      endDate: "",
+      isCurrentJob: false,
+    },
   ])
+
   const [skills, setSkills] = useState<string[]>([])
   const [cnhTypes, setCnhTypes] = useState<string[]>([])
   const [summary, setSummary] = useState("")
   const [address, setAddress] = useState("")
-  const [whatsapp, setWhatsapp] = useState("")
-  const [hasCourses, setHasCourses] = useState<"yes" | "no" | null>(null)
-  const [courses, setCourses] = useState<Course[]>([
-    { name: "", duration: "", isComplete: false, institution: "", completionYear: "" },
-  ])
+
+  const [courses, setCourses] = useState<
+    Array<{
+      name: string
+      duration: string
+      isComplete: boolean
+      institution: string
+      completionYear: string
+    }>
+  >([])
+  const [hasMoreCourses, setHasMoreCourses] = useState(false)
 
   const { cities, loading: citiesLoading } = useCities()
 
   const progress = (currentStep / TOTAL_STEPS) * 100
 
   const addExperience = () => {
-    setExperiences([...experiences, { position: "", company: "", startDate: "", endDate: "", activities: "" }])
+    setExperiences([
+      ...experiences,
+      {
+        position: "",
+        company: "",
+        activities: "",
+        startDate: "",
+        endDate: "",
+        isCurrentJob: false,
+      },
+    ])
   }
 
   const removeExperience = (index: number) => {
@@ -104,26 +119,33 @@ export function OnboardingQuiz() {
     }
   }
 
-  const updateExperience = (index: number, field: keyof Experience, value: string) => {
-    const updated = [...experiences]
-    updated[index] = { ...updated[index], [field]: value }
-    setExperiences(updated)
+  const updateExperience = (index: number, field: string, value: any) => {
+    const newExperiences = [...experiences]
+    newExperiences[index] = { ...newExperiences[index], [field]: value }
+    setExperiences(newExperiences)
   }
 
   const addCourse = () => {
-    setCourses([...courses, { name: "", duration: "", isComplete: false, institution: "", completionYear: "" }])
+    setCourses([
+      ...courses,
+      {
+        name: "",
+        duration: "",
+        isComplete: false,
+        institution: "",
+        completionYear: "",
+      },
+    ])
   }
 
   const removeCourse = (index: number) => {
-    if (courses.length > 1) {
-      setCourses(courses.filter((_, i) => i !== index))
-    }
+    setCourses(courses.filter((_, i) => i !== index))
   }
 
-  const updateCourse = (index: number, field: keyof Course, value: string | boolean) => {
-    const updated = [...courses]
-    updated[index] = { ...updated[index], [field]: value }
-    setCourses(updated)
+  const updateCourse = (index: number, field: string, value: any) => {
+    const newCourses = [...courses]
+    newCourses[index] = { ...newCourses[index], [field]: value }
+    setCourses(newCourses)
   }
 
   const handleNext = async () => {
@@ -131,6 +153,15 @@ export function OnboardingQuiz() {
     try {
       switch (currentStep) {
         case 1:
+          if (!whatsapp.trim()) {
+            alert("Por favor, informe seu número de WhatsApp")
+            setIsLoading(false)
+            return
+          }
+          await saveOnboardingStep("whatsapp", { whatsapp })
+          break
+
+        case 2:
           if (!fullName.trim()) {
             alert("Por favor, preencha seu nome completo")
             setIsLoading(false)
@@ -139,7 +170,7 @@ export function OnboardingQuiz() {
           await saveOnboardingStep("full_name", { full_name: fullName })
           break
 
-        case 2:
+        case 3:
           if (!city || !state) {
             alert("Por favor, selecione sua cidade")
             setIsLoading(false)
@@ -148,7 +179,7 @@ export function OnboardingQuiz() {
           await saveOnboardingStep("location", { city, state, city_id: cityId })
           break
 
-        case 3:
+        case 4:
           if (!birthDate) {
             alert("Por favor, informe sua data de nascimento")
             setIsLoading(false)
@@ -157,9 +188,14 @@ export function OnboardingQuiz() {
           await saveOnboardingStep("birth_date", { birth_date: birthDate })
           break
 
-        case 4:
-          if (!educationLevel || !educationStatus) {
-            alert("Por favor, selecione seu nível de escolaridade e status")
+        case 5:
+          if (!educationLevel) {
+            alert("Por favor, selecione seu nível de escolaridade")
+            setIsLoading(false)
+            return
+          }
+          if (!["Ensino Fundamental", "Ensino Médio"].includes(educationLevel) && !educationCourseName.trim()) {
+            alert("Por favor, informe o nome do curso")
             setIsLoading(false)
             return
           }
@@ -168,35 +204,43 @@ export function OnboardingQuiz() {
               level: educationLevel,
               institution: educationInstitution || "Não informado",
               completionYear: educationYear || undefined,
-              isComplete: educationStatus === "Concluído",
-              status: educationStatus.toLowerCase(),
+              isComplete: educationStatus === "concluído",
+              status: educationStatus,
+              courseName: educationCourseName || undefined,
             },
           })
           break
 
-        case 5:
+        case 6:
           if (hasExperience === null) {
             alert("Por favor, informe se você já trabalhou antes")
             setIsLoading(false)
             return
           }
           if (hasExperience === "yes") {
-            const invalidExperience = experiences.find((exp) => !exp.position.trim() || !exp.company.trim())
-            if (invalidExperience) {
-              alert("Por favor, preencha o cargo e a empresa em todas as experiências")
+            const validExperiences = experiences.filter((exp) => exp.position.trim() && exp.company.trim())
+            if (validExperiences.length === 0) {
+              alert("Por favor, preencha pelo menos uma experiência com cargo e empresa")
               setIsLoading(false)
               return
             }
-            await saveOnboardingStep("experience", {
+            await saveOnboardingStep("experiences", {
               is_first_job: false,
-              experiences: experiences,
+              experiences: validExperiences.map((exp) => ({
+                position: exp.position,
+                company: exp.company,
+                activities: exp.activities || undefined,
+                startDate: exp.startDate || undefined,
+                endDate: exp.isCurrentJob ? undefined : exp.endDate || undefined,
+                isCurrentJob: exp.isCurrentJob,
+              })),
             })
           } else {
             await saveOnboardingStep("experience", { is_first_job: true })
           }
           break
 
-        case 6:
+        case 7:
           if (skills.length === 0) {
             alert("Por favor, selecione pelo menos uma habilidade")
             setIsLoading(false)
@@ -205,11 +249,11 @@ export function OnboardingQuiz() {
           await saveOnboardingStep("skills", { skills })
           break
 
-        case 7:
+        case 8:
           await saveOnboardingStep("cnh", { cnh_types: cnhTypes })
           break
 
-        case 8:
+        case 9:
           if (!summary.trim()) {
             alert("Por favor, conte um pouco sobre você")
             setIsLoading(false)
@@ -218,7 +262,7 @@ export function OnboardingQuiz() {
           await saveOnboardingStep("summary", { professional_summary: summary })
           break
 
-        case 9:
+        case 10:
           if (!address.trim()) {
             alert("Por favor, informe seu endereço")
             setIsLoading(false)
@@ -227,35 +271,20 @@ export function OnboardingQuiz() {
           await saveOnboardingStep("address", { address })
           break
 
-        case 10:
-          if (!whatsapp.trim()) {
-            alert("Por favor, informe seu WhatsApp")
-            setIsLoading(false)
-            return
-          }
-          await saveOnboardingStep("whatsapp", { whatsapp })
-          break
-
         case 11:
-          if (hasCourses === "yes") {
-            const invalidCourse = courses.find(
-              (course) => !course.name.trim() || !course.institution.trim() || !course.duration.trim(),
-            )
-            if (invalidCourse) {
-              alert("Por favor, preencha nome, instituição e duração em todos os cursos")
-              setIsLoading(false)
-              return
+          if (courses.length > 0) {
+            const validCourses = courses.filter((course) => course.name.trim() && course.institution.trim())
+            if (validCourses.length > 0) {
+              await saveOnboardingStep("courses", {
+                courses: validCourses.map((course) => ({
+                  name: course.name,
+                  duration: course.duration || undefined,
+                  isComplete: course.isComplete,
+                  institution: course.institution,
+                  completionYear: course.isComplete ? course.completionYear || undefined : undefined,
+                })),
+              })
             }
-            // Validar completionYear se isComplete for true
-            const incompleteCourse = courses.find((course) => course.isComplete && !course.completionYear)
-            if (incompleteCourse) {
-              alert("Por favor, informe o ano de conclusão para cursos concluídos")
-              setIsLoading(false)
-              return
-            }
-            await saveOnboardingStep("courses", { courses })
-          } else {
-            await saveOnboardingStep("courses", { courses: [] })
           }
           // Último passo - redirecionar para o feed
           router.push("/feed")
@@ -280,6 +309,8 @@ export function OnboardingQuiz() {
     setCnhTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
   }
 
+  const shouldShowCourseName = educationLevel && !["Ensino Fundamental", "Ensino Médio"].includes(educationLevel)
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-2xl">
@@ -292,8 +323,25 @@ export function OnboardingQuiz() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* PASSO 1 - Nome completo */}
           {currentStep === 1 && (
+            <div className="space-y-4">
+              <CardTitle>Qual o seu número de contato/WhatsApp?</CardTitle>
+              <CardDescription>Precisamos de um contato para os recrutadores</CardDescription>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  placeholder="(00) 00000-0000"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+
+          {/* PASSO 2 - Nome completo */}
+          {currentStep === 2 && (
             <div className="space-y-4">
               <CardTitle>Qual é seu nome completo?</CardTitle>
               <CardDescription>Vamos começar conhecendo você</CardDescription>
@@ -310,8 +358,8 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {/* PASSO 2 - Localização */}
-          {currentStep === 2 && (
+          {/* PASSO 3 - Localização */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               <CardTitle>Onde você mora?</CardTitle>
               <CardDescription>Isso ajuda a encontrar vagas próximas a você</CardDescription>
@@ -343,8 +391,8 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {/* PASSO 3 - Data de nascimento */}
-          {currentStep === 3 && (
+          {/* PASSO 4 - Data de nascimento */}
+          {currentStep === 4 && (
             <div className="space-y-4">
               <CardTitle>Qual é sua data de nascimento?</CardTitle>
               <CardDescription>Precisamos saber sua idade</CardDescription>
@@ -361,8 +409,7 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {/* PASSO 4 - Formação */}
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <div className="space-y-4">
               <CardTitle>Qual é seu nível de escolaridade?</CardTitle>
               <CardDescription>Informe sua formação acadêmica</CardDescription>
@@ -380,48 +427,66 @@ export function OnboardingQuiz() {
                     ))}
                   </RadioGroup>
                 </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <RadioGroup value={educationStatus} onValueChange={setEducationStatus}>
-                    {EDUCATION_STATUS.map((status) => (
-                      <div key={status} className="flex items-center space-x-2">
-                        <RadioGroupItem value={status} id={status} />
-                        <Label htmlFor={status} className="font-normal cursor-pointer">
-                          {status}
-                        </Label>
+
+                {educationLevel && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <RadioGroup value={educationStatus} onValueChange={(value) => setEducationStatus(value as any)}>
+                        {EDUCATION_STATUS_OPTIONS.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option.value} id={option.value} />
+                            <Label htmlFor={option.value} className="font-normal cursor-pointer">
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+
+                    {shouldShowCourseName && (
+                      <div className="space-y-2">
+                        <Label htmlFor="courseName">Nome do curso *</Label>
+                        <Input
+                          id="courseName"
+                          placeholder="Ex: Engenharia Civil, Técnico em Informática"
+                          value={educationCourseName}
+                          onChange={(e) => setEducationCourseName(e.target.value)}
+                        />
                       </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="institution">Instituição (opcional)</Label>
-                  <Input
-                    id="institution"
-                    placeholder="Nome da escola/universidade"
-                    value={educationInstitution}
-                    onChange={(e) => setEducationInstitution(e.target.value)}
-                  />
-                </div>
-                {educationStatus === "Concluído" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="year">Ano de conclusão (opcional)</Label>
-                    <Input
-                      id="year"
-                      type="number"
-                      placeholder="2020"
-                      value={educationYear}
-                      onChange={(e) => setEducationYear(e.target.value)}
-                      min="1950"
-                      max={new Date().getFullYear()}
-                    />
-                  </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="institution">Instituição (opcional)</Label>
+                      <Input
+                        id="institution"
+                        placeholder="Nome da escola/universidade"
+                        value={educationInstitution}
+                        onChange={(e) => setEducationInstitution(e.target.value)}
+                      />
+                    </div>
+
+                    {educationStatus === "concluído" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="year">Ano de conclusão (opcional)</Label>
+                        <Input
+                          id="year"
+                          type="number"
+                          placeholder="2020"
+                          value={educationYear}
+                          onChange={(e) => setEducationYear(e.target.value)}
+                          min="1950"
+                          max={new Date().getFullYear()}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           )}
 
-          {/* PASSO 5 - Experiência */}
-          {currentStep === 5 && (
+          {currentStep === 6 && (
             <div className="space-y-4">
               <CardTitle>Você já trabalhou antes?</CardTitle>
               <CardDescription>Conte sobre sua experiência profissional</CardDescription>
@@ -444,21 +509,18 @@ export function OnboardingQuiz() {
               </RadioGroup>
 
               {hasExperience === "yes" && (
-                <div className="space-y-4 pt-4">
+                <div className="space-y-6 pt-4">
                   {experiences.map((exp, index) => (
-                    <div key={index} className="space-y-4 p-4 border rounded-lg relative">
-                      {experiences.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeExperience(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <h4 className="font-medium">Experiência {index + 1}</h4>
+                    <div key={index} className="space-y-4 p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Experiência {index + 1}</h4>
+                        {experiences.length > 1 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeExperience(index)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor={`position-${index}`}>Cargo *</Label>
                         <Input
@@ -468,6 +530,7 @@ export function OnboardingQuiz() {
                           onChange={(e) => updateExperience(index, "position", e.target.value)}
                         />
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor={`company-${index}`}>Empresa *</Label>
                         <Input
@@ -477,16 +540,29 @@ export function OnboardingQuiz() {
                           onChange={(e) => updateExperience(index, "company", e.target.value)}
                         />
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor={`activities-${index}`}>Atividades (opcional)</Label>
                         <Textarea
                           id={`activities-${index}`}
-                          placeholder="Descreva suas principais atividades..."
+                          placeholder="Descreva suas atividades e responsabilidades"
                           value={exp.activities}
                           onChange={(e) => updateExperience(index, "activities", e.target.value)}
                           rows={3}
                         />
                       </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`current-${index}`}
+                          checked={exp.isCurrentJob}
+                          onCheckedChange={(checked) => updateExperience(index, "isCurrentJob", checked)}
+                        />
+                        <Label htmlFor={`current-${index}`} className="font-normal cursor-pointer">
+                          Trabalho aqui atualmente
+                        </Label>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor={`startDate-${index}`}>Início (opcional)</Label>
@@ -497,29 +573,32 @@ export function OnboardingQuiz() {
                             onChange={(e) => updateExperience(index, "startDate", e.target.value)}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`endDate-${index}`}>Fim (opcional)</Label>
-                          <Input
-                            id={`endDate-${index}`}
-                            type="month"
-                            value={exp.endDate}
-                            onChange={(e) => updateExperience(index, "endDate", e.target.value)}
-                          />
-                        </div>
+                        {!exp.isCurrentJob && (
+                          <div className="space-y-2">
+                            <Label htmlFor={`endDate-${index}`}>Fim (opcional)</Label>
+                            <Input
+                              id={`endDate-${index}`}
+                              type="month"
+                              value={exp.endDate}
+                              onChange={(e) => updateExperience(index, "endDate", e.target.value)}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
+
                   <Button type="button" variant="outline" onClick={addExperience} className="w-full bg-transparent">
                     <Plus className="mr-2 h-4 w-4" />
-                    Adicionar outra experiência
+                    Adicionar mais experiência
                   </Button>
                 </div>
               )}
             </div>
           )}
 
-          {/* PASSO 6 - Habilidades */}
-          {currentStep === 6 && (
+          {/* PASSO 7 - Habilidades */}
+          {currentStep === 7 && (
             <div className="space-y-4">
               <CardTitle>Quais habilidades você possui?</CardTitle>
               <CardDescription>Selecione todas que se aplicam</CardDescription>
@@ -536,8 +615,8 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {/* PASSO 7 - CNH */}
-          {currentStep === 7 && (
+          {/* PASSO 8 - CNH */}
+          {currentStep === 8 && (
             <div className="space-y-4">
               <CardTitle>Você possui CNH?</CardTitle>
               <CardDescription>Selecione as categorias que você possui (opcional)</CardDescription>
@@ -555,8 +634,8 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {/* PASSO 8 - Resumo profissional */}
-          {currentStep === 8 && (
+          {/* PASSO 9 - Resumo profissional */}
+          {currentStep === 9 && (
             <div className="space-y-4">
               <CardTitle>Conte um pouco sobre você</CardTitle>
               <CardDescription>Compartilhe suas qualidades e objetivos profissionais</CardDescription>
@@ -573,8 +652,8 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {/* PASSO 9 - Endereço */}
-          {currentStep === 9 && (
+          {/* PASSO 10 - Endereço */}
+          {currentStep === 10 && (
             <div className="space-y-4">
               <CardTitle>Qual seu endereço completo?</CardTitle>
               <CardDescription>Rua, número e bairro</CardDescription>
@@ -590,58 +669,30 @@ export function OnboardingQuiz() {
             </div>
           )}
 
-          {currentStep === 10 && (
-            <div className="space-y-4">
-              <CardTitle>Qual seu WhatsApp?</CardTitle>
-              <CardDescription>Para que as empresas possam entrar em contato</CardDescription>
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  placeholder="(00) 00000-0000"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
           {currentStep === 11 && (
             <div className="space-y-4">
-              <CardTitle>Você possui cursos complementares?</CardTitle>
-              <CardDescription>Certificações, workshops ou cursos que você realizou</CardDescription>
-              <RadioGroup value={hasCourses || ""} onValueChange={(value) => setHasCourses(value as "yes" | "no")}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="courses-yes" />
-                  <Label htmlFor="courses-yes" className="font-normal cursor-pointer">
-                    Sim
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="courses-no" />
-                  <Label htmlFor="courses-no" className="font-normal cursor-pointer">
-                    Não
-                  </Label>
-                </div>
-              </RadioGroup>
+              <CardTitle>Deseja adicionar cursos?</CardTitle>
+              <CardDescription>Adicione cursos complementares que você fez (opcional)</CardDescription>
 
-              {hasCourses === "yes" && (
-                <div className="space-y-4 pt-4">
+              {courses.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">Nenhum curso adicionado ainda</p>
+                  <Button type="button" variant="outline" onClick={addCourse}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar curso
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
                   {courses.map((course, index) => (
-                    <div key={index} className="space-y-4 p-4 border rounded-lg relative">
-                      {courses.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeCourse(index)}
-                        >
+                    <div key={index} className="space-y-4 p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Curso {index + 1}</h4>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeCourse(index)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                      <h4 className="font-medium">Curso {index + 1}</h4>
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor={`course-name-${index}`}>Nome do curso *</Label>
                         <Input
@@ -651,17 +702,19 @@ export function OnboardingQuiz() {
                           onChange={(e) => updateCourse(index, "name", e.target.value)}
                         />
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor={`course-institution-${index}`}>Instituição *</Label>
                         <Input
                           id={`course-institution-${index}`}
-                          placeholder="Nome da instituição"
+                          placeholder="Ex: SENAC, Coursera"
                           value={course.institution}
                           onChange={(e) => updateCourse(index, "institution", e.target.value)}
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor={`course-duration-${index}`}>Duração *</Label>
+                        <Label htmlFor={`course-duration-${index}`}>Duração (opcional)</Label>
                         <Input
                           id={`course-duration-${index}`}
                           placeholder="Ex: 40 horas"
@@ -669,19 +722,21 @@ export function OnboardingQuiz() {
                           onChange={(e) => updateCourse(index, "duration", e.target.value)}
                         />
                       </div>
+
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id={`course-complete-${index}`}
                           checked={course.isComplete}
-                          onCheckedChange={(checked) => updateCourse(index, "isComplete", checked as boolean)}
+                          onCheckedChange={(checked) => updateCourse(index, "isComplete", checked)}
                         />
                         <Label htmlFor={`course-complete-${index}`} className="font-normal cursor-pointer">
                           Curso concluído
                         </Label>
                       </div>
+
                       {course.isComplete && (
                         <div className="space-y-2">
-                          <Label htmlFor={`course-year-${index}`}>Ano de conclusão *</Label>
+                          <Label htmlFor={`course-year-${index}`}>Ano de conclusão (opcional)</Label>
                           <Input
                             id={`course-year-${index}`}
                             type="number"
@@ -695,9 +750,10 @@ export function OnboardingQuiz() {
                       )}
                     </div>
                   ))}
+
                   <Button type="button" variant="outline" onClick={addCourse} className="w-full bg-transparent">
                     <Plus className="mr-2 h-4 w-4" />
-                    Adicionar outro curso
+                    Adicionar mais curso
                   </Button>
                 </div>
               )}
