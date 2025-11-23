@@ -9,9 +9,8 @@ import { CompleteProfileModal } from "./complete-profile-modal"
 
 export function ProfileCheckWrapper({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [missingField, setMissingField] = useState<"name" | "city" | null>(null)
+  const [missingField, setMissingField] = useState<"name" | null>(null)
   const [currentName, setCurrentName] = useState("")
-  const [currentCityId, setCurrentCityId] = useState<number | null>(null)
   const [isChecking, setIsChecking] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
@@ -46,11 +45,7 @@ export function ProfileCheckWrapper({ children }: { children: React.ReactNode })
           return
         }
 
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("full_name, city_id")
-          .eq("id", user.id)
-          .single()
+        const { data: profile, error } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
 
         if (error) {
           console.error("Erro ao buscar perfil:", error)
@@ -59,14 +54,9 @@ export function ProfileCheckWrapper({ children }: { children: React.ReactNode })
         }
 
         setCurrentName(profile?.full_name || "")
-        setCurrentCityId(profile?.city_id || null)
 
-        // Verificar campos obrigatórios
         if (!profile?.full_name || profile.full_name.trim() === "") {
           setMissingField("name")
-          setIsOpen(true)
-        } else if (!profile?.city_id) {
-          setMissingField("city")
           setIsOpen(true)
         }
       } catch (err) {
@@ -81,37 +71,6 @@ export function ProfileCheckWrapper({ children }: { children: React.ReactNode })
 
   const handleComplete = () => {
     setIsOpen(false)
-
-    // Verificar se precisa do próximo modal
-    setTimeout(async () => {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, city_id")
-          .eq("id", user.id)
-          .single()
-
-        if (profile) {
-          // Se completou o nome, verificar cidade
-          if (missingField === "name" && !profile.city_id) {
-            setCurrentCityId(profile.city_id)
-            setMissingField("city")
-            setIsOpen(true)
-          }
-          // Se completou a cidade e não tinha nome
-          else if (missingField === "city" && (!profile.full_name || profile.full_name.trim() === "")) {
-            setCurrentName(profile.full_name)
-            setMissingField("name")
-            setIsOpen(true)
-          }
-        }
-      }
-    }, 500)
   }
 
   if (isChecking) {
@@ -125,7 +84,7 @@ export function ProfileCheckWrapper({ children }: { children: React.ReactNode })
         isOpen={isOpen}
         missingField={missingField}
         currentName={currentName}
-        currentCityId={currentCityId}
+        currentCityId={null}
         onComplete={handleComplete}
       />
     </>

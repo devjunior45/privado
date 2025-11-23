@@ -101,6 +101,14 @@ export function AuthForm() {
 
       if (signUpError) {
         console.error("Erro ao criar usuário:", signUpError)
+        if (
+          signUpError.message.includes("already registered") ||
+          signUpError.message.includes("User already registered")
+        ) {
+          setError("Esse email já possui cadastro, faça login para prosseguir.")
+          setIsLoading(false)
+          return
+        }
         throw signUpError
       }
 
@@ -147,7 +155,11 @@ export function AuthForm() {
       router.refresh()
     } catch (error: any) {
       console.error("Erro no cadastro:", error)
-      setError(error.message || "Erro ao criar conta. Tente novamente.")
+      if (error.message?.includes("already registered") || error.message?.includes("User already registered")) {
+        setError("Esse email já possui cadastro, faça login para prosseguir.")
+      } else {
+        setError(error.message || "Erro ao criar conta. Tente novamente.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -171,7 +183,15 @@ export function AuthForm() {
       router.refresh()
     } catch (error: any) {
       console.error("Erro no login:", error)
-      setError(error.message || "Erro ao fazer login")
+      if (
+        error.message?.includes("Invalid login credentials") ||
+        error.message?.includes("invalid") ||
+        error.status === 400
+      ) {
+        setError("Email ou senha incorretos, tente novamente.")
+      } else {
+        setError("Email ou senha incorretos, tente novamente.")
+      }
     } finally {
       setIsLoading(false)
     }
