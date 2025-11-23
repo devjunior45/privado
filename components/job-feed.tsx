@@ -3,7 +3,7 @@ import { JobPost } from "@/components/job-post"
 import type { JobPostWithProfile } from "@/types/database"
 import { EnhancedJobSkeleton } from "@/components/ui/enhanced-job-skeleton"
 import useMobile from "@/hooks/use-mobile"
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 
 interface JobFeedProps {
   isLoggedIn: boolean
@@ -31,63 +31,67 @@ export function JobFeed({
 }: JobFeedProps) {
   const isMobile = useMobile()
 
-  const [displayedPosts, setDisplayedPosts] = useState<typeof initialPosts>([])
-  const [currentPage, setCurrentPage] = useState(1)
+  const [displayedCount, setDisplayedCount] = useState(10)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const observerTarget = useRef<HTMLDivElement>(null)
-  const POSTS_PER_PAGE = 5
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Reset quando os posts iniciais mudarem (filtros, etc)
-  useEffect(() => {
-    setDisplayedPosts(initialPosts.slice(0, POSTS_PER_PAGE))
-    setCurrentPage(1)
-  }, [initialPosts])
+  const posts = initialPosts.slice(0, displayedCount)
+  const hasMore = displayedCount < initialPosts.length
 
-  // Intersection Observer para detectar quando chegar ao final
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore && hasLoadedOnce) {
-          loadMorePosts()
-        }
-      },
-      { threshold: 0.1 },
-    )
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current)
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current)
-      }
-    }
-  }, [isLoadingMore, displayedPosts, initialPosts, hasLoadedOnce])
-
-  const loadMorePosts = () => {
-    const totalPosts = initialPosts.length
-    const currentDisplayed = displayedPosts.length
-
-    if (currentDisplayed >= totalPosts) return
+  const loadMore = () => {
+    if (isLoadingMore || !hasMore) return
 
     setIsLoadingMore(true)
 
+    if (containerRef.current) {
+      document.body.style.overflow = "hidden"
+    }
+
     setTimeout(() => {
-      const nextPage = currentPage + 1
-      const newPosts = initialPosts.slice(0, nextPage * POSTS_PER_PAGE)
-      setDisplayedPosts(newPosts)
-      setCurrentPage(nextPage)
+      setDisplayedCount((prev) => Math.min(prev + 10, initialPosts.length))
       setIsLoadingMore(false)
-    }, 500)
+
+      document.body.style.overflow = ""
+    }, 800)
   }
 
-  const hasMore = displayedPosts.length < initialPosts.length
+  useEffect(() => {
+    setDisplayedCount(10)
+  }, [initialPosts.length])
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" },
+    )
+
+    observerRef.current.observe(sentinelRef.current)
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [hasMore, isLoadingMore, displayedCount])
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [])
 
   if (isLoading && !hasLoadedOnce) {
     return (
       <div className={` ${isMobile ? "space-y-1" : "space-y-4"}`}>
-        {[...Array(isMobile ? 3 : 5)].map((_, index) => (
+        {[...Array(isMobile ? 3 : 6)].map((_, index) => (
           <EnhancedJobSkeleton key={index} />
         ))}
       </div>
@@ -104,8 +108,8 @@ export function JobFeed({
   }
 
   return (
-    <div className={isMobile ? "space-y-0.5 bg-muted/20" : "space-y-4"}>
-      {displayedPosts.map((post, index) => (
+    <div ref={containerRef} className={isMobile ? "space-y-0.5 bg-muted/20" : "space-y-4"}>
+      {posts.map((post, index) => (
         <JobPost
           key={post.id}
           jobPost={post}
@@ -123,10 +127,10 @@ export function JobFeed({
       ))}
 
       {hasMore && (
-        <div ref={observerTarget} className="py-8 flex justify-center">
+        <div ref={sentinelRef} className="py-4">
           {isLoadingMore && (
-            <div className="space-y-4 w-full">
-              {[...Array(2)].map((_, index) => (
+            <div className={isMobile ? "space-y-1" : "space-y-4"}>
+              {[...Array(3)].map((_, index) => (
                 <EnhancedJobSkeleton key={`loading-${index}`} />
               ))}
             </div>
@@ -134,8 +138,8 @@ export function JobFeed({
         </div>
       )}
 
-      {!hasMore && displayedPosts.length > 0 && (
-        <div className="text-center py-8 text-muted-foreground text-sm">Todas as vagas foram carregadas</div>
+      {!hasMore && initialPosts.length > 10 && (
+        <div className="text-center py-8 text-muted-foreground">Todas as vagas foram carregadas</div>
       )}
     </div>
   )
