@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Busca Empregos",
-    short_name: "Busca Empregos",
+    name: "Galeria de Empregos",
+    short_name: "Empregos",
     description: "Encontre as melhores oportunidades de emprego na sua região",
     start_url: "/",
     display: "standalone",

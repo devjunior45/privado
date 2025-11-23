@@ -9,6 +9,7 @@ import { preloadCities } from "@/hooks/use-cities"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import useMobile from "@/hooks/use-mobile"
 import { sortJobsByImportance } from "@/utils/ranking"
+import { isProfileComplete } from "@/utils/check-profile-complete"
 
 export default function FeedPage() {
   const isMobile = useMobile()
@@ -22,6 +23,7 @@ export default function FeedPage() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true)
   const [allPosts, setAllPosts] = useState<
     (JobPostWithProfile & {
       is_saved?: boolean
@@ -69,7 +71,15 @@ export default function FeedPage() {
         const { data: userProfileData } = await supabase.from("profiles").select("*").eq("id", user.id).single()
         profile = userProfileData
         setUserProfile(profile)
+
+        if (profile && profile.user_type === "candidate" && !isProfileComplete(profile)) {
+          console.log("[v0] Perfil incompleto, redirecionando para onboarding")
+          router.push("/onboarding")
+          return
+        }
       }
+
+      setIsCheckingProfile(false)
 
       const { data: fetchedPosts, error: postsError } = await supabase
         .from("job_posts")
@@ -110,7 +120,6 @@ export default function FeedPage() {
           application_date: applicationData.get(post.id)?.application_date || null,
         })) || []
 
-      // Ordenar por importância usando o ranking
       const sortedPosts = sortJobsByImportance(postsWithEngagement)
 
       setAllPosts(sortedPosts)
@@ -120,10 +129,11 @@ export default function FeedPage() {
     } catch (error) {
       console.error("Erro ao buscar dados:", error)
       setHasLoadedOnce(true)
+      setIsCheckingProfile(false)
     } finally {
       setIsInitialLoading(false)
     }
-  }, [supabase])
+  }, [supabase, router])
 
   const applyFilters = useCallback(() => {
     const currentSelectedCityId = cityParam
@@ -153,7 +163,6 @@ export default function FeedPage() {
       return searchMatch && cityMatch && locationMatch && salaryMatch && sectorMatch
     })
 
-    // Aplicar ranking aos posts filtrados também
     const sortedFiltered = sortJobsByImportance(filtered)
     setFilteredPosts(sortedFiltered)
   }, [allPosts, cityParam, searchParam, currentFilters, postParam])
@@ -196,6 +205,17 @@ export default function FeedPage() {
 
   const handleMobileFilterChange = (filters: { locations: number[]; salaryRanges: string[]; sectors: number[] }) => {
     setCurrentFilters(filters)
+  }
+
+  if (isCheckingProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
