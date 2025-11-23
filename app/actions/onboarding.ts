@@ -44,10 +44,7 @@ export async function saveOnboardingStep(step: string, data: Record<string, any>
         updateData.experiences = []
         updateData.is_first_job = true
       } else {
-        // Buscar experiências atuais
-        const { data: profileExp } = await supabase.from("profiles").select("experiences").eq("id", user.id).single()
-        const currentExperiences = (profileExp?.experiences as any[]) || []
-        updateData.experiences = [...currentExperiences, data.experience]
+        updateData.experiences = data.experiences
         updateData.is_first_job = false
       }
       break
@@ -66,6 +63,14 @@ export async function saveOnboardingStep(step: string, data: Record<string, any>
 
     case "address":
       updateData.address = data.address
+      break
+
+    case "whatsapp":
+      updateData.whatsapp = data.whatsapp
+      break
+
+    case "courses":
+      updateData.courses = data.courses
       break
   }
 
