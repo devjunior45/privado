@@ -56,8 +56,8 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const { sectors, isLoading: isLoadingSectors } = useSectors()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Buscar dados do perfil para preencher empresa
   useEffect(() => {
     const fetchProfile = async () => {
       const supabase = createClient()
@@ -81,21 +81,18 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     fetchProfile()
   }, [])
 
-  // Auto-resize textarea
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current
     if (textarea) {
       textarea.style.height = "auto"
       textarea.style.height = `${Math.max(textarea.scrollHeight, 200)}px`
 
-      // Sincronizar altura do preview
       if (previewRef.current) {
         previewRef.current.style.height = textarea.style.height
       }
     }
   }
 
-  // Garantir que o cursor esteja sempre visível
   const ensureCursorVisible = () => {
     const textarea = textareaRef.current
     if (textarea) {
@@ -106,14 +103,12 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
       const lineHeight = 24 // Aproximadamente 1.5rem
       const cursorTop = (currentLine - 1) * lineHeight
 
-      // Se o cursor estiver fora da área visível, fazer scroll
       if (cursorTop < textarea.scrollTop) {
         textarea.scrollTop = cursorTop
       } else if (cursorTop > textarea.scrollTop + textarea.clientHeight - lineHeight) {
         textarea.scrollTop = cursorTop - textarea.clientHeight + lineHeight * 2
       }
 
-      // Sincronizar scroll do preview
       if (previewRef.current) {
         previewRef.current.scrollTop = textarea.scrollTop
       }
@@ -126,33 +121,47 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      try {
-        // Comprimir imagem para máximo 400KB
-        const compressedFile = await compressImage(file, 400)
-        setSelectedImage(compressedFile)
+    if (!file) return
 
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string)
-        }
-        reader.readAsDataURL(compressedFile)
-      } catch (error) {
-        console.error("Erro ao comprimir imagem:", error)
-        // Em caso de erro, usar imagem original
-        setSelectedImage(file)
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string)
-        }
-        reader.readAsDataURL(file)
+    console.log("[v0] Arquivo selecionado:", file.name, file.size)
+
+    try {
+      const compressedFile = await compressImage(file, 400)
+      console.log("[v0] Imagem comprimida:", compressedFile.size)
+
+      const reader = new FileReader()
+      reader.onloadstart = () => {
+        console.log("[v0] Iniciando leitura do arquivo...")
       }
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        console.log("[v0] Preview carregado, tamanho:", result?.length)
+        setImagePreview(result)
+        setSelectedImage(compressedFile)
+      }
+      reader.onerror = (error) => {
+        console.error("[v0] Erro ao ler arquivo:", error)
+      }
+      reader.readAsDataURL(compressedFile)
+    } catch (error) {
+      console.error("[v0] Erro ao comprimir imagem:", error)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        console.log("[v0] Preview (original) carregado")
+        setImagePreview(result)
+        setSelectedImage(file)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
   const removeImage = () => {
     setSelectedImage(null)
     setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   const validateForm = () => {
@@ -166,7 +175,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // Verificar se pode criar vaga
     if (!canCreateJob) {
       setShowVerificationModal(true)
       return
@@ -210,7 +218,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     }
   }
 
-  // Função para renderizar o texto com formatação em tempo real
   const renderFormattedText = (text: string) => {
     return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>")
   }
@@ -224,7 +231,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   }
 
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
-    // Sincronizar scroll entre textarea e preview
     if (previewRef.current) {
       previewRef.current.scrollTop = e.currentTarget.scrollTop
     }
@@ -236,7 +242,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     <>
       <div className="space-y-6 pb-20">
         <form onSubmit={handleFormSubmit} noValidate>
-          {/* Upload de Imagem */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -256,7 +261,14 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                           Escolher Imagem
                         </div>
                       </Label>
-                      <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                      <Input
+                        ref={fileInputRef}
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
                       <p className="text-xs text-muted-foreground">PNG, JPG até 5MB - Torna sua vaga mais atrativa</p>
                     </div>
                   </div>
@@ -282,13 +294,11 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
             </CardContent>
           </Card>
 
-          {/* Informações Básicas */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Informações da Vaga</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Título e Empresa lado a lado */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="title" className="text-sm">
@@ -323,7 +333,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                 </div>
               </div>
 
-              {/* Salário e Localização lado a lado */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="salary" className="text-sm">
@@ -374,7 +383,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
             </CardContent>
           </Card>
 
-          {/* Descrição com Editor Expansível */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Descrição da Vaga</CardTitle>
@@ -399,7 +407,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   }}
                 />
 
-                {/* Preview sobreposto */}
                 {description && (
                   <div
                     ref={previewRef}
@@ -431,7 +438,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
             </CardContent>
           </Card>
 
-          {/* Configurações de Candidatura */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Configurações de Candidatura</CardTitle>
@@ -474,7 +480,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
             </CardContent>
           </Card>
 
-          {/* Seletor de Cor - Só aparece se não houver imagem */}
           {!selectedImage && (
             <Card>
               <CardHeader>
@@ -513,7 +518,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
             </Card>
           )}
 
-          {/* Botão de Publicar */}
           <div className="flex justify-center">
             <Button type="submit" disabled={isLoading} className="w-full max-w-md">
               {isLoading ? (
@@ -527,11 +531,10 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
             </Button>
           </div>
         </form>
-
-        <ToastContainer />
       </div>
 
       <VerificationModal isOpen={showVerificationModal} onClose={() => setShowVerificationModal(false)} />
+      <ToastContainer />
     </>
   )
 }
