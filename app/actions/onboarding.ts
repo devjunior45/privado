@@ -43,25 +43,12 @@ export async function saveOnboardingStep(step: string, data: Record<string, any>
       updateData.education = [...currentEducation, data.education]
       break
 
-    case "experiences":
-      if (data.is_first_job) {
-        updateData.experiences = []
-        updateData.is_first_job = true
-      } else {
-        updateData.experiences = data.experiences
-        updateData.is_first_job = false
-      }
-      break
-
     case "experience":
       if (data.is_first_job) {
         updateData.experiences = []
         updateData.is_first_job = true
       } else {
-        // Buscar experiências atuais
-        const { data: profileExp } = await supabase.from("profiles").select("experiences").eq("id", user.id).single()
-        const currentExperiences = (profileExp?.experiences as any[]) || []
-        updateData.experiences = [...currentExperiences, data.experience]
+        updateData.experiences = data.experiences
         updateData.is_first_job = false
       }
       break
