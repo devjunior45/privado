@@ -129,7 +129,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
           <Edit className="w-4 h-4 mr-2" />
           Editar Perfil
         </Button>
-        <SettingsSheet />
+
       </div>
 
       {/* Dialog para Editar Perfil */}
