@@ -5,18 +5,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// 🚨 Bloqueia acesso externo — aceita apenas chamadas do CRON interno da Vercel
-function validateCronRequest(req) {
-  if (!req.headers["x-vercel-cron"]) {
-    return false;
-  }
-  return true;
-}
 
-module.exports = async function handler(req, res) {
-  if (!validateCronRequest(req)) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
 
   try {
     let output = [];
