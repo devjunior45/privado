@@ -1,12 +1,13 @@
 const { createClient } = require("@supabase/supabase-js");
+const fetch = require("node-fetch"); // necessário no Node 18 para compatibilidade
 
+// Inicializar Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-
-
+module.exports = async (req, res) => {
   try {
     let output = [];
     output.push("🚀 Iniciando execução do script...");
@@ -65,7 +66,7 @@ const supabase = createClient(
         output.push(`🧾 Novas candidaturas nas últimas 24h: ${newApplications}`);
       }
 
-      // CRIAR/ATUALIZAR SESSÃO DO BOT
+      // Criar/atualizar sessão
       const { data: existingSession } = await supabase
         .from("bot_sessions")
         .select("*")
@@ -102,7 +103,7 @@ const supabase = createClient(
         { type: "reply", reply: { id: "close_jobs", title: "Encerrar uma vaga" } },
       ];
 
-      // Enviar mensagem pelo WhatsApp API
+      // Enviar mensagem
       await fetch(
         `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
         {
@@ -124,7 +125,7 @@ const supabase = createClient(
         }
       );
 
-      output.push(`📤 Mensagem enviada para ${phoneNumber}`);
+      output.push(`📨 Mensagem enviada para ${phoneNumber}`);
     }
 
     output.push("\n🏁 Execução concluída.");
