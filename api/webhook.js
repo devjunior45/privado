@@ -284,18 +284,32 @@ async function handleViewJobs(session, recruiter, whatsapp, res) {
       updated_at: new Date().toISOString()
     }).eq("id", session.id);
 
-    // envia botões com até 10 vagas (ajuste se quiser)
-    const listButtons = jobPosts.slice(0, 10).map(v => ({
-      type: "reply",
-      reply: { id: `job_${v.id}`, title: v.title.substring(0, 24) || "Vaga" }
-    }));
+    const rows = jobPosts.map(v => ({
+  id: `job_${v.id}`,
+  title: v.title.substring(0, 24)
+}));
 
-    const body = {
-      messaging_product: "whatsapp",
-      to: whatsapp,
-      type: "interactive",
-      interactive: { type: "button", body: { text: "📋 Selecione uma vaga para exibir candidatos:" }, action: { buttons: listButtons } }
-    };
+const body = {
+  messaging_product: "whatsapp",
+  to: whatsapp,
+  type: "interactive",
+  interactive: {
+    type: "list",
+    header: { type: "text", text: "Vagas Ativas" },
+    body: { text: "📋 Escolha uma vaga para ver os candidatos:" },
+    footer: { text: "Selecione uma opção abaixo" },
+    action: {
+      button: "Selecionar vaga",
+      sections: [
+        {
+          title: "Minhas vagas",
+          rows
+        }
+      ]
+    }
+  }
+};
+
 
     try {
       const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
@@ -321,59 +335,116 @@ async function handleViewJobs(session, recruiter, whatsapp, res) {
 }
 
 async function handleStartClose(session, recruiter, whatsapp, res) {
-  // busca vagas e muda estado para list_vacancies_close
-  const { data: jobPosts, error } = await supabase
-    .from("job_posts")
-    .select("id, title")
-    .eq("author_id", recruiter.id)
-    .eq("status", "active");
-
-  if (error) {
-    console.error("Erro ao buscar vagas para encerrar:", error);
-    return res.status(500).send("Erro ao buscar vagas");
-  }
-  if (!jobPosts || jobPosts.length === 0) {
-    await sendText(whatsapp, "🚫 Nenhuma vaga ativa para encerrar.");
-    await supabase.from("bot_sessions").update({ current_state: "menu", updated_at: new Date().toISOString(), last_vacancies: null }).eq("id", session.id);
-    return res.status(200).send("sem vagas");
-  }
-
-  await supabase.from("bot_sessions").update({
-    current_state: "list_vacancies_close",
-    last_vacancies: jobPosts,
-    updated_at: new Date().toISOString()
-  }).eq("id", session.id);
-
-  const listButtons = jobPosts.slice(0, 10).map(v => ({
-    type: "reply",
-    reply: { id: `close_${v.id}`, title: v.title.substring(0, 24) || "Vaga" }
-  }));
-
-  const body = {
-    messaging_product: "whatsapp",
-    to: whatsapp,
-    type: "interactive",
-    interactive: { type: "button", body: { text: "Escolha uma vaga para encerrar:" }, action: { buttons: listButtons } }
-  };
-
   try {
-    const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    const txt = await resp.text();
-    if (!resp.ok) console.error("Erro ao enviar opções de encerrar vaga:", resp.status, txt);
-    else console.log("Opções de encerrar enviadas:", txt.slice(0, 500));
-  } catch (e) {
-    console.error("Exception ao enviar opções de encerrar vaga:", e);
-  }
+    // Buscar vagas
+    const { data: jobPosts, error } = await supabase
+      .from("job_posts")
+      .select("id, title")
+      .eq("author_id", recruiter.id)
+      .eq("status", "active");
 
-  return res.status(200).send("encerramento iniciado");
+    if (error) {
+      console.error("Erro ao buscar vagas para encerrar:", error);
+      return res.status(500).send("Erro ao buscar vagas");
+    }
+
+    if (!jobPosts || jobPosts.length === 0) {
+      await sendText(whatsapp, "🚫 Nenhuma vaga ativa para encerrar.");
+      await supabase
+        .from("bot_sessions")
+        .update({
+          current_state: "menu",
+          updated_at: new Date().toISOString(),
+          last_vacancies: null,
+        })
+        .eq("id", session.id);
+
+      return res.status(200).send("sem vagas");
+    }
+
+    // Atualiza estado da sessão
+    await supabase
+      .from("bot_sessions")
+      .update({
+        current_state: "list_vacancies_close",
+        last_vacancies: jobPosts,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", session.id);
+
+    // Monta rows da lista
+    const rows = jobPosts.map((v) => ({
+      id: `close_${v.id}`,
+      title: v.title.substring(0, 24) || "Vaga",
+    }));
+
+    // Corpo da lista interativa
+    const body = {
+      messaging_product: "whatsapp",
+      to: whatsapp,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: {
+          type: "text",
+          text: "Encerrar vaga",
+        },
+        body: {
+          text: "🔒 Escolha a vaga que deseja encerrar:",
+        },
+        footer: {
+          text: "Ação irreversível",
+        },
+        action: {
+          button: "Selecionar vaga",
+          sections: [
+            {
+              title: "Vagas ativas",
+              rows,
+            },
+          ],
+        },
+      },
+    };
+
+    // Envia lista
+    try {
+      const resp = await fetch(
+        `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      const txt = await resp.text();
+      if (!resp.ok) {
+        console.error(
+          "Erro ao enviar opções de encerrar vaga:",
+          resp.status,
+          txt
+        );
+      } else {
+        console.log(
+          "Opções de encerrar enviadas:",
+          txt.slice(0, 500)
+        );
+      }
+    } catch (e) {
+      console.error("Exception ao enviar opções de encerrar vaga:", e);
+    }
+
+    return res.status(200).send("encerramento iniciado");
+  } catch (e) {
+    console.error("Erro geral em handleStartClose:", e);
+    return res.status(500).send("erro interno");
+  }
 }
+
 
 async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
   try {
