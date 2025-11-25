@@ -355,12 +355,12 @@ export function JobPost({
         <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-1.5 pb-3 bg-white" : ""}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-[2px]">
   <Button
     variant="ghost"
     size="sm"
     onClick={handleLike}
-    className="h-10 w-10 flex items-center justify-center p-0" // hitbox maior sem aumentar o ícone
+    className="h-10 w-10 flex items-center justify-center p-0"
   >
     <Heart
       className={`${isMobile ? "w-7 h-7" : "w-6 h-6"} ${
@@ -377,6 +377,7 @@ export function JobPost({
     {likesCount}
   </span>
 </div>
+
 
               <Button variant="ghost" size="sm" onClick={handleComments} className="p-0 h-auto">
                 <MessageCircle className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
