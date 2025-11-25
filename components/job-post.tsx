@@ -356,23 +356,28 @@ export function JobPost({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-               <Button
-  variant="ghost"
-  size="sm"
-  onClick={handleLike}
-  className="h-10 w-10 flex items-center justify-center"
->
-  <Heart
-    className={`${isMobile ? "w-7 h-7" : "w-6 h-6"} ${
-      isLiked ? "fill-red-500 text-red-500" : ""
-    } ${isMobile ? "stroke-2" : ""}`}
-  />
-</Button>
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={handleLike}
+    className="h-10 w-10 flex items-center justify-center p-0" // hitbox maior sem aumentar o ícone
+  >
+    <Heart
+      className={`${isMobile ? "w-7 h-7" : "w-6 h-6"} ${
+        isLiked ? "fill-red-500 text-red-500" : ""
+      } ${isMobile ? "stroke-2" : ""}`}
+    />
+  </Button>
 
-                <span className={`text-muted-foreground ${isMobile ? "text-sm font-medium" : "text-sm"}`}>
-                  {likesCount}
-                </span>
-              </div>
+  <span
+    className={`text-muted-foreground ${
+      isMobile ? "text-sm font-medium" : "text-sm"
+    }`}
+  >
+    {likesCount}
+  </span>
+</div>
+
               <Button variant="ghost" size="sm" onClick={handleComments} className="p-0 h-auto">
                 <MessageCircle className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
               </Button>
