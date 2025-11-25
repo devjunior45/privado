@@ -161,17 +161,18 @@ export default async function handler(req, res) {
 
     // MENU
     if (session.current_state === "menu") {
-      if (userCommand === "view_jobs" || buttonReplyId?.startsWith?.("job_")) {
-        return await handleViewJobs(session, recruiter, whatsapp, res);
-      }
+  if (userCommand === "view_jobs") {
+    return await handleViewJobs(session, recruiter, whatsapp, res);
+  }
 
-      if (userCommand === "close_jobs" || buttonReplyId?.startsWith?.("close_")) {
-        return await handleStartClose(session, recruiter, whatsapp, res);
-      }
+  if (userCommand === "close_jobs") {
+    return await handleStartClose(session, recruiter, whatsapp, res);
+  }
 
-      await sendMenuAndUpdate(session, recruiter.full_name);
-      return res.status(200).send("menu reenviado");
-    }
+  await sendMenuAndUpdate(session, recruiter.full_name);
+  return res.status(200).send("menu reenviado");
+}
+
 
     // LISTAR VAGAS → CANDIDATOS
     if (
