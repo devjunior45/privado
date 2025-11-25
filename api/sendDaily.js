@@ -5,7 +5,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+// 🚨 Bloqueia acesso externo — aceita apenas chamadas do CRON interno da Vercel
+function validateCronRequest(req) {
+  if (!req.headers["x-vercel-cron"]) {
+    return false;
+  }
+  return true;
+}
+
 module.exports = async function handler(req, res) {
+  if (!validateCronRequest(req)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
   try {
     let output = [];
     output.push("🚀 Iniciando execução do script...");
@@ -64,7 +76,7 @@ module.exports = async function handler(req, res) {
         output.push(`🧾 Novas candidaturas nas últimas 24h: ${newApplications}`);
       }
 
-      // ⚠️ **CRIAR/ATUALIZAR SESSÃO DO BOT**
+      // CRIAR/ATUALIZAR SESSÃO DO BOT
       const { data: existingSession } = await supabase
         .from("bot_sessions")
         .select("*")
@@ -96,14 +108,13 @@ module.exports = async function handler(req, res) {
       // Texto da mensagem automática
       const text = `👋 Olá ${recruiter.full_name}!\n\n📊 Vagas ativas: ${jobPosts.length}\n👤 Novas candidaturas nas últimas 24h: ${newApplications}\n\nO que deseja fazer agora?`;
 
-      // Botões compatíveis com código 2
       const buttons = [
         { type: "reply", reply: { id: "view_jobs", title: "Ver minhas vagas" } },
         { type: "reply", reply: { id: "close_jobs", title: "Encerrar uma vaga" } },
       ];
 
       // Enviar mensagem pelo WhatsApp API
-      const response = await fetch(
+      await fetch(
         `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
         {
           method: "POST",
@@ -124,8 +135,7 @@ module.exports = async function handler(req, res) {
         }
       );
 
-      output.push(`🧪 Mensagem enviada para ${phoneNumber}`);
-      output.push(`📋 Corpo: ${JSON.stringify({ text, buttons }, null, 2)}`);
+      output.push(`📤 Mensagem enviada para ${phoneNumber}`);
     }
 
     output.push("\n🏁 Execução concluída.");
