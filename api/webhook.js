@@ -132,30 +132,28 @@ export default async function handler(req, res) {
 
       session.current_state = "menu";
     }
+/* ------------------ Extrair comando (Robusto) ------------------ */
+let buttonReplyId = null;
 
-    /* ------------------ Extrair comando ------------------ */
-    const buttonReplyId =
-      message.button?.payload ||
-      message.interactive?.button_reply?.id ||
-      message.interactive?.list_reply?.id ||
-      null;
+// Button reply padrão
+if (message?.interactive?.button_reply?.id)
+  buttonReplyId = message.interactive.button_reply.id;
 
-    const text = message.text?.body?.trim()?.toLowerCase() || "";
+// List reply padrão
+else if (message?.interactive?.list_reply?.id)
+  buttonReplyId = message.interactive.list_reply.id;
 
-    let userCommand = null;
+// 🔥 Cloud API Novo formato (algumas versões colocam dentro de message.list_reply)
+else if (message?.list_reply?.id)
+  buttonReplyId = message.list_reply.id;
 
-    if (buttonReplyId) {
-      const id = String(buttonReplyId);
+// 🔥 Outro formato real de provedores (às vezes vem em message.context.list_reply)
+else if (message?.context?.list_reply?.id)
+  buttonReplyId = message.context.list_reply.id;
 
-      if (["ver_vagas", "view_jobs"].includes(id)) userCommand = "view_jobs";
-      if (["encerrar_vaga", "close_jobs"].includes(id)) userCommand = "close_jobs";
+// Texto normal
+const text = message?.text?.body?.trim()?.toLowerCase() || "";
 
-      if (id.startsWith("job_")) userCommand = id;
-      if (id.startsWith("close_")) userCommand = id;
-    } else if (text) {
-      if (text === "1" || text.includes("ver vaga")) userCommand = "view_jobs";
-      if (text === "2" || text.includes("encerrar")) userCommand = "close_jobs";
-    }
 
     /* -------------------- Rotas por estado -------------------- */
 
