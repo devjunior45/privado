@@ -273,45 +273,66 @@ async function handleViewJobs(session, recruiter, whatsapp, res) {
 
     if (!jobPosts || jobPosts.length === 0) {
       await sendText(whatsapp, "📭 Você não tem vagas ativas.");
-      await supabase.from("bot_sessions").update({ current_state: "menu", updated_at: new Date().toISOString(), last_vacancies: null }).eq("id", session.id);
+      await supabase.from("bot_sessions")
+        .update({
+          current_state: "menu",
+          last_vacancies: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session.id);
+
       return res.status(200).send("sem vagas");
     }
 
-    // salva lista e atualiza estado
-    await supabase.from("bot_sessions").update({
-      current_state: "list_vacancies",
-      last_vacancies: jobPosts,
-      updated_at: new Date().toISOString()
-    }).eq("id", session.id);
+    // salvar vagas em sessão
+    await supabase.from("bot_sessions")
+      .update({
+        current_state: "list_vacancies",
+        last_vacancies: jobPosts,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", session.id);
 
-    // envia botões com até 10 vagas (ajuste se quiser)
-    const listButtons = jobPosts.slice(0, 10).map(v => ({
-      type: "reply",
-      reply: { id: `job_${v.id}`, title: v.title.substring(0, 24) || "Vaga" }
+    // montar rows da lista
+    const rows = jobPosts.map(v => ({
+      id: `job_${v.id}`,
+      title: v.title.substring(0, 24)
     }));
 
     const body = {
       messaging_product: "whatsapp",
       to: whatsapp,
       type: "interactive",
-      interactive: { type: "button", body: { text: "📋 Selecione uma vaga para exibir candidatos:" }, action: { buttons: listButtons } }
+      interactive: {
+        type: "list",
+        header: { type: "text", text: "Suas vagas ativas" },
+        body: { text: "Selecione uma vaga para ver os candidatos:" },
+        action: {
+          button: "Ver vagas",
+          sections: [
+            {
+              title: "Vagas",
+              rows
+            }
+          ]
+        }
+      }
     };
 
-    try {
-      const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
+    const resp = await fetch(
+      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+      {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-      });
-      const txt = await resp.text();
-      if (!resp.ok) console.error("Erro ao enviar lista de vagas:", resp.status, txt);
-      else console.log("Lista de vagas enviada:", txt.slice(0, 500));
-    } catch (e) {
-      console.error("Exception ao enviar lista de vagas:", e);
-    }
+      }
+    );
+
+    const txt = await resp.text();
+    if (!resp.ok) console.error("Erro ao enviar lista de vagas:", resp.status, txt);
 
     return res.status(200).send("vagas enviadas");
   } catch (e) {
@@ -319,6 +340,7 @@ async function handleViewJobs(session, recruiter, whatsapp, res) {
     return res.status(500).send("erro interno");
   }
 }
+
 
 async function handleStartClose(session, recruiter, whatsapp, res) {
   // busca vagas e muda estado para list_vacancies_close
