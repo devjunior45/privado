@@ -1,4 +1,4 @@
-// código-2-robusto.js
+// webhook_refeito.js
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -8,58 +8,55 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   try {
-    // --- GET (verificação do webhook) ---
+    // GET: verificação do webhook
     if (req.method === "GET") {
       const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
       const mode = req.query["hub.mode"];
       const token = req.query["hub.verify_token"];
       const challenge = req.query["hub.challenge"];
       if (mode === "subscribe" && token === VERIFY_TOKEN) {
-        console.log("Webhook verificado com sucesso.");
         return res.status(200).send(challenge);
       } else {
-        console.warn("Falha na verificação do webhook (token inválido).");
         return res.status(403).send("Token inválido");
       }
     }
 
-    // --- POST (eventos) ---
-    if (req.method !== "POST") {
-      return res.status(200).send("Webhook ativo ✅");
-    }
+    // Só processa POST
+    if (req.method !== "POST") return res.status(200).send("Webhook ativo");
 
-    // Log do body para debug (cuidado com dados sensíveis em produção)
-    console.log("Incoming webhook body:", JSON.stringify(req.body).slice(0, 2000));
-
-    // Tenta extrair a mensagem nos formatos mais comuns do WhatsApp Cloud
+    // Extrai mensagem do webhook (compatível com diferentes formatos)
     const message =
-      req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0] || // formato padrão do Cloud webhook
-      req.body?.messages?.[0] || // outro formato possível
+      req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0] ||
+      req.body?.messages?.[0] ||
       null;
 
     if (!message) {
-      console.log("Sem mensagem processável no payload — retornando 200.");
-      return res.status(200).send("Sem mensagem recebida");
+      console.log("Sem mensagem processável no payload.");
+      return res.status(200).send("Sem mensagem");
     }
 
-    // Extrai número remetente de forma segura
-    const from = message.from || message.from_number || message.author || message?.wa_id;
+    // Debug opcional (descomente se precisar)
+    // console.log("RAW MESSAGE:", JSON.stringify(message, null, 2));
+
+    // Extrai remetente
+    const from =
+      message.from || message.from_number || message.author || message?.wa_id;
     if (!from) {
-      console.warn("Mensagem sem campo 'from' — payload:", JSON.stringify(message));
-      return res.status(200).send("Mensagem sem remetente");
+      console.warn("Mensagem sem campo 'from'. Payload:", JSON.stringify(message));
+      return res.status(200).send("Sem remetente");
     }
-
-    // Normalize (apenas números, sem espaços/sinais)
     const whatsapp = String(from).replace(/\D/g, "");
-    console.log("Mensagem recebida de:", whatsapp, "conteúdo:", message);
 
-    // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
-    if (process.env.WHATSAPP_PHONE_NUMBER_ID && whatsapp === process.env.WHATSAPP_PHONE_NUMBER_ID.replace(/\D/g, "")) {
+    // Ignora mensagens do próprio número (se setado)
+    if (
+      process.env.WHATSAPP_PHONE_NUMBER_ID &&
+      whatsapp === process.env.WHATSAPP_PHONE_NUMBER_ID.replace(/\D/g, "")
+    ) {
       console.log("Ignorado: mensagem do próprio bot.");
-      return res.status(200).send("Ignorado: mensagem do próprio bot");
+      return res.status(200).send("Ignorado");
     }
 
-    // --- Busca recruiter (usando maybeSingle para não lançar se não achar) ---
+    // Busca recruiter
     const { data: recruiter, error: recruiterErr } = await supabase
       .from("profiles")
       .select("id, full_name")
@@ -70,15 +67,14 @@ export default async function handler(req, res) {
 
     if (recruiterErr) {
       console.error("Erro ao buscar recruiter:", recruiterErr);
-      return res.status(500).send("Erro interno ao buscar recruiter");
+      return res.status(500).send("Erro interno");
     }
     if (!recruiter) {
-      console.log("Remetente não cadastrado como recruiter:", whatsapp);
       await sendText(whatsapp, "⚠️ Seu número não está cadastrado como recrutador verificado.");
       return res.status(200).send("Recrutador não encontrado");
     }
 
-    // --- Busca ou cria sessão (maybeSingle para evitar throw) ---
+    // Busca ou cria sessão
     let { data: session, error: sessionErr } = await supabase
       .from("bot_sessions")
       .select("*")
@@ -87,7 +83,7 @@ export default async function handler(req, res) {
 
     if (sessionErr) {
       console.error("Erro ao buscar session:", sessionErr);
-      return res.status(500).send("Erro interno ao buscar sessão");
+      return res.status(500).send("Erro interno");
     }
 
     if (!session) {
@@ -105,86 +101,86 @@ export default async function handler(req, res) {
 
       if (createErr) {
         console.error("Erro ao criar sessão:", createErr);
-        return res.status(500).send("Erro interno ao criar sessão");
+        return res.status(500).send("Erro interno");
       }
       session = newSession;
       console.log("Sessão criada para", whatsapp);
     }
 
-    // --- Expiração: se passou X minutos resetar (configurável) ---
-    const now = new Date();
-    const lastUpdate = session.updated_at ? new Date(session.updated_at) : new Date(0);
-    const diffMs = now - lastUpdate;
-    const expireMinutes = Number(process.env.SESSION_EXPIRE_MINUTES || 10);
-    if (diffMs > expireMinutes * 60 * 1000) {
-      console.log(`Sessão expirada (>${expireMinutes} min). Resetando para menu.`);
-      await supabase
-        .from("bot_sessions")
-        .update({ current_state: "menu", last_vacancies: null, updated_at: now.toISOString() })
-        .eq("id", session.id);
-      session.current_state = "menu";
+    // Expira sessão se necessário (mantive sua lógica)
+    try {
+      const now = new Date();
+      const lastUpdate = session.updated_at ? new Date(session.updated_at) : new Date(0);
+      const diffMs = now - lastUpdate;
+      const expireMinutes = Number(process.env.SESSION_EXPIRE_MINUTES || 10);
+      if (diffMs > expireMinutes * 60 * 1000) {
+        await supabase
+          .from("bot_sessions")
+          .update({ current_state: "menu", last_vacancies: null, updated_at: now.toISOString() })
+          .eq("id", session.id);
+        session.current_state = "menu";
+      }
+    } catch (e) {
+      console.warn("Erro ao checar expiração da sessão:", e);
     }
 
-    // --- Extrai comando: botão/list reply em QUALQUER formato --- 
-let buttonReplyId = null;
+    // -------------------------
+    // Extrai reply id robusto (button/list)
+    // -------------------------
+    let buttonReplyId = null;
 
-// formato novo do WhatsApp list_reply
-if (message.interactive?.type === "list_reply") {
-  buttonReplyId = message.interactive?.list_reply?.id;
-}
+    // formatos seguros
+    if (message.interactive?.type === "list_reply") {
+      // padrão: interactive.type === "list_reply"
+      buttonReplyId = message.interactive?.list_reply?.id;
+    }
 
-// formato novo de botão
-if (!buttonReplyId && message.interactive?.type === "button_reply") {
-  buttonReplyId = message.interactive?.button_reply?.id;
-}
+    if (!buttonReplyId && message.interactive?.type === "button_reply") {
+      buttonReplyId = message.interactive?.button_reply?.id;
+    }
 
-// formato antigo de botão
-if (!buttonReplyId && message.button?.payload) {
-  buttonReplyId = message.button.payload;
-}
+    // formato antigo/button antigo
+    if (!buttonReplyId && message.button?.payload) {
+      buttonReplyId = message.button.payload;
+    }
 
-// fallback adicional (alguns números enviam sem .type)
-if (!buttonReplyId && message.interactive?.list_reply) {
-  buttonReplyId = message.interactive.list_reply.id;
-}
-
+    // fallback: alguns webhooks/environments entregam list_reply sem .type
+    if (!buttonReplyId && message.interactive?.list_reply) {
+      buttonReplyId = message.interactive.list_reply.id;
+    }
 
     const text = message.text?.body?.trim()?.toLowerCase() || "";
 
-    // Normaliza ids que você espera:
-    // aceitamos "ver_vagas" e "view_jobs" e "encerrar_vaga" e "close_jobs"
+    // Normaliza comando
     let userCommand = null;
     if (buttonReplyId) {
       const id = String(buttonReplyId);
       if (["ver_vagas", "view_jobs"].includes(id)) userCommand = "view_jobs";
-      if (["encerrar_vaga", "close_jobs", "encerrar_vaga"].includes(id)) userCommand = "close_jobs";
+      if (["encerrar_vaga", "close_jobs"].includes(id)) userCommand = "close_jobs";
       if (id.startsWith("job_")) userCommand = id; // job_{id}
-      if (id.startsWith("close_")) userCommand = id;
+      if (id.startsWith("close_")) userCommand = id; // close_{id}
     } else if (text) {
-      if (text === "1" || text.includes("ver vaga") || text.includes("ver minhas vagas")) userCommand = "view_jobs";
+      if (text === "1" || text.includes("ver vaga") || text.includes("ver minhas vagas") || text.includes("ver vagas")) userCommand = "view_jobs";
       if (text === "2" || text.includes("encerrar") || text.includes("fechar vaga")) userCommand = "close_jobs";
     }
 
-    console.log("userCommand detectado:", userCommand, "estado atual:", session.current_state);
+    console.log("userCommand:", userCommand, "state:", session.current_state);
 
-    // --- Rotas por estado ---
-    // Se está no menu
+    // Rotas por estado
     if (session.current_state === "menu") {
       if (userCommand === "view_jobs" || (buttonReplyId && String(buttonReplyId).startsWith("job_"))) {
-        // handle view jobs
         return await handleViewJobs(session, recruiter, whatsapp, res);
       }
       if (userCommand === "close_jobs" || (buttonReplyId && String(buttonReplyId).startsWith("close_"))) {
-        // handle close jobs
         return await handleStartClose(session, recruiter, whatsapp, res);
       }
 
-      // Reenviar menu e atualizar updated_at
+      // reenviar menu
       await sendMenuAndUpdate(session, recruiter.full_name);
       return res.status(200).send("menu reenviado");
     }
 
-    // Se está listando vagas e o usuário clicou em job_{id}
+    // Se está listando vagas e clicou em job_{id}
     if (session.current_state === "list_vacancies" && buttonReplyId && String(buttonReplyId).startsWith("job_")) {
       const jobId = String(buttonReplyId).replace("job_", "").trim();
       return await handleListCandidates(session, recruiter, whatsapp, jobId, res);
@@ -196,40 +192,36 @@ if (!buttonReplyId && message.interactive?.list_reply) {
       return await handleCloseJob(session, recruiter, whatsapp, jobId, res);
     }
 
-    // Fallback — reenviar menu
+    // fallback
     await sendMenuAndUpdate(session, recruiter.full_name);
     return res.status(200).send("fallback menu enviado");
+
   } catch (err) {
     console.error("Erro no webhook:", err);
-    return res.status(500).send("Erro interno: " + (err && err.message ? err.message : String(err)));
+    return res.status(500).send("Erro interno");
   }
 }
 
 /* ------------------ FUNÇÕES AUXILIARES ------------------ */
 
 async function sendText(to, text) {
-  const body = {
-    messaging_product: "whatsapp",
-    to,
-    text: { body: text },
-  };
   try {
-    const resp = await fetch(
-      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    );
-    const txt = await resp.text();
+    const body = {
+      messaging_product: "whatsapp",
+      to,
+      text: { body: text },
+    };
+    const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
     if (!resp.ok) {
+      const txt = await resp.text();
       console.error("Erro ao enviar text:", resp.status, txt);
-    } else {
-      console.log("Text enviado OK:", txt.slice(0, 500));
     }
   } catch (e) {
     console.error("Exception ao enviar text:", e);
@@ -237,22 +229,30 @@ async function sendText(to, text) {
 }
 
 async function sendMenuAndUpdate(session, name) {
-  // atualiza sessão e envia menu
-  await supabase
-    .from("bot_sessions")
-    .update({ current_state: "menu", updated_at: new Date().toISOString(), last_vacancies: null })
-    .eq("id", session.id);
-
-  const buttons = [
-    { type: "reply", reply: { id: "ver_vagas", title: "Ver minhas vagas" } },
-    { type: "reply", reply: { id: "encerrar_vaga", title: "Encerrar uma vaga" } },
-  ];
+  // atualiza sessão e envia menu com botões (até 3 — aqui usamos 2)
+  try {
+    await supabase
+      .from("bot_sessions")
+      .update({ current_state: "menu", updated_at: new Date().toISOString(), last_vacancies: null })
+      .eq("id", session.id);
+  } catch (e) {
+    console.warn("Erro ao atualizar sessão antes de enviar menu:", e);
+  }
 
   const body = {
     messaging_product: "whatsapp",
     to: session.whatsapp,
     type: "interactive",
-    interactive: { type: "button", body: { text: `👋 Olá ${name}! Escolha uma opção:` }, action: { buttons } },
+    interactive: {
+      type: "button",
+      body: { text: `👋 Olá ${name}! Escolha uma opção:` },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "ver_vagas", title: "Ver minhas vagas" } },
+          { type: "reply", reply: { id: "encerrar_vaga", title: "Encerrar uma vaga" } }
+        ]
+      }
+    }
   };
 
   try {
@@ -264,171 +264,180 @@ async function sendMenuAndUpdate(session, name) {
       },
       body: JSON.stringify(body),
     });
-    const txt = await resp.text();
     if (!resp.ok) {
+      const txt = await resp.text();
       console.error("Erro ao enviar menu:", resp.status, txt);
-    } else {
-      console.log("Menu enviado:", txt.slice(0, 500));
     }
   } catch (e) {
     console.error("Exception ao enviar menu:", e);
   }
 }
 
+/* ---------------------------------------------------------
+   handleViewJobs: envia LIST (interactive list) com vagas
+   - atualiza sessão para list_vacancies
+   - rows id => job_{id}
+--------------------------------------------------------- */
 async function handleViewJobs(session, recruiter, whatsapp, res) {
-  const { data: jobPosts, error } = await supabase
-    .from("job_posts")
-    .select("id, title")
-    .eq("author_id", recruiter.id)
-    .eq("status", "active");
-
-  if (error) {
-    console.error("Erro ao buscar vagas:", error);
-    return res.status(500).send("Erro ao buscar vagas");
-  }
-
-  if (!jobPosts || jobPosts.length === 0) {
-    await sendText(whatsapp, "📭 Você não tem vagas ativas.");
-    await supabase.from("bot_sessions")
-      .update({
-        current_state: "menu",
-        last_vacancies: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", session.id);
-    return res.status(200).send("sem vagas");
-  }
-
-  await supabase.from("bot_sessions").update({
-    current_state: "list_vacancies",
-    last_vacancies: jobPosts,
-    updated_at: new Date().toISOString()
-  }).eq("id", session.id);
-
-  const body = {
-    messaging_product: "whatsapp",
-    to: whatsapp,
-    type: "interactive",
-    interactive: {
-      type: "list",
-      header: { type: "text", text: "📋 Vagas disponíveis" },
-      body: { text: "Selecione uma vaga para visualizar os candidatos:" },
-      footer: { text: "Escolha uma vaga" },
-      action: {
-        button: "Ver vagas",
-        sections: [
-          {
-            title: "Vagas ativas",
-            rows: jobPosts.map(v => ({
-              id: `job_${v.id}`,
-              title: v.title.substring(0, 24)
-            }))
-          }
-        ]
-      }
-    }
-  };
-
   try {
-    const resp = await fetch(
-      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
-      {
+    const { data: jobPosts, error } = await supabase
+      .from("job_posts")
+      .select("id, title")
+      .eq("author_id", recruiter.id)
+      .eq("status", "active");
+
+    if (error) {
+      console.error("Erro ao buscar vagas:", error);
+      return res.status(500).send("Erro ao buscar vagas");
+    }
+
+    if (!jobPosts || jobPosts.length === 0) {
+      await sendText(whatsapp, "📭 Você não tem vagas ativas.");
+      await supabase.from("bot_sessions").update({ current_state: "menu", last_vacancies: null, updated_at: new Date().toISOString() }).eq("id", session.id);
+      return res.status(200).send("sem vagas");
+    }
+
+    await supabase.from("bot_sessions").update({
+      current_state: "list_vacancies",
+      last_vacancies: jobPosts,
+      updated_at: new Date().toISOString()
+    }).eq("id", session.id);
+
+    // Monta lista (pode ter muitos itens — WhatsApp aceita até 10 seções com 10 rows cada)
+    const rows = jobPosts.map(j => ({
+      id: `job_${j.id}`,
+      title: j.title ? j.title.substring(0, 24) : "Vaga"
+    }));
+
+    const body = {
+      messaging_product: "whatsapp",
+      to: whatsapp,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: "📋 Vagas Ativas" },
+        body: { text: "Selecione uma vaga para ver os candidatos:" },
+        footer: { text: "Escolha abaixo" },
+        action: {
+          button: "Selecionar vaga",
+          sections: [
+            {
+              title: "Vagas disponíveis",
+              rows
+            }
+          ]
+        }
+      }
+    };
+
+    try {
+      const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        console.error("Erro ao enviar lista de vagas:", resp.status, txt);
       }
-    );
-    const txt = await resp.text();
-    if (!resp.ok) console.error("Erro ao enviar lista:", resp.status, txt);
-    else console.log("Lista enviada:", txt.slice(0, 400));
-  } catch (e) {
-    console.error("Exception ao enviar lista:", e);
-  }
+    } catch (e) {
+      console.error("Exception ao enviar lista de vagas:", e);
+    }
 
-  return res.status(200).send("lista enviada");
+    return res.status(200).send("vagas enviadas");
+  } catch (e) {
+    console.error("Erro em handleViewJobs:", e);
+    return res.status(500).send("erro interno");
+  }
 }
 
-
+/* ---------------------------------------------------------
+   handleStartClose: envia LIST para encerrar vaga
+   - atualiza sessão para list_vacancies_close
+   - rows id => close_{id}
+--------------------------------------------------------- */
 async function handleStartClose(session, recruiter, whatsapp, res) {
-  const { data: jobPosts, error } = await supabase
-    .from("job_posts")
-    .select("id, title")
-    .eq("author_id", recruiter.id)
-    .eq("status", "active");
-
-  if (error) {
-    console.error("Erro ao buscar vagas para encerrar:", error);
-    return res.status(500).send("Erro ao buscar vagas");
-  }
-
-  if (!jobPosts || jobPosts.length === 0) {
-    await sendText(whatsapp, "🚫 Você não possui vagas ativas para encerrar.");
-    await supabase.from("bot_sessions")
-      .update({
-        current_state: "menu",
-        last_vacancies: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", session.id);
-    return res.status(200).send("sem vagas");
-  }
-
-  await supabase.from("bot_sessions").update({
-    current_state: "list_vacancies_close",
-    last_vacancies: jobPosts,
-    updated_at: new Date().toISOString()
-  }).eq("id", session.id);
-
-  const body = {
-    messaging_product: "whatsapp",
-    to: whatsapp,
-    type: "interactive",
-    interactive: {
-      type: "list",
-      header: { type: "text", text: "Encerrar vaga" },
-      body: { text: "Selecione qual vaga deseja encerrar:" },
-      footer: { text: "Escolha uma vaga para encerrar" },
-      action: {
-        button: "Selecionar vaga",
-        sections: [
-          {
-            title: "Vagas ativas",
-            rows: jobPosts.map(v => ({
-              id: `close_${v.id}`,
-              title: v.title.substring(0, 24)
-            }))
-          }
-        ]
-      }
-    }
-  };
-
   try {
-    const resp = await fetch(
-      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
-      {
+    const { data: jobPosts, error } = await supabase
+      .from("job_posts")
+      .select("id, title")
+      .eq("author_id", recruiter.id)
+      .eq("status", "active");
+
+    if (error) {
+      console.error("Erro ao buscar vagas para encerrar:", error);
+      return res.status(500).send("Erro ao buscar vagas");
+    }
+
+    if (!jobPosts || jobPosts.length === 0) {
+      await sendText(whatsapp, "🚫 Nenhuma vaga ativa para encerrar.");
+      await supabase.from("bot_sessions").update({ current_state: "menu", last_vacancies: null, updated_at: new Date().toISOString() }).eq("id", session.id);
+      return res.status(200).send("sem vagas");
+    }
+
+    await supabase.from("bot_sessions").update({
+      current_state: "list_vacancies_close",
+      last_vacancies: jobPosts,
+      updated_at: new Date().toISOString()
+    }).eq("id", session.id);
+
+    const rows = jobPosts.map(j => ({
+      id: `close_${j.id}`,
+      title: j.title ? j.title.substring(0, 24) : "Vaga"
+    }));
+
+    const body = {
+      messaging_product: "whatsapp",
+      to: whatsapp,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: "Encerrar vaga" },
+        body: { text: "Selecione a vaga que deseja encerrar:" },
+        footer: { text: "A ação encerrará a vaga escolhida" },
+        action: {
+          button: "Selecionar vaga",
+          sections: [
+            {
+              title: "Vagas ativas",
+              rows
+            }
+          ]
+        }
+      }
+    };
+
+    try {
+      const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        console.error("Erro ao enviar lista para encerrar:", resp.status, txt);
       }
-    );
-    const txt = await resp.text();
-    if (!resp.ok) console.error("Erro ao enviar lista de encerramento:", resp.status, txt);
-    else console.log("Lista enviada:", txt.slice(0, 400));
-  } catch (e) {
-    console.error("Exception ao enviar lista:", e);
-  }
+    } catch (e) {
+      console.error("Exception ao enviar lista para encerrar:", e);
+    }
 
-  return res.status(200).send("lista enviada");
+    return res.status(200).send("encerramento iniciado");
+  } catch (e) {
+    console.error("Erro em handleStartClose:", e);
+    return res.status(500).send("erro interno");
+  }
 }
 
-
+/* ---------------------------------------------------------
+   handleListCandidates: lista candidatos da vaga selecionada
+   - jobId recebido sem prefixo (mas aqui tratamos job_{id})
+--------------------------------------------------------- */
 async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
   try {
     const { data: candidates, error } = await supabase
@@ -445,11 +454,13 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
     if (!candidates || candidates.length === 0) {
       await sendText(whatsapp, "📭 Nenhum candidato para esta vaga.");
     } else {
-      const list = candidates.map((c, i) => `${i + 1}. ${c.profiles.full_name} — ${c.resume_pdf_url || "sem currículo"}`).join("\n\n");
+      const list = candidates
+        .map((c, i) => `${i + 1}. ${c.profiles?.full_name || "Nome não informado"} — ${c.resume_pdf_url || "sem currículo"}`)
+        .join("\n\n");
       await sendText(whatsapp, `👥 Candidatos:\n\n${list}`);
     }
 
-    // volta ao menu e atualiza timestamp
+    // volta ao menu
     await supabase.from("bot_sessions").update({ current_state: "menu", last_vacancies: null, updated_at: new Date().toISOString() }).eq("id", session.id);
     await sendText(whatsapp, "Retornando ao menu.");
     return res.status(200).send("candidatos listados");
@@ -459,6 +470,10 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
   }
 }
 
+/* ---------------------------------------------------------
+   handleCloseJob: encerra a vaga selecionada
+   - jobId vem do id close_{id}
+--------------------------------------------------------- */
 async function handleCloseJob(session, recruiter, whatsapp, jobId, res) {
   try {
     const { error } = await supabase.from("job_posts").update({ status: "closed" }).eq("id", jobId);
@@ -474,4 +489,4 @@ async function handleCloseJob(session, recruiter, whatsapp, jobId, res) {
     console.error("Erro em handleCloseJob:", e);
     return res.status(500).send("erro interno");
   }
-        }
+}
