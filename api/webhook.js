@@ -413,7 +413,7 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
 
     const rows = slice.map((c, i) => ({
       id: `cand_${i}`,
-      title: c.profiles.full_name,
+      title: title: c.profiles.full_name.substring(0, 24),
       description: c.resume_pdf_url ? "📄 Currículo disponível" : "Sem currículo"
     }));
 
