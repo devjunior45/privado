@@ -413,7 +413,7 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
 
     const rows = slice.map((c, i) => ({
       id: `cand_${i}`,
-      title: title: c.profiles.full_name.substring(0, 24),
+      title: c.profiles.full_name.substring(0, 24),
       description: c.resume_pdf_url ? "📄 Currículo disponível" : "Sem currículo"
     }));
 
@@ -439,7 +439,7 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
 
     await sendWhatsApp(body);
 
-    // Após listar, volta ao menu
+    // volta ao menu
     await supabase.from("bot_sessions").update({
       current_state: "menu",
       last_vacancies: null,
@@ -453,6 +453,7 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
     return res.status(500).send("erro interno");
   }
 }
+
 
 async function handleCloseJob(session, recruiter, whatsapp, jobId, res) {
   try {
