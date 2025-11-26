@@ -38,10 +38,13 @@ export default async function handler(req, res) {
 
     // Buscar nome e whatsapp do recrutador
     const { data: recruiter, error: recErr } = await supabase
-      .from("profiles")
-      .select("full_name, whatsapp")
-      .eq("id", job.author_id)
-      .maybeSingle();
+  .from("profiles")
+  .select("full_name, whatsapp, is_verified")
+  .eq("id", job.author_id)
+  .eq("user_type", "recruiter")      // garante que é recrutador
+  .eq("is_verified", true)           // garante que é verificado
+  .maybeSingle();
+
 
     if (recErr || !recruiter) {
       console.error("Erro ao buscar recruiter:", recErr);
