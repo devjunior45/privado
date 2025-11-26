@@ -10,7 +10,7 @@ interface VerificationModalProps {
 }
 
 export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
-  const whatsappLink = "https://wa.me/5511999999999?text=Olá,%20gostaria%20de%20assinar%20o%20Busca%20Empregos%2B"
+  const whatsappLink = "https://wa.me/554796807243?text=Olá,%20gostaria%20de%20assinar%20o%20Busca%20Empregos%2B"
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
