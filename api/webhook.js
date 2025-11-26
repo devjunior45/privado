@@ -171,7 +171,14 @@ export default async function handler(req, res) {
     if (session.current_state === "list_vacancies" && buttonReplyId && String(buttonReplyId).startsWith("job_")) {
       const jobId = String(buttonReplyId).replace("job_", "").trim();
       return await handleListCandidates(session, recruiter, whatsapp, jobId, res);
-    }
+    } 
+
+    // Se está listando candidatos e usuário clicou em cand_{i}
+if (session.current_state === "list_candidates" && buttonReplyId && String(buttonReplyId).startsWith("cand_")) {
+  const index = Number(String(buttonReplyId).replace("cand_", "").trim());
+  return await handleCandidateSelected(session, recruiter, whatsapp, index, res);
+}
+
 
     // Se está no fluxo de fechar vaga e clicou em close_{id}
     if (session.current_state === "list_vacancies_close" && buttonReplyId && String(buttonReplyId).startsWith("close_")) {
@@ -439,14 +446,15 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
 
     await sendWhatsApp(body);
 
-    // volta ao menu
-    await supabase.from("bot_sessions").update({
-      current_state: "menu",
-      last_vacancies: null,
-      updated_at: new Date().toISOString()
-    }).eq("id", session.id);
+    // agora salvamos candidatos no estado e não voltamos ao menu
+await supabase.from("bot_sessions").update({
+  current_state: "list_candidates",
+  last_vacancies: candidates, // salvar candidatos para seleção posterior
+  updated_at: new Date().toISOString()
+}).eq("id", session.id);
 
-    return res.status(200).send("candidatos listados");
+return res.status(200).send("candidatos listados");
+
 
   } catch (e) {
     console.error(e);
@@ -468,6 +476,34 @@ async function handleCloseJob(session, recruiter, whatsapp, jobId, res) {
     return res.status(200).send("vaga encerrada");
   } catch (e) {
     console.error("Erro em handleCloseJob:", e);
+    return res.status(500).send("erro interno");
+  }
+}
+async function handleCandidateSelected(session, recruiter, whatsapp, index, res) {
+  try {
+    const candidates = session.last_vacancies || [];
+
+    const candidate = candidates[index];
+    if (!candidate) {
+      await sendText(whatsapp, "❌ Candidato não encontrado.");
+      return res.status(200).send("erro candidato");
+    }
+
+    const name = candidate.profiles.full_name;
+    const resume = candidate.resume_pdf_url || "Sem currículo enviado";
+
+    await sendText(
+      whatsapp,
+      `👤 *${name}*\n📄 Currículo: ${resume}`
+    );
+
+    // Voltamos ao menu após o envio das informações
+    await sendMenuAndUpdate(session, recruiter.full_name);
+
+    return res.status(200).send("candidato enviado");
+
+  } catch (e) {
+    console.error("Erro handleCandidateSelected:", e);
     return res.status(500).send("erro interno");
   }
 }
