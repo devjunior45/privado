@@ -125,12 +125,29 @@ export default async function handler(req, res) {
       session.current_state = "menu";
     }
 
-    // --- Extrai comando: botão reply common id (diferentes formatos) ou texto --- 
-    const buttonReplyId =
-      message.button?.payload || // formato antigo
-      message.interactive?.button_reply?.id || // formato interactive
-      message.interactive?.list_reply?.id || // list reply
-      null;
+    // --- Extrai comando: botão/list reply em QUALQUER formato --- 
+let buttonReplyId = null;
+
+// formato novo do WhatsApp list_reply
+if (message.interactive?.type === "list_reply") {
+  buttonReplyId = message.interactive?.list_reply?.id;
+}
+
+// formato novo de botão
+if (!buttonReplyId && message.interactive?.type === "button_reply") {
+  buttonReplyId = message.interactive?.button_reply?.id;
+}
+
+// formato antigo de botão
+if (!buttonReplyId && message.button?.payload) {
+  buttonReplyId = message.button.payload;
+}
+
+// fallback adicional (alguns números enviam sem .type)
+if (!buttonReplyId && message.interactive?.list_reply) {
+  buttonReplyId = message.interactive.list_reply.id;
+}
+
 
     const text = message.text?.body?.trim()?.toLowerCase() || "";
 
