@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     }
 
     const jobId = newRow.job_id;
-    const candidateId = newRow.candidate_id;
+    const candidateId = newRow.user_id;
     const resumeUrl = newRow.resume_pdf_url || "Sem currículo";
 
     // Buscar dados da vaga + recrutador
