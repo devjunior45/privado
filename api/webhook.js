@@ -266,56 +266,57 @@ async function handleViewJobs(session, recruiter, whatsapp, res) {
       .eq("author_id", recruiter.id)
       .eq("status", "active");
 
-    if (error) {
-      console.error("Erro ao buscar vagas:", error);
-      return res.status(500).send("Erro ao buscar vagas");
-    }
+    if (error) return res.status(500).send("Erro ao buscar vagas");
 
     if (!jobPosts || jobPosts.length === 0) {
       await sendText(whatsapp, "📭 Você não tem vagas ativas.");
-      await supabase.from("bot_sessions").update({ current_state: "menu", updated_at: new Date().toISOString(), last_vacancies: null }).eq("id", session.id);
       return res.status(200).send("sem vagas");
     }
 
-    // salva lista e atualiza estado
+    // SALVA vagas na sessão
     await supabase.from("bot_sessions").update({
       current_state: "list_vacancies",
       last_vacancies: jobPosts,
       updated_at: new Date().toISOString()
     }).eq("id", session.id);
 
-    // envia botões com até 10 vagas (ajuste se quiser)
-    const listButtons = jobPosts.slice(0, 10).map(v => ({
-      type: "reply",
-      reply: { id: `job_${v.id}`, title: v.title.substring(0, 24) || "Vaga" }
+    // PAGINAÇÃO
+    const maxPerPage = 10;
+    const page = 1;
+
+    const slice = jobPosts.slice(0, maxPerPage);
+
+    const rows = slice.map(v => ({
+      id: `job_${v.id}`,
+      title: v.title.substring(0, 24),
+      description: "Toque para ver candidatos"
     }));
 
     const body = {
       messaging_product: "whatsapp",
       to: whatsapp,
       type: "interactive",
-      interactive: { type: "button", body: { text: "📋 Selecione uma vaga para exibir candidatos:" }, action: { buttons: listButtons } }
+      interactive: {
+        type: "list",
+        header: { type: "text", text: "📋 Suas vagas:" },
+        body: { text: "Selecione uma vaga abaixo" },
+        action: {
+          button: "Ver vagas",
+          sections: [
+            {
+              title: "Vagas disponíveis",
+              rows
+            }
+          ]
+        }
+      }
     };
 
-    try {
-      const resp = await fetch(`https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-      const txt = await resp.text();
-      if (!resp.ok) console.error("Erro ao enviar lista de vagas:", resp.status, txt);
-      else console.log("Lista de vagas enviada:", txt.slice(0, 500));
-    } catch (e) {
-      console.error("Exception ao enviar lista de vagas:", e);
-    }
+    await sendWhatsApp(body);
+    return res.status(200).send("lista enviada");
 
-    return res.status(200).send("vagas enviadas");
   } catch (e) {
-    console.error("Erro em handleViewJobs:", e);
+    console.error(e);
     return res.status(500).send("erro interno");
   }
 }
@@ -383,24 +384,57 @@ async function handleListCandidates(session, recruiter, whatsapp, jobId, res) {
       .eq("job_id", jobId);
 
     if (error) {
-      console.error("Erro ao buscar candidatos:", error);
       await sendText(whatsapp, "❌ Erro ao listar candidatos.");
-      return res.status(500).send("erro listar candidatos");
+      return res.status(500).send("erro");
     }
 
     if (!candidates || candidates.length === 0) {
       await sendText(whatsapp, "📭 Nenhum candidato para esta vaga.");
-    } else {
-      const list = candidates.map((c, i) => `${i + 1}. ${c.profiles.full_name} — ${c.resume_pdf_url || "sem currículo"}`).join("\n\n");
-      await sendText(whatsapp, `👥 Candidatos:\n\n${list}`);
+      return res.status(200).send("vazio");
     }
 
-    // volta ao menu e atualiza timestamp
-    await supabase.from("bot_sessions").update({ current_state: "menu", last_vacancies: null, updated_at: new Date().toISOString() }).eq("id", session.id);
-    await sendText(whatsapp, "Retornando ao menu.");
+    const maxPerPage = 10;
+    const slice = candidates.slice(0, maxPerPage);
+
+    const rows = slice.map((c, i) => ({
+      id: `cand_${i}`,
+      title: c.profiles.full_name,
+      description: c.resume_pdf_url ? "📄 Currículo disponível" : "Sem currículo"
+    }));
+
+    const body = {
+      messaging_product: "whatsapp",
+      to: whatsapp,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: "👥 Candidatos:" },
+        body: { text: "Selecione um candidato:" },
+        action: {
+          button: "Ver candidatos",
+          sections: [
+            {
+              title: "Candidatos inscritos",
+              rows
+            }
+          ]
+        }
+      }
+    };
+
+    await sendWhatsApp(body);
+
+    // Após listar, volta ao menu
+    await supabase.from("bot_sessions").update({
+      current_state: "menu",
+      last_vacancies: null,
+      updated_at: new Date().toISOString()
+    }).eq("id", session.id);
+
     return res.status(200).send("candidatos listados");
+
   } catch (e) {
-    console.error("Erro em handleListCandidates:", e);
+    console.error(e);
     return res.status(500).send("erro interno");
   }
 }
@@ -421,3 +455,26 @@ async function handleCloseJob(session, recruiter, whatsapp, jobId, res) {
     return res.status(500).send("erro interno");
   }
 }
+
+async function sendWhatsApp(body) {
+  try {
+    const resp = await fetch(
+      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const txt = await resp.text();
+    if (!resp.ok) console.error("Erro WhatsApp:", resp.status, txt);
+    else console.log("Enviado:", txt.slice(0, 500));
+  } catch (e) {
+    console.error("Exception WhatsApp:", e);
+  }
+}
+
