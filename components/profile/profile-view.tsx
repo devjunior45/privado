@@ -431,7 +431,7 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
       {/* Header do Perfil */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg"></CardTitle>
+          <CardTitle className="text-lg">Perfil</CardTitle>
           {isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => setIsProfileEditOpen(true)} className="h-8 w-8 p-0">
               <Edit className="w-4 h-4" />
@@ -874,18 +874,8 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
             </div>
 
             <div>
-              <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input
-                id="whatsapp"
-                name="whatsapp"
-                defaultValue={profileData.whatsapp || ""}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" defaultValue={profileData.email || ""} />
+              <Label htmlFor="whatsapp">WhatsApp *</Label>
+              <Input id="whatsapp" name="whatsapp" defaultValue={profileData.whatsapp || ""} required />
             </div>
 
             <div>

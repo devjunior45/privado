@@ -22,7 +22,6 @@ export async function updateProfile(formData: FormData) {
   const address = formData.get("address") as string
   const cityId = formData.get("cityId") ? Number.parseInt(formData.get("cityId") as string) : null
   const whatsapp = formData.get("whatsapp") as string
-  const email = formData.get("email") as string
   const professionalSummary = formData.get("professionalSummary") as string
   const cnhTypes = formData.getAll("cnhTypes") as string[]
   const avatarFile = formData.get("avatar") as File
@@ -78,7 +77,6 @@ export async function updateProfile(formData: FormData) {
     city, // Mantemos para compatibilidade
     state, // Mantemos para compatibilidade
     whatsapp,
-    email,
     professional_summary: professionalSummary,
     cnh_types: cnhTypes,
   }
@@ -111,13 +109,11 @@ export async function updateRecruiterProfile(formData: FormData) {
   const cnpj = formData.get("cnpj") as string
   const cityId = formData.get("cityId") ? Number.parseInt(formData.get("cityId") as string) : null
   const whatsapp = formData.get("whatsapp") as string
-  const email = formData.get("email") as string
   const description = formData.get("description") as string
   const avatarFile = formData.get("avatar") as File
 
-  // Validações obrigatórias
-  if (!companyName || !whatsapp || !email || !cityId) {
-    throw new Error("Nome da empresa, WhatsApp, email e cidade são obrigatórios")
+  if (!companyName || !whatsapp || !cityId) {
+    throw new Error("Nome da empresa, WhatsApp e cidade são obrigatórios")
   }
 
   let avatarUrl = null
@@ -171,7 +167,6 @@ export async function updateRecruiterProfile(formData: FormData) {
     state,
     company_location: city && state ? `${city}, ${state}` : null,
     whatsapp,
-    email,
     professional_summary: description,
   }
 

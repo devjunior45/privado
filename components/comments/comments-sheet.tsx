@@ -474,7 +474,7 @@ export function CommentsSheet({ isOpen, onClose, postId, initialComments = [] }:
       {/* Drag Handle - apenas mobile */}
       {isMobile && (
         <div
-          className="flex justify-center py-2 cursor-grab active:cursor-grabbing"
+          className="flex justify-center py-4 cursor-grab active:cursor-grabbing"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}

@@ -157,7 +157,7 @@ export function DesktopHeader({ isLoggedIn, userProfile }: DesktopHeaderProps) {
               className="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
               onClick={() => router.push("/")}
             >
-               <img src="/logo.empresa.png" alt="Busca Empregos" className="h-8 w-auto" />
+              <img src="/logo.png" alt="Galeria Empregos" className="h-8 w-auto" />
             </div>
 
             {/* Search and City */}

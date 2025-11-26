@@ -25,7 +25,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
   const [selectedCityId, setSelectedCityId] = useState<number | null>(profile.city_id || null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const whatsappLink = "https://wa.me/554796807243?text=Olá,%20gostaria%20de%20assinar%20o%20Busca%20Empregos%2B"
+  const whatsappLink = "https://wa.me/5511999999999?text=Olá,%20gostaria%20de%20assinar%20o%20Busca%20Empregos%2B"
 
   const handleProfileSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -129,7 +129,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
           <Edit className="w-4 h-4 mr-2" />
           Editar Perfil
         </Button>
-
+        <SettingsSheet />
       </div>
 
       {/* Dialog para Editar Perfil */}
@@ -185,10 +185,7 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
               />
             </div>
 
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input id="email" name="email" type="email" defaultValue={profile.email || ""} required />
-            </div>
+            {/* Removed campo de email do formulário de edição */}
 
             <div>
               <Label htmlFor="description">Descrição da Empresa</Label>

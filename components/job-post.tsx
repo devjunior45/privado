@@ -1,5 +1,15 @@
 "use client"
 
+import { DialogTitle } from "@/components/ui/dialog"
+
+import { DialogHeader } from "@/components/ui/dialog"
+
+import { DialogContent } from "@/components/ui/dialog"
+
+import { DialogTrigger } from "@/components/ui/dialog"
+
+import { Dialog } from "@/components/ui/dialog"
+
 import type React from "react"
 
 import { useState, useTransition, useEffect } from "react"
@@ -24,7 +34,6 @@ import {
 import type { JobPostWithProfile } from "@/types/database"
 import { toggleLike } from "@/app/actions/posts"
 import { toggleSaveJob } from "@/app/actions/saved-jobs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { applyToJobPlatform } from "@/app/actions/profile"
 import { trackJobView } from "@/app/actions/dashboard"
 import { useRouter } from "next/navigation"
@@ -355,30 +364,16 @@ export function JobPost({
         <CardFooter className={`flex flex-col gap-3 pt-3 ${isMobile ? "px-1.5 pb-3 bg-white" : ""}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-[2px]">
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={handleLike}
-    className="h-10 w-10 flex items-center justify-center p-0"
-  >
-    <Heart
-      className={`${isMobile ? "w-7 h-7" : "w-6 h-6"} ${
-        isLiked ? "fill-red-500 text-red-500" : ""
-      } ${isMobile ? "stroke-2" : ""}`}
-    />
-  </Button>
-
-  <span
-    className={`text-muted-foreground ${
-      isMobile ? "text-sm font-medium" : "text-sm"
-    }`}
-  >
-    {likesCount}
-  </span>
-</div>
-
-
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={handleLike} className="p-2 h-auto">
+                  <Heart
+                    className={`${isMobile ? "w-7 h-7" : "w-6 h-6"} ${isLiked ? "fill-red-500 text-red-500" : ""} ${isMobile ? "stroke-2" : ""}`}
+                  />
+                </Button>
+                <span className={`text-muted-foreground ${isMobile ? "text-sm font-medium" : "text-sm"}`}>
+                  {likesCount}
+                </span>
+              </div>
               <Button variant="ghost" size="sm" onClick={handleComments} className="p-0 h-auto">
                 <MessageCircle className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
               </Button>

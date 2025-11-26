@@ -58,6 +58,32 @@ export async function toggleSaveJob(postId: string) {
   }
 }
 
+export async function removeSavedJob(postId: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  try {
+    const { error } = await supabase.from("saved_jobs").delete().eq("post_id", postId).eq("user_id", user.id)
+
+    if (error) {
+      throw new Error("Erro ao remover vaga dos salvos: " + error.message)
+    }
+
+    revalidatePath("/saved")
+    return { success: true }
+  } catch (error) {
+    console.error("Erro ao remover vaga salva:", error)
+    throw error
+  }
+}
+
 export async function getSavedJobs() {
   const supabase = await createClient()
 

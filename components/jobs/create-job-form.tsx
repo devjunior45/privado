@@ -346,6 +346,29 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                     placeholder="Ex: R$ 5.000 - R$ 8.000"
                     className="text-base h-9"
                   />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setSalary("Salário a combinar")}
+                      className="text-xs px-3 py-1 rounded-full border border-border hover:bg-accent transition-colors"
+                    >
+                      Salário a combinar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSalary("Salário base mais benefícios")}
+                      className="text-xs px-3 py-1 rounded-full border border-border hover:bg-accent transition-colors"
+                    >
+                      Salário base mais benefícios
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSalary("A combinar na entrevista")}
+                      className="text-xs px-3 py-1 rounded-full border border-border hover:bg-accent transition-colors"
+                    >
+                      A combinar na entrevista
+                    </button>
+                  </div>
                 </div>
 
                 <div>

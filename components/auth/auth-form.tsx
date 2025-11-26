@@ -80,6 +80,18 @@ export function AuthForm() {
     const supabase = createClient()
 
     try {
+      const { data: existingProfile, error: checkError } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("email", email)
+        .single()
+
+      if (existingProfile) {
+        setError("Email já cadastrado, faça login para prosseguir.")
+        setIsLoading(false)
+        return
+      }
+
       // Gerar username único baseado no nome
       const username = await generateUniqueUsername(fullName)
 
@@ -95,7 +107,7 @@ export function AuthForm() {
             company_name: userType === "recruiter" ? companyName : null,
             company_location: userType === "recruiter" ? companyLocation : null,
           },
-          emailRedirectTo: `${window.location.origin}/confirm-email`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
@@ -105,7 +117,7 @@ export function AuthForm() {
           signUpError.message.includes("already registered") ||
           signUpError.message.includes("User already registered")
         ) {
-          setError("Esse email já possui cadastro, faça login para prosseguir.")
+          setError("Email já cadastrado, faça login para prosseguir.")
           setIsLoading(false)
           return
         }
@@ -156,7 +168,7 @@ export function AuthForm() {
     } catch (error: any) {
       console.error("Erro no cadastro:", error)
       if (error.message?.includes("already registered") || error.message?.includes("User already registered")) {
-        setError("Esse email já possui cadastro, faça login para prosseguir.")
+        setError("Email já cadastrado, faça login para prosseguir.")
       } else {
         setError(error.message || "Erro ao criar conta. Tente novamente.")
       }
@@ -237,7 +249,9 @@ export function AuthForm() {
   const renderWelcomeStep = () => (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-       <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <p className="text-muted-foreground">Conectando talentos e oportunidades</p>
       </div>
 
@@ -289,7 +303,9 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
         <p className="text-muted-foreground">Acesse sua conta com seu email</p>
       </div>
@@ -338,7 +354,9 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Criar Conta</h2>
         <p className="text-muted-foreground">O que você pretende fazer?</p>
       </div>
@@ -377,7 +395,9 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("user-type")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-       <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
           <MapPin className="w-6 h-6" />
           Sua Cidade
@@ -431,7 +451,9 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Seus Dados</h2>
         <p className="text-muted-foreground">Finalize seu cadastro</p>
       </div>
@@ -497,7 +519,9 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Dados da Empresa</h2>
         <p className="text-muted-foreground">Finalize seu cadastro</p>
       </div>
