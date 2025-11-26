@@ -48,19 +48,17 @@ export default async function handler(req, res) {
     /* ===========================================================
       EXTRAÇÃO ROBUSTA DA MENSAGEM (ACEITA TODOS OS FORMATOS)
     ============================================================ */
-    const entry = req.body?.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value || changes || req.body;
+    // EXTRAÇÃO CORRETA E SIMPLES — COMPATÍVEL COM SEU PAYLOAD REAL
+const entry = req.body?.entry?.[0];
+const changes = entry?.changes?.[0]?.value;
 
-    let message = null;
-    if (value?.messages?.[0]) message = value.messages[0];
-    else if (req.body?.messages?.[0]) message = req.body.messages[0];
-    else if (entry?.messages?.[0]) message = entry.messages[0];
+let message = changes?.messages?.[0] || null;
 
-    if (!message) {
-      console.log("Sem mensagem processável no payload.");
-      return res.status(200).send("ok");
-    }
+if (!message) {
+  console.log("Sem mensagem processável no payload.");
+  return res.status(200).send("ok");
+}
+
 
     /* ----------------------- REMETENTE ----------------------- */
     const rawFrom =
