@@ -41,7 +41,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== "POST")
-      return res.status(200).send("Webhook ativo");
+      return res.status(200).send("Webhook ativo"); 
+    console.log(">>> RAW BODY RECEIVED:", JSON.stringify(req.body, null, 2));
+
 
     /* ===========================================================
       EXTRAÇÃO ROBUSTA DA MENSAGEM (ACEITA TODOS OS FORMATOS)
