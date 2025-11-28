@@ -7,7 +7,7 @@ export default function handler(req, res) {
     }
 
     // Domain do seu Supabase
-    const SUPABASE_PROJECT_URL = "https://SEU-PROJETO.supabase.co";
+    const SUPABASE_PROJECT_URL = "https://tdotbucnazgversgbake.supabase.co";
 
     const redirectUrl = `${SUPABASE_PROJECT_URL}/auth/v1/verify?token=${token}`;
 
