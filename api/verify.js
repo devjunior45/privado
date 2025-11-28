@@ -6,12 +6,11 @@ export default function handler(req, res) {
       return res.status(400).send("Missing token");
     }
 
-    // Domain do seu Supabase
     const SUPABASE_PROJECT_URL = "https://tdotbucnazgversgbake.supabase.co";
 
-    const redirectUrl = `${SUPABASE_PROJECT_URL}/auth/v1/verify?token=${token}`;
+    // Supabase exige o type
+    const redirectUrl = `${SUPABASE_PROJECT_URL}/auth/v1/verify?token=${token}&type=signup`;
 
-    // Redireciona imediatamente
     return res.redirect(302, redirectUrl);
 
   } catch (err) {
