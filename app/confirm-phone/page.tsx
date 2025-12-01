@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Smartphone, ArrowLeft, CheckCircle } from "lucide-react"
 import Image from "next/image"
+import { generateUsernameFromPhone } from "@/utils/username-generator"
 
 export default function ConfirmPhonePage() {
   const [phone, setPhone] = useState("")
@@ -87,7 +88,7 @@ export default function ConfirmPhonePage() {
     try {
       const formattedPhone = phone.startsWith("+") ? phone : `+55${phone.replace(/\D/g, "")}`
 
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: code,
         type: "sms",
@@ -96,12 +97,36 @@ export default function ConfirmPhonePage() {
       if (error) {
         setError(error.message || "Código inválido. Tente novamente.")
       } else {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+          // Verificar se já existe perfil
+          const { data: existingProfile } = await supabase.from("profiles").select("id").eq("id", user.id).single()
+
+          if (!existingProfile) {
+            // Gerar username baseado no telefone
+            const username = await generateUsernameFromPhone(formattedPhone)
+
+            // Criar perfil com username gerado
+            await supabase.from("profiles").insert({
+              id: user.id,
+              username: username,
+              whatsapp: formattedPhone,
+              user_type: "candidate",
+              created_at: new Date().toISOString(),
+            })
+          }
+        }
+
         setMessage("Telefone confirmado com sucesso!")
         setTimeout(() => {
-          router.push("/feed")
+          router.push("/onboarding")
         }, 1500)
       }
     } catch (err) {
+      console.error("[v0] Erro ao verificar código:", err)
       setError("Erro ao verificar código. Tente novamente.")
     } finally {
       setIsVerifying(false)
