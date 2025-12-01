@@ -87,7 +87,7 @@ export default function ConfirmPhonePage() {
     try {
       const formattedPhone = phone.startsWith("+") ? phone : `+55${phone.replace(/\D/g, "")}`
 
-      const { data, error } = await supabase.auth.verifyOtp({
+      const { error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: code,
         type: "sms",
@@ -95,48 +95,13 @@ export default function ConfirmPhonePage() {
 
       if (error) {
         setError(error.message || "Código inválido. Tente novamente.")
-        setIsVerifying(false)
-        return
+      } else {
+        setMessage("Telefone confirmado com sucesso!")
+        setTimeout(() => {
+          router.push("/feed")
+        }, 1500)
       }
-
-      if (data?.user) {
-        const userId = data.user.id
-
-        // Verificar se o perfil já existe
-        const { data: existingProfile } = await supabase.from("profiles").select("username").eq("id", userId).single()
-
-        // Se não tem username, gerar um
-        if (existingProfile && !existingProfile.username) {
-          const randomUsername = `user_${Math.random().toString(36).substring(2, 10)}`
-
-          await supabase
-            .from("profiles")
-            .update({
-              username: randomUsername,
-              whatsapp: phone,
-            })
-            .eq("id", userId)
-        } else if (!existingProfile) {
-          // Se o perfil não existe, criar um
-          const randomUsername = `user_${Math.random().toString(36).substring(2, 10)}`
-          const userEmail = data.user.email || `${randomUsername}@temp.com`
-
-          await supabase.from("profiles").insert({
-            id: userId,
-            email: userEmail,
-            username: randomUsername,
-            whatsapp: phone,
-            user_type: "candidate",
-          })
-        }
-      }
-
-      setMessage("Telefone confirmado com sucesso!")
-      setTimeout(() => {
-        router.push("/feed")
-      }, 1500)
     } catch (err) {
-      console.error("[v0] Erro ao verificar código:", err)
       setError("Erro ao verificar código. Tente novamente.")
     } finally {
       setIsVerifying(false)
