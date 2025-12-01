@@ -131,6 +131,17 @@ export function AuthForm() {
       // Salvar email no localStorage para a página de confirmação
       localStorage.setItem("pending_confirmation_email", email)
 
+      localStorage.setItem("pending_signup_password", password)
+      localStorage.setItem("pending_signup_fullname", fullName)
+      localStorage.setItem("pending_signup_usertype", userType)
+      if (selectedCityId) {
+        localStorage.setItem("pending_signup_cityid", selectedCityId.toString())
+      }
+      if (userType === "recruiter") {
+        localStorage.setItem("pending_signup_companyname", companyName)
+        localStorage.setItem("pending_signup_companylocation", companyLocation)
+      }
+
       // Aguarda um pouco para o trigger criar o perfil
       await new Promise((resolve) => setTimeout(resolve, 1000))
 

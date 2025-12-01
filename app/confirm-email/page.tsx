@@ -87,6 +87,11 @@ export default function ConfirmEmailPage() {
     }
   }
 
+  const handleConfirmViaSMS = () => {
+    // Os dados já estão no localStorage, só redirecionar
+    router.push("/confirm-phone")
+  }
+
   const handleBackToLogin = () => {
     localStorage.removeItem("pending_confirmation_email")
     router.push("/login")
@@ -159,8 +164,8 @@ export default function ConfirmEmailPage() {
               {isResending ? "Reenviando..." : "Reenviar e-mail"}
             </Button>
 
-            <Button onClick={() => router.push("/signup-phone")} className="w-full bg-transparent" variant="outline">
-              Cadastre-se usando o telefone
+            <Button onClick={handleConfirmViaSMS} className="w-full bg-transparent" variant="outline">
+              Confirmar via SMS
             </Button>
 
             <Button onClick={handleBackToLogin} className="w-full" variant="ghost">

@@ -19,18 +19,46 @@ export default function ConfirmPhonePage() {
   const [isVerifying, setIsVerifying] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [signupData, setSignupData] = useState<{
+    email?: string
+    password?: string
+    fullName?: string
+    userType?: string
+    cityId?: string
+    companyName?: string
+    companyLocation?: string
+  }>({})
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const loadUserPhone = async () => {
       try {
+        const savedEmail = localStorage.getItem("pending_confirmation_email")
+        const savedPassword = localStorage.getItem("pending_signup_password")
+        const savedFullName = localStorage.getItem("pending_signup_fullname")
+        const savedUserType = localStorage.getItem("pending_signup_usertype")
+        const savedCityId = localStorage.getItem("pending_signup_cityid")
+        const savedCompanyName = localStorage.getItem("pending_signup_companyname")
+        const savedCompanyLocation = localStorage.getItem("pending_signup_companylocation")
+
+        if (savedEmail) {
+          setSignupData({
+            email: savedEmail,
+            password: savedPassword || undefined,
+            fullName: savedFullName || undefined,
+            userType: savedUserType || "candidate",
+            cityId: savedCityId || undefined,
+            companyName: savedCompanyName || undefined,
+            companyLocation: savedCompanyLocation || undefined,
+          })
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser()
 
         if (user) {
-          // Buscar telefone do perfil
           const { data: profile } = await supabase.from("profiles").select("whatsapp").eq("id", user.id).single()
 
           if (profile?.whatsapp) {
@@ -56,20 +84,31 @@ export default function ConfirmPhonePage() {
     setMessage("")
 
     try {
-      // Formatar telefone para formato internacional (+55...)
       const formattedPhone = phone.startsWith("+") ? phone : `+55${phone.replace(/\D/g, "")}`
 
-      const { error } = await supabase.auth.signInWithOtp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         phone: formattedPhone,
+        password: signupData.password || `temp_${Date.now()}`,
+        options: {
+          data: {
+            username: await generateUsernameFromPhone(formattedPhone),
+            full_name: signupData.fullName,
+            user_type: signupData.userType,
+            city_id: signupData.cityId,
+            company_name: signupData.companyName,
+            company_location: signupData.companyLocation,
+          },
+        },
       })
 
-      if (error) {
-        setError(error.message || "Erro ao enviar código. Tente novamente.")
+      if (signUpError) {
+        setError(signUpError.message || "Erro ao criar conta. Tente novamente.")
       } else {
         setMessage("Código enviado com sucesso! Verifique seu SMS.")
         setStep("code")
       }
     } catch (err) {
+      console.error("[v0] Erro ao enviar código:", err)
       setError("Erro ao enviar código. Tente novamente.")
     } finally {
       setIsSending(false)
@@ -97,28 +136,13 @@ export default function ConfirmPhonePage() {
       if (error) {
         setError(error.message || "Código inválido. Tente novamente.")
       } else {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (user) {
-          // Verificar se já existe perfil
-          const { data: existingProfile } = await supabase.from("profiles").select("id").eq("id", user.id).single()
-
-          if (!existingProfile) {
-            // Gerar username baseado no telefone
-            const username = await generateUsernameFromPhone(formattedPhone)
-
-            // Criar perfil com username gerado
-            await supabase.from("profiles").insert({
-              id: user.id,
-              username: username,
-              whatsapp: formattedPhone,
-              user_type: "candidate",
-              created_at: new Date().toISOString(),
-            })
-          }
-        }
+        localStorage.removeItem("pending_confirmation_email")
+        localStorage.removeItem("pending_signup_password")
+        localStorage.removeItem("pending_signup_fullname")
+        localStorage.removeItem("pending_signup_usertype")
+        localStorage.removeItem("pending_signup_cityid")
+        localStorage.removeItem("pending_signup_companyname")
+        localStorage.removeItem("pending_signup_companylocation")
 
         setMessage("Telefone confirmado com sucesso!")
         setTimeout(() => {
