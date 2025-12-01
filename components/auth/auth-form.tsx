@@ -190,7 +190,15 @@ export function AuthForm() {
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        if (error.message?.includes("Email not confirmed")) {
+          localStorage.setItem("pending_confirmation_email", email)
+          router.push("/confirm-email")
+          return
+        }
+        throw error
+      }
+
       router.push("/feed")
       router.refresh()
     } catch (error: any) {
