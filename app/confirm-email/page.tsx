@@ -159,6 +159,10 @@ export default function ConfirmEmailPage() {
               {isResending ? "Reenviando..." : "Reenviar e-mail"}
             </Button>
 
+            <Button onClick={() => router.push("/confirm-phone")} className="w-full bg-transparent" variant="outline">
+              Confirmar via SMS
+            </Button>
+
             <Button onClick={handleBackToLogin} className="w-full" variant="ghost">
               Voltar ao login
             </Button>
