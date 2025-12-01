@@ -131,17 +131,6 @@ export function AuthForm() {
       // Salvar email no localStorage para a página de confirmação
       localStorage.setItem("pending_confirmation_email", email)
 
-      localStorage.setItem("pending_signup_password", password)
-      localStorage.setItem("pending_signup_fullname", fullName)
-      localStorage.setItem("pending_signup_usertype", userType)
-      if (selectedCityId) {
-        localStorage.setItem("pending_signup_cityid", selectedCityId.toString())
-      }
-      if (userType === "recruiter") {
-        localStorage.setItem("pending_signup_companyname", companyName)
-        localStorage.setItem("pending_signup_companylocation", companyLocation)
-      }
-
       // Aguarda um pouco para o trigger criar o perfil
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -196,18 +185,32 @@ export function AuthForm() {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        // Se o erro for relacionado à confirmação de email
         if (error.message?.includes("Email not confirmed")) {
+          // Salvar email no localStorage para a página de confirmação
           localStorage.setItem("pending_confirmation_email", email)
+          // Redirecionar para a página de confirmação
           router.push("/confirm-email")
           return
         }
         throw error
+      }
+
+      // Verificar se o usuário existe mas o email não foi confirmado
+      if (data.user && !data.user.email_confirmed_at) {
+        // Salvar email no localStorage para a página de confirmação
+        localStorage.setItem("pending_confirmation_email", email)
+        // Fazer logout do usuário não confirmado
+        await supabase.auth.signOut()
+        // Redirecionar para a página de confirmação
+        router.push("/confirm-email")
+        return
       }
 
       router.push("/feed")

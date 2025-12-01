@@ -101,8 +101,10 @@ export function JobFeed({
   if (!isLoading && initialPosts.length === 0 && hasLoadedOnce) {
     return (
       <div className="text-center py-10">
-        <p className="text-xl text-muted-foreground">Nenhuma vaga encontrada.</p>
-        <p className="text-sm text-muted-foreground mt-2">Tente ajustar seus filtros ou expandir sua busca.</p>
+        <p className="text-xl text-muted-foreground">Não temos vagas neste local ainda.</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Conhece alguém contratando na sua cidade? Indique o Busca Empregos!
+        </p>
       </div>
     )
   }
