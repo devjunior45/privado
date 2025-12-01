@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Smartphone, ArrowLeft, CheckCircle } from "lucide-react"
 import Image from "next/image"
+import { generateUsernameFromPhone } from "@/utils/username-generator"
 
 export default function ConfirmPhonePage() {
   const [phone, setPhone] = useState("")
@@ -55,69 +56,6 @@ export default function ConfirmPhonePage() {
     setMessage("")
 
     try {
-      const savedData = localStorage.getItem("pending_registration_data")
-
-      if (savedData) {
-        const registrationData = JSON.parse(savedData)
-
-        // Criar conta com email e senha
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: registrationData.email,
-          password: registrationData.password,
-          options: {
-            data: {
-              username: registrationData.username,
-              full_name: registrationData.fullName,
-              user_type: registrationData.userType,
-              city_id: registrationData.selectedCityId?.toString(),
-              company_name: registrationData.companyName,
-              company_location: registrationData.companyLocation,
-            },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
-        })
-
-        if (signUpError) {
-          setError("Erro ao criar conta: " + signUpError.message)
-          setIsSending(false)
-          return
-        }
-
-        // Aguardar criação do perfil
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-
-        // Verificar e criar perfil se necessário
-        if (signUpData.user) {
-          const { data: existingProfile } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("id", signUpData.user.id)
-            .single()
-
-          if (!existingProfile) {
-            await supabase.from("profiles").insert({
-              id: signUpData.user.id,
-              email: registrationData.email,
-              username: registrationData.username,
-              full_name: registrationData.fullName,
-              user_type: registrationData.userType,
-              city_id: registrationData.selectedCityId,
-              company_name: registrationData.companyName,
-              company_location: registrationData.companyLocation,
-              whatsapp: phone.startsWith("+") ? phone : `+55${phone.replace(/\D/g, "")}`,
-            })
-          } else {
-            // Atualizar whatsapp no perfil existente
-            await supabase
-              .from("profiles")
-              .update({
-                whatsapp: phone.startsWith("+") ? phone : `+55${phone.replace(/\D/g, "")}`,
-              })
-              .eq("id", signUpData.user.id)
-          }
-        }
-      }
-
       // Formatar telefone para formato internacional (+55...)
       const formattedPhone = phone.startsWith("+") ? phone : `+55${phone.replace(/\D/g, "")}`
 
@@ -132,8 +70,7 @@ export default function ConfirmPhonePage() {
         setStep("code")
       }
     } catch (err) {
-      console.error("[v0] Erro ao processar:", err)
-      setError("Erro ao processar. Tente novamente.")
+      setError("Erro ao enviar código. Tente novamente.")
     } finally {
       setIsSending(false)
     }
@@ -160,8 +97,28 @@ export default function ConfirmPhonePage() {
       if (error) {
         setError(error.message || "Código inválido. Tente novamente.")
       } else {
-        localStorage.removeItem("pending_registration_data")
-        localStorage.removeItem("pending_confirmation_email")
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+          // Verificar se já existe perfil
+          const { data: existingProfile } = await supabase.from("profiles").select("id").eq("id", user.id).single()
+
+          if (!existingProfile) {
+            // Gerar username baseado no telefone
+            const username = await generateUsernameFromPhone(formattedPhone)
+
+            // Criar perfil com username gerado
+            await supabase.from("profiles").insert({
+              id: user.id,
+              username: username,
+              whatsapp: formattedPhone,
+              user_type: "candidate",
+              created_at: new Date().toISOString(),
+            })
+          }
+        }
 
         setMessage("Telefone confirmado com sucesso!")
         setTimeout(() => {
