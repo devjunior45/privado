@@ -95,6 +95,18 @@ export function AuthForm() {
       // Gerar username único baseado no nome
       const username = await generateUniqueUsername(fullName)
 
+      const registrationData = {
+        email,
+        password,
+        fullName,
+        username,
+        userType,
+        selectedCityId,
+        companyName: userType === "recruiter" ? companyName : null,
+        companyLocation: userType === "recruiter" ? companyLocation : null,
+      }
+      localStorage.setItem("pending_registration_data", JSON.stringify(registrationData))
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
