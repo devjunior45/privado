@@ -114,7 +114,7 @@ const AuthForm = () => {
             company_name: userType === "recruiter" ? companyName : null,
             company_location: userType === "recruiter" ? companyLocation : null,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/confirm-email`,
         },
       })
 
