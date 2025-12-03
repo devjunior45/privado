@@ -20,7 +20,7 @@ import { generateUniqueUsername } from "@/utils/username-generator"
 
 type AuthStep = "welcome" | "login" | "user-type" | "city-selection" | "personal-info" | "company-info"
 
-export function AuthForm() {
+const AuthForm = () => {
   const [currentStep, setCurrentStep] = useState<AuthStep>("welcome")
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
@@ -33,6 +33,7 @@ export function AuthForm() {
   const [companyLocation, setCompanyLocation] = useState("")
   const [userType, setUserType] = useState<UserType>("candidate")
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { theme } = useTheme()
@@ -62,6 +63,12 @@ export function AuthForm() {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+
+    if (!acceptedTerms) {
+      setError("Você precisa aceitar a Política de Privacidade para continuar")
+      setIsLoading(false)
+      return
+    }
 
     // Validar se as senhas coincidem
     if (password !== confirmPassword) {
@@ -107,7 +114,7 @@ export function AuthForm() {
             company_name: userType === "recruiter" ? companyName : null,
             company_location: userType === "recruiter" ? companyLocation : null,
           },
-          emailRedirectTo: `${window.location.origin}/confirm-email`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
@@ -271,7 +278,9 @@ export function AuthForm() {
   const renderWelcomeStep = () => (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <p className="text-muted-foreground">Conectando talentos e oportunidades</p>
       </div>
 
@@ -323,7 +332,9 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-         <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Entrar</h2>
         <p className="text-muted-foreground">Acesse sua conta com seu email</p>
       </div>
@@ -372,7 +383,9 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("welcome")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Criar Conta</h2>
         <p className="text-muted-foreground">O que você pretende fazer?</p>
       </div>
@@ -411,7 +424,9 @@ export function AuthForm() {
         <Button variant="ghost" size="sm" onClick={() => setCurrentStep("user-type")} className="absolute left-4 top-4">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-         <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
           <MapPin className="w-6 h-6" />
           Sua Cidade
@@ -465,7 +480,9 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Seus Dados</h2>
         <p className="text-muted-foreground">Finalize seu cadastro</p>
       </div>
@@ -513,6 +530,27 @@ export function AuthForm() {
           />
         </div>
 
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="terms"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-1"
+          />
+          <Label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
+            Eu aceito a{" "}
+            <a
+              href="/politica_de_privacidade.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline hover:text-primary/80"
+            >
+              Política de Privacidade
+            </a>
+          </Label>
+        </div>
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Criando conta..." : "Criar conta"}
         </Button>
@@ -531,7 +569,9 @@ export function AuthForm() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="mb-6"> <Image src="/logo.empresa.png" alt="Logo" width={200} height={80} className="mx-auto" /> </div>
+        <div className="mb-12 flex justify-end pr-12 pt-8">
+          <Image src={getLogoSrc() || "/placeholder.svg"} alt="Logo" width={200} height={80} />
+        </div>
         <h2 className="text-2xl font-bold">Dados da Empresa</h2>
         <p className="text-muted-foreground">Finalize seu cadastro</p>
       </div>
@@ -599,6 +639,27 @@ export function AuthForm() {
           />
         </div>
 
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="terms-recruiter"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-1"
+          />
+          <Label htmlFor="terms-recruiter" className="text-sm leading-relaxed cursor-pointer">
+            Eu aceito a{" "}
+            <a
+              href="/politica_de_privacidade.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline hover:text-primary/80"
+            >
+              Política de Privacidade
+            </a>
+          </Label>
+        </div>
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Criando conta..." : "Criar conta"}
         </Button>
@@ -631,3 +692,6 @@ export function AuthForm() {
     </div>
   )
 }
+
+export { AuthForm }
+export default AuthForm as any

@@ -17,10 +17,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Eye, Shield, Mail, Lock, LogOut, Trash2 } from "lucide-react"
+import { ArrowLeft, Eye, Shield, Mail, Lock, LogOut, Trash2, FileText, MessageCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -248,20 +249,15 @@ export default function SettingsPage() {
         throw new Error("Senha incorreta")
       }
 
-      // Deletar dados do perfil
-      const { error: profileError } = await supabase.from("profiles").delete().eq("id", user.id)
-
-      if (profileError) {
-        console.error("Erro ao deletar perfil:", profileError)
-      }
-
-      // Deletar conta do usuário
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
+      const { error: deleteError } = await supabase.rpc("delete_user")
 
       if (deleteError) {
-        // Se não conseguir deletar via admin, fazer logout
-        await supabase.auth.signOut()
+        console.error("Erro ao deletar conta:", deleteError)
+        throw new Error("Erro ao deletar conta: " + deleteError.message)
       }
+
+      // Fazer logout
+      await supabase.auth.signOut()
 
       toast({
         title: "Conta encerrada",
@@ -460,6 +456,33 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Informações */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Informações
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Política de Privacidade */}
+            <Link href="/politica_de_privacidade.html" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full justify-start bg-transparent">
+                <FileText className="w-4 h-4 mr-2" />
+                Política de Privacidade
+              </Button>
+            </Link>
+
+            {/* Contato */}
+            <a href="mailto:f7promotora@gmail.com">
+              <Button variant="outline" className="w-full justify-start bg-transparent">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Contato: f7promotora@gmail.com
+              </Button>
+            </a>
           </CardContent>
         </Card>
 
