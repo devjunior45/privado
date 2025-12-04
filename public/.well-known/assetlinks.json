@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.nortaoempregos.twa",
+      "sha256_cert_fingerprints":
+        ["2A:A6:6E:F9:91:01:E1:7E:56:C1:E7:20:4E:2A:B3:00:44:81:33:82:DE:37:2B:1F:24:66:4C:8C:BE:3B:15:E4"]
+    }
+  }
+]
