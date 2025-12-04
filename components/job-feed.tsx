@@ -34,17 +34,18 @@ export function JobFeed({
 
   const [displayedCount, setDisplayedCount] = useState(10)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const sentinelRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const prefetchSentinelRef = useRef<HTMLDivElement>(null)
   const [isPrefetching, setIsPrefetching] = useState(false)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const prefetchObserverRef = useRef<IntersectionObserver | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const prefetchSentinelRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const posts = initialPosts.slice(0, displayedCount)
   const hasMore = displayedCount < initialPosts.length
 
   const loadMore = () => {
-    if (isLoadingMore || !hasMore || isPrefetching) return
+    if (isLoadingMore || !hasMore) return
 
     setIsLoadingMore(true)
 
@@ -68,30 +69,32 @@ export function JobFeed({
   }, [initialPosts.length])
 
   useEffect(() => {
-    if (!prefetchSentinelRef.current || !hasMore) return
+    if (!prefetchSentinelRef.current || !hasMore || isLoadingMore) return
 
-    const prefetchObserver = new IntersectionObserver(
+    prefetchObserverRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore && !isPrefetching) {
+        if (entries[0].isIntersecting && !isPrefetching && !isLoadingMore) {
           setIsPrefetching(true)
         }
       },
-      { threshold: 0.1, rootMargin: "50px" },
+      { threshold: 0.1, rootMargin: "200px" },
     )
 
-    prefetchObserver.observe(prefetchSentinelRef.current)
+    prefetchObserverRef.current.observe(prefetchSentinelRef.current)
 
     return () => {
-      prefetchObserver.disconnect()
+      if (prefetchObserverRef.current) {
+        prefetchObserverRef.current.disconnect()
+      }
     }
-  }, [hasMore, isLoadingMore, isPrefetching, displayedCount])
+  }, [hasMore, isPrefetching, isLoadingMore, displayedCount])
 
   useEffect(() => {
     if (!sentinelRef.current || !hasMore) return
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore && isPrefetching) {
+        if (entries[0].isIntersecting && !isLoadingMore) {
           loadMore()
         }
       },
@@ -105,7 +108,7 @@ export function JobFeed({
         observerRef.current.disconnect()
       }
     }
-  }, [hasMore, isLoadingMore, displayedCount, isPrefetching])
+  }, [hasMore, isLoadingMore, displayedCount])
 
   useEffect(() => {
     return () => {
@@ -135,13 +138,14 @@ export function JobFeed({
     )
   }
 
-  const prefetchIndex = Math.floor(posts.length * 0.7)
+  const prefetchPosition = Math.floor(posts.length * 0.7)
 
   return (
     <div ref={containerRef} className={isMobile ? "space-y-0.5 bg-muted/20" : "space-y-4"}>
       {posts.map((post, index) => (
-        <div key={post.id}>
+        <>
           <JobPost
+            key={post.id}
             jobPost={post}
             profile={post.profiles}
             isLoggedIn={isLoggedIn}
@@ -154,16 +158,15 @@ export function JobFeed({
             style={{ animationDelay: `${index * 100}ms` }}
             id={`post-${post.id}`}
           />
-          {index === prefetchIndex && hasMore && <div ref={prefetchSentinelRef} className="h-1" />}
-        </div>
+          {index === prefetchPosition && hasMore && <div ref={prefetchSentinelRef} className="h-1" />}
+        </>
       ))}
 
       {hasMore && (
         <div ref={sentinelRef} className="py-8">
-          {(isLoadingMore || isPrefetching) && (
-            <div className="flex flex-col items-center justify-center gap-3">
+          {isLoadingMore && (
+            <div className="flex justify-center items-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Carregando mais vagas...</p>
             </div>
           )}
         </div>
