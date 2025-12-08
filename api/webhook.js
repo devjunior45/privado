@@ -30,6 +30,35 @@ export default async function handler(req, res) {
 
     // Log do body para debug (cuidado com dados sensíveis em produção)
     console.log("Incoming webhook body:", JSON.stringify(req.body).slice(0, 2000));
+    
+    function normalizeWhatsapp(input) {
+  if (!input) return null;
+
+  // Remove tudo que não for número
+  let digits = String(input).replace(/\D/g, "");
+
+  // Remove zero(s) à esquerda
+  digits = digits.replace(/^0+/, "");
+
+  // Remove código do país se já vier junto (55)
+  if (digits.startsWith("55")) {
+    digits = digits.slice(2);
+  }
+
+  // Agora digits deve ser DDD + número
+  // Se tiver 11 dígitos (DDD + 9 + número), remove o 9
+  if (digits.length === 11 && /^\d{2}9\d{8}$/.test(digits)) {
+    digits = digits.replace(/^(\d{2})9(\d{8})$/, "$1$2");
+  }
+
+  // Garante que terminou com 10 dígitos
+  if (digits.length !== 10) {
+    return null; // formato inválido
+  }
+
+  // Retorna SEMPRE em E.164 sem "+"
+  return `55${digits}`;
+}
 
     // Tenta extrair a mensagem nos formatos mais comuns do WhatsApp Cloud
     const message =
@@ -50,7 +79,7 @@ export default async function handler(req, res) {
     }
 
     // Normalize (apenas números, sem espaços/sinais)
-    const whatsapp = String(from).replace(/\D/g, "");
+    const whatsapp = normalizeWhatsapp(from);
     console.log("Mensagem recebida de:", whatsapp, "conteúdo:", message);
 
     // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
@@ -63,7 +92,7 @@ export default async function handler(req, res) {
     const { data: recruiter, error: recruiterErr } = await supabase
       .from("profiles")
       .select("id, full_name")
-      .eq("whatsapp", whatsapp.replace(/^55/, ""))
+      .eq("whatsapp", whatsapp)
       .eq("user_type", "recruiter")
       .eq("is_verified", true)
       .maybeSingle();
