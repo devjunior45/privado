@@ -49,16 +49,17 @@ export default async function handler(req, res) {
       return res.status(200).send("Mensagem sem remetente");
     }
 
-    // Normalize (apenas números, sem espaços/sinais)
+    
+    // Normaliza (somente números)
     let whatsapp = String(from).replace(/\D/g, "");
 
-    // Remove o 9 extra após o DDD (celular BR sem +55)
+    // Remove o 9 após o DDD (celular BR)
     if (whatsapp.length === 11) {
      whatsapp = whatsapp.replace(/^(\d{2})9(\d{8})$/, "$1$2");
       }
 
-     console.log("Mensagem recebida de:", whatsapp, "conteúdo:", message);
-
+    // Garante formato E.164 sem "+"
+    whatsapp = `55${whatsapp}`;
 
     // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
     if (process.env.WHATSAPP_PHONE_NUMBER_ID && whatsapp === process.env.WHATSAPP_PHONE_NUMBER_ID.replace(/\D/g, "")) {
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
     const { data: recruiter, error: recruiterErr } = await supabase
       .from("profiles")
       .select("id, full_name")
-      .eq("whatsapp", whatsapp.replace(/^55/, ""))
+      .eq("whatsapp", whatsapp)
       .eq("user_type", "recruiter")
       .eq("is_verified", true)
       .maybeSingle();
