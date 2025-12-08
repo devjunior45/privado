@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       }
 
     // Garante formato E.164 sem "+"
-    whatsapp = `55${whatsapp}`;
+    // whatsapp = `55${whatsapp}`;
 
     // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
     if (process.env.WHATSAPP_PHONE_NUMBER_ID && whatsapp === process.env.WHATSAPP_PHONE_NUMBER_ID.replace(/\D/g, "")) {
