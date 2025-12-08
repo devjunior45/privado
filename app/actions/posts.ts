@@ -160,14 +160,14 @@ export async function updateJobStatus(jobId: string, status: "active" | "paused"
     redirect("/auth")
   }
 
-  const { error } = await supabase.from("job_posts").update({ status }).eq("id", jobId).eq("author_id", user.id) // Apenas o autor pode alterar
+  const { error } = await supabase.from("job_posts").update({ status }).eq("id", jobId).eq("author_id", user.id)
 
   if (error) {
     throw new Error("Erro ao atualizar status da vaga: " + error.message)
   }
 
+  // Revalidar apenas o dashboard - remover /feed para evitar revalidação desnecessária
   revalidatePath("/dashboard")
-  revalidatePath("/feed")
 }
 
 export async function incrementJobViews(jobId: string) {

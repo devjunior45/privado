@@ -127,16 +127,10 @@ export async function getRecruiterJobs(recruiterId: string) {
   const supabase = await createClient()
 
   try {
+    // Usar a VIEW otimizada que já retorna os contadores calculados
     const { data: jobs, error } = await supabase
-      .from("job_posts")
-      .select(`
-      *,
-      job_applications (
-        id,
-        status,
-        application_type
-      )
-    `)
+      .from("recruiter_jobs_with_stats")
+      .select("*")
       .eq("author_id", recruiterId)
       .order("created_at", { ascending: false })
 
@@ -145,21 +139,8 @@ export async function getRecruiterJobs(recruiterId: string) {
       return []
     }
 
-    // Processar dados para incluir contadores
-    const processedJobs = jobs?.map((job) => ({
-      ...job,
-      applications_count: job.job_applications?.length || 0,
-      platform_applications_count:
-        job.job_applications?.filter((app: any) => app.application_type === "platform").length || 0,
-      external_applications_count:
-        job.job_applications?.filter((app: any) => app.application_type === "external").length || 0,
-      pending_count: job.job_applications?.filter((app: any) => app.status === "pending").length || 0,
-      interview_count: job.job_applications?.filter((app: any) => app.status === "interview").length || 0,
-      hired_count: job.job_applications?.filter((app: any) => app.status === "hired").length || 0,
-      rejected_count: job.job_applications?.filter((app: any) => app.status === "rejected").length || 0,
-    }))
-
-    return processedJobs || []
+    // Retornar diretamente - contadores já vêm da VIEW
+    return jobs || []
   } catch (error) {
     console.error("Erro ao buscar vagas:", error)
     return []
@@ -216,8 +197,8 @@ export async function updateJobStatus(jobId: string, status: "active" | "paused"
       throw new Error("Erro ao atualizar status da vaga")
     }
 
+    // Revalidar apenas o dashboard - não revalidar /feed para evitar bloqueio da UI
     revalidatePath("/dashboard")
-    revalidatePath("/feed")
     return { success: true }
   } catch (error) {
     console.error("Erro ao atualizar status:", error)

@@ -22,6 +22,7 @@ import Link from "next/link"
 import { getRecruiterJobs, updateJobStatus } from "@/app/actions/dashboard"
 import { CityDisplay } from "@/components/ui/city-display"
 import { toast } from "sonner"
+import type { RecruiterJobWithStats } from "@/types/job"
 
 interface Job {
   id: string
@@ -43,8 +44,8 @@ interface JobsManagementProps {
 }
 
 export function JobsManagement({ recruiterId }: JobsManagementProps) {
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>([])
+  const [jobs, setJobs] = useState<RecruiterJobWithStats[]>([])
+  const [filteredJobs, setFilteredJobs] = useState<RecruiterJobWithStats[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("active")
   const [loading, setLoading] = useState(true)
@@ -66,8 +67,8 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
       try {
         setLoading(true)
         const jobsData = await getRecruiterJobs(recruiterId)
-        setJobs(jobsData)
-        setFilteredJobs(jobsData)
+        setJobs(jobsData as RecruiterJobWithStats[])
+        setFilteredJobs(jobsData as RecruiterJobWithStats[])
       } catch (error) {
         console.error("Erro ao carregar vagas:", error)
         toast.error("Erro ao carregar vagas")
@@ -105,7 +106,6 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
     try {
       await updateJobStatus(jobId, newStatus)
 
-      // Atualizar estado local
       setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: newStatus } : job)))
 
       toast.success(
@@ -253,7 +253,7 @@ function JobCard({
   onStatusChange,
   onConfirmAction,
 }: {
-  job: Job
+  job: RecruiterJobWithStats
   onStatusChange: (jobId: string, status: "active" | "paused" | "closed") => void
   onConfirmAction: (jobId: string, jobTitle: string, action: "pause" | "close") => void
 }) {

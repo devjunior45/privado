@@ -132,9 +132,9 @@ export function JobFeed({
       <div className="text-center py-10">
         <p className="text-xl text-muted-foreground">Não temos vagas neste local ainda.</p>
         <p className="text-sm text-muted-foreground mt-2">
-          Conhece alguém contratando na sua cidade? <a href="https://wa.me/554796807243" target="_blank" rel="noopener noreferrer">Indique o Busca Empregos!</a>
-       </p>
-        </div>
+          Conhece alguém contratando na sua cidade? Indique o Busca Empregos!
+        </p>
+      </div>
     )
   }
 
