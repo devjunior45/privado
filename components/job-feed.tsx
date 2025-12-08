@@ -130,10 +130,34 @@ export function JobFeed({
   if (!isLoading && initialPosts.length === 0 && hasLoadedOnce) {
     return (
       <div className="text-center py-10">
-        <p className="text-xl text-muted-foreground">Não temos vagas neste local ainda.</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Conhece alguém contratando na sua cidade? Indique o Busca Empregos!
-        </p>
+       <p className="text-xl text-muted-foreground">
+  Não temos vagas neste local ainda.
+</p>
+
+<p className="mt-3 text-sm text-muted-foreground">
+  Conhece alguém contratando na sua cidade?
+</p>
+
+<a
+  href="https://wa.me/554796807243"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="
+    inline-block 
+    mt-3 
+    rounded-lg 
+    bg-green-600 
+    px-4 
+    py-2 
+    text-white 
+    font-semibold 
+    hover:bg-green-700 
+    transition
+  "
+>
+  Indicar via WhatsApp
+</a>
+
       </div>
     )
   }
