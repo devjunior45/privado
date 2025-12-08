@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { JobFeed } from "@/components/job-feed"
 import { PageContainer } from "@/components/page-container"
@@ -11,7 +11,7 @@ import useMobile from "@/hooks/use-mobile"
 import { sortJobsByImportance } from "@/utils/ranking"
 import { isProfileComplete } from "@/utils/check-profile-complete"
 
-export default function FeedPage() {
+function FeedContent() {
   const isMobile = useMobile()
   const router = useRouter()
   const pathname = usePathname()
@@ -262,5 +262,22 @@ export default function FeedPage() {
         />
       </div>
     </>
+  )
+}
+
+export default function FeedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      }
+    >
+      <FeedContent />
+    </Suspense>
   )
 }
