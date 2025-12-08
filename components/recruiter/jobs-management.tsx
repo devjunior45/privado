@@ -148,14 +148,14 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
     const { jobId, action } = confirmDialog
     const newStatus = action === "pause" ? "paused" : "closed"
 
-    // IMPORTANTE: Fechar o dialog ANTES de executar a ação async
+    // Fechar modal IMEDIATAMENTE
     setConfirmDialog({ open: false, jobId: "", jobTitle: "", action: "pause" })
 
-    // Aguardar o desmonte do dialog
+    // Aguardar próximo tick para garantir desmontagem do modal
     await new Promise((r) => setTimeout(r, 0))
 
-    // Agora sim executar a ação
-    handleStatusChange(jobId, newStatus)
+    // Agora executar a ação async
+    await handleStatusChange(jobId, newStatus)
   }
 
   if (loading) {

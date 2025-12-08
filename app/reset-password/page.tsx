@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, Suspense } from "react"
+
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Lock, CheckCircle } from "lucide-react"
 import Image from "next/image"
 
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -211,21 +212,5 @@ function ResetPasswordContent() {
         </form>
       </div>
     </div>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
-          <div className="text-center">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        </div>
-      }
-    >
-      <ResetPasswordContent />
-    </Suspense>
   )
 }
