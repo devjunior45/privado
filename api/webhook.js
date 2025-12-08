@@ -31,34 +31,50 @@ export default async function handler(req, res) {
     // Log do body para debug (cuidado com dados sensíveis em produção)
     console.log("Incoming webhook body:", JSON.stringify(req.body).slice(0, 2000));
     
-    function normalizeWhatsapp(input) {
+    function normalizeWhatsappAll(input) {
   if (!input) return null;
 
-  // Remove tudo que não for número
+  // 1. Limpa tudo que não for número
   let digits = String(input).replace(/\D/g, "");
 
-  // Remove zero(s) à esquerda
+  // Remove zeros à esquerda
   digits = digits.replace(/^0+/, "");
 
-  // Remove código do país se já vier junto (55)
+  // Remove +55 se existir
   if (digits.startsWith("55")) {
     digits = digits.slice(2);
   }
 
-  // Agora digits deve ser DDD + número
-  // Se tiver 11 dígitos (DDD + 9 + número), remove o 9
-  if (digits.length === 11 && /^\d{2}9\d{8}$/.test(digits)) {
-    digits = digits.replace(/^(\d{2})9(\d{8})$/, "$1$2");
+  // Agora digits pode ser:
+  // 10 → DDD + número
+  // 11 → DDD + 9 + número
+
+  let ddd, number, with9, without9;
+
+  if (digits.length === 11) {
+    ddd = digits.slice(0, 2);
+    number = digits.slice(3);
+    with9 = digits;
+    without9 = ddd + number;
+  } else if (digits.length === 10) {
+    ddd = digits.slice(0, 2);
+    number = digits.slice(2);
+    with9 = ddd + "9" + number;
+    without9 = digits;
+  } else {
+    return null;
   }
 
-  // Garante que terminou com 10 dígitos
-  if (digits.length !== 10) {
-    return null; // formato inválido
-  }
+  return {
+    // Formatos possíveis no banco
+    dbCandidates: [...new Set([with9, without9])],
 
-  // Retorna SEMPRE em E.164 sem "+"
-  return `55${digits}`;
+    // Formato final correto (para API / sessão)
+    e164With9: `55${with9}`,
+    e164Without9: `55${without9}`
+  };
 }
+
 
     // Tenta extrair a mensagem nos formatos mais comuns do WhatsApp Cloud
     const message =
@@ -78,10 +94,16 @@ export default async function handler(req, res) {
       return res.status(200).send("Mensagem sem remetente");
     }
 
-    // Normalize (apenas números, sem espaços/sinais)
-    const whatsapp = normalizeWhatsapp(from);
-    console.log("Mensagem recebida de:", whatsapp, "conteúdo:", message);
+    const normalized = normalizeWhatsappAll(from);
 
+if (!normalized) {
+  console.warn("Número inválido:", from);
+  return res.status(200).send("Número inválido");
+}
+
+const { dbCandidates, e164With9 } = normalized;
+
+    
     // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
     if (process.env.WHATSAPP_PHONE_NUMBER_ID && whatsapp === process.env.WHATSAPP_PHONE_NUMBER_ID.replace(/\D/g, "")) {
       console.log("Ignorado: mensagem do próprio bot.");
@@ -89,13 +111,14 @@ export default async function handler(req, res) {
     }
 
     // --- Busca recruiter (usando maybeSingle para não lançar se não achar) ---
-    const { data: recruiter, error: recruiterErr } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("whatsapp", whatsapp)
-      .eq("user_type", "recruiter")
-      .eq("is_verified", true)
-      .maybeSingle();
+    const { data: recruiter, error } = await supabase
+  .from("profiles")
+  .select("id, full_name\n  whatsapp")
+  .in("whatsapp", dbCandidates) // ✅ chave do sucesso
+  .eq("user_type", "recruiter")
+  .eq("is_verified", true)
+  .maybeSingle();
+
 
     if (recruiterErr) {
       console.error("Erro ao buscar recruiter:", recruiterErr);
@@ -106,12 +129,14 @@ export default async function handler(req, res) {
       await sendText(whatsapp, "⚠️ Seu número não está cadastrado como recrutador verificado.");
       return res.status(200).send("Recrutador não encontrado");
     }
+     const sessionWhatsapp = normalized.e164With9;
+
 
     // --- Busca ou cria sessão (maybeSingle para evitar throw) ---
     let { data: session, error: sessionErr } = await supabase
       .from("bot_sessions")
       .select("*")
-      .eq("whatsapp", whatsapp)
+      .eq("whatsapp", sessionWhatsapp)
       .maybeSingle();
 
     if (sessionErr) {
@@ -124,7 +149,7 @@ export default async function handler(req, res) {
         .from("bot_sessions")
         .insert({
           recruiter_id: recruiter.id,
-          whatsapp,
+          whatsapp: sessionWhatsapp,
           current_state: "menu",
           last_vacancies: null,
           updated_at: new Date().toISOString(),
