@@ -61,7 +61,7 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
 
   const handleWhatsAppContact = () => {
     if (profile.whatsapp) {
-      const message = `Olá ${profile.company_name || profile.full_name || profile.username}, vi suas vagas na Nortão Empregos!`
+      const message = `Olá ${profile.company_name || profile.full_name || profile.username}, vi suas vagas no Busca Empregos!`
       const whatsappUrl = `https://wa.me/${profile.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`
       window.open(whatsappUrl, "_blank")
     }
@@ -73,8 +73,8 @@ export function RecruiterPublicView({ profile, jobPosts, isLoggedIn, isOwnProfil
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${profile.company_name || profile.full_name} - Nortão Empregos`,
-          text: `Confira o perfil de ${profile.company_name || profile.full_name} na Nortão Empregos`,
+          title: `${profile.company_name || profile.full_name} - Busca Empregos`,
+          text: `Confira o perfil de ${profile.company_name || profile.full_name} no Busca Empregos`,
           url: profileUrl,
         })
       } catch (error) {
