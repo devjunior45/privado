@@ -111,19 +111,19 @@ const { dbCandidates, e164With9 } = normalized;
     }
 
     // --- Busca recruiter (usando maybeSingle para não lançar se não achar) ---
-    const { data: recruiter, error } = await supabase
+    const { data: recruiter, error: recruiterErr } = await supabase
   .from("profiles")
-  .select("id, full_name\n  whatsapp")
-  .in("whatsapp", dbCandidates) // ✅ chave do sucesso
+  .select("id, full_name")
+  .in("whatsapp", dbCandidates)
   .eq("user_type", "recruiter")
   .eq("is_verified", true)
   .maybeSingle();
 
+if (recruiterErr) {
+  console.error("Erro ao buscar recruiter:", recruiterErr);
+  return res.status(500).send("Erro interno ao buscar recruiter");
+}
 
-    if (recruiterErr) {
-      console.error("Erro ao buscar recruiter:", recruiterErr);
-      return res.status(500).send("Erro interno ao buscar recruiter");
-    }
     if (!recruiter) {
       console.log("Remetente não cadastrado como recruiter:", whatsapp);
       await sendText(whatsapp, "⚠️ Seu número não está cadastrado como recrutador verificado.");
