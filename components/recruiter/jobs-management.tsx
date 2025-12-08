@@ -103,10 +103,12 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
   }, [jobs, searchTerm, statusFilter])
 
   const handleStatusChange = async (jobId: string, newStatus: "active" | "paused" | "closed") => {
-    try {
-      await updateJobStatus(jobId, newStatus)
+    // Atualização otimista do estado local ANTES da chamada ao servidor
+    setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: newStatus } : job)))
 
-      setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, status: newStatus } : job)))
+    try {
+      // Executar em background sem bloquear
+      await updateJobStatus(jobId, newStatus)
 
       toast.success(
         newStatus === "active"
@@ -117,6 +119,18 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
       )
     } catch (error) {
       console.error("Erro ao atualizar status:", error)
+
+      // Reverter mudança otimista em caso de erro
+      setJobs((prev) =>
+        prev.map((job) => {
+          if (job.id === jobId) {
+            const originalJob = jobs.find((j) => j.id === jobId)
+            return originalJob ? { ...job, status: originalJob.status } : job
+          }
+          return job
+        }),
+      )
+
       toast.error("Erro ao atualizar status da vaga")
     }
   }

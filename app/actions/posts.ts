@@ -166,8 +166,8 @@ export async function updateJobStatus(jobId: string, status: "active" | "paused"
     throw new Error("Erro ao atualizar status da vaga: " + error.message)
   }
 
-  // Revalidar apenas o dashboard - remover /feed para evitar revalidação desnecessária
-  revalidatePath("/dashboard")
+  // Não revalidar - deixar o cliente gerenciar o estado otimisticamente
+  return { success: true }
 }
 
 export async function incrementJobViews(jobId: string) {
