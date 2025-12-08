@@ -330,7 +330,7 @@ async function handleViewJobs(session, recruiter, sessionWhatsapp, res) {
     if (error) return res.status(500).send("Erro ao buscar vagas");
 
     if (!jobPosts || jobPosts.length === 0) {
-      await sendText(whatsapp, "📭 Você não tem vagas ativas.");
+      await sendText(sessionWhatsapp, "📭 Você não tem vagas ativas.");
       return res.status(200).send("sem vagas");
     }
 
