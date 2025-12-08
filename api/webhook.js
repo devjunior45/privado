@@ -43,48 +43,82 @@ export default async function handler(req, res) {
     }
 
     // Extrai número remetente de forma segura
-    const from = message.from || message.from_number || message.author || message?.wa_id;
-    if (!from) {
-      console.warn("Mensagem sem campo 'from' — payload:", JSON.stringify(message));
-      return res.status(200).send("Mensagem sem remetente");
-    }
+const from = message.from || message.from_number || message.author || message?.wa_id;
+if (!from) {
+  console.warn("Mensagem sem campo 'from' — payload:", JSON.stringify(message));
+  return res.status(200).send("Mensagem sem remetente");
+}
 
-    
-    // Normaliza (somente números)
-    let whatsapp = String(from).replace(/\D/g, "");
+// Normaliza: somente dígitos
+let digits = String(from).replace(/\D/g, "");
 
-    // Remove o 9 após o DDD (celular BR)
-    if (whatsapp.length === 11) {
-     whatsapp = whatsapp.replace(/^(\d{2})9(\d{8})$/, "$1$2");
-      }
+// Remove zeros à esquerda acidentais
+digits = digits.replace(/^0+/, "");
 
-    // Garante formato E.164 sem "+"
-    // whatsapp = `55${whatsapp}`;
+// Se o número vier com código do país no início (55), removemos para criar a versão "local"
+let local = digits.replace(/^55/, "");
 
-    // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
-    if (process.env.WHATSAPP_PHONE_NUMBER_ID && whatsapp === process.env.WHATSAPP_PHONE_NUMBER_ID.replace(/\D/g, "")) {
-      console.log("Ignorado: mensagem do próprio bot.");
-      return res.status(200).send("Ignorado: mensagem do próprio bot");
-    }
+// Se for celular BR com 11 dígitos e tiver o "9" depois do DDD, remove o 9
+// exemplo: 11991234567 -> 1191234567
+if (/^\d{11}$/.test(local) && /^(\d{2})9\d{8}$/.test(local)) {
+  local = local.replace(/^(\d{2})9(\d{8})$/, "$1$2");
+}
 
-    // --- Busca recruiter (usando maybeSingle para não lançar se não achar) ---
-    const { data: recruiter, error: recruiterErr } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("whatsapp", whatsapp)
-      .eq("user_type", "recruiter")
-      .eq("is_verified", true)
-      .maybeSingle();
+// Versão E.164 (sem '+') para API do WhatsApp
+const e164 = `55${local}`;
 
-    if (recruiterErr) {
-      console.error("Erro ao buscar recruiter:", recruiterErr);
-      return res.status(500).send("Erro interno ao buscar recruiter");
-    }
-    if (!recruiter) {
-      console.log("Remetente não cadastrado como recruiter:", whatsapp);
-      await sendText(whatsapp, "⚠️ Seu número não está cadastrado como recrutador verificado.");
-      return res.status(200).send("Recrutador não encontrado");
-    }
+// --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
+const botNumber = process.env.WHATSAPP_PHONE_NUMBER_ID?.replace(/\D/g, "");
+if (botNumber && (e164 === botNumber || local === botNumber)) {
+  console.log("Ignorado: mensagem do próprio bot.");
+  return res.status(200).send("Ignorado: mensagem do próprio bot");
+}
+
+// --- Busca recruiter (tenta primeiro sem o código do país, depois com 55) ---
+let recruiter = null;
+let recruiterErr = null;
+
+// Tenta busca usando o formato sem 55 (mais comum em bases)
+let resp = await supabase
+  .from("profiles")
+  .select("id, full_name")
+  .eq("whatsapp", local)
+  .eq("user_type", "recruiter")
+  .eq("is_verified", true)
+  .maybeSingle();
+
+if (resp.error) {
+  console.error("Erro ao buscar recruiter (local):", resp.error);
+  return res.status(500).send("Erro interno ao buscar recruiter");
+}
+recruiter = resp.data;
+
+if (!recruiter) {
+  // Se não achou, tenta com E.164 (com 55) — cobre bases que armazenam com código do país
+  let resp2 = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("whatsapp", e164)
+    .eq("user_type", "recruiter")
+    .eq("is_verified", true)
+    .maybeSingle();
+
+  if (resp2.error) {
+    console.error("Erro ao buscar recruiter (e164):", resp2.error);
+    return res.status(500).send("Erro interno ao buscar recruiter");
+  }
+  recruiter = resp2.data;
+}
+
+if (!recruiter) {
+  console.log("Remetente não cadastrado como recruiter:", e164, "(local:", local, ")");
+  // Use e164 ao enviar a mensagem via API
+  await sendText(e164, "⚠️ Seu número não está cadastrado como recrutador verificado.");
+  return res.status(200).send("Recrutador não encontrado");
+}
+
+// ... segue lógica quando recruteur encontrado
+
 
     // --- Busca ou cria sessão (maybeSingle para evitar throw) ---
     let { data: session, error: sessionErr } = await supabase
