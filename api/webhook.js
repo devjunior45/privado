@@ -50,14 +50,14 @@ export default async function handler(req, res) {
     }
 
     // Normalize (apenas números, sem espaços/sinais)
-   let whatsapp = String(from).replace(/\D/g, "");
+    let whatsapp = String(from).replace(/\D/g, "");
 
-   // Remove o 9 extra após o DDD (padrão celular BR)
-   if (whatsapp.length === 13 && whatsapp.startsWith("55")) {
-    whatsapp = whatsapp.replace(/^(\d{4})9(\d{8})$/, "$1$2");
-    }
+    // Remove o 9 extra após o DDD (celular BR sem +55)
+    if (whatsapp.length === 11) {
+     whatsapp = whatsapp.replace(/^(\d{2})9(\d{8})$/, "$1$2");
+      }
 
-    console.log("Mensagem recebida de:", whatsapp, "conteúdo:", message);
+     console.log("Mensagem recebida de:", whatsapp, "conteúdo:", message);
 
 
     // --- Ignora mensagens enviadas pelo próprio número do bot (se configurado) ---
