@@ -144,11 +144,18 @@ export function JobsManagement({ recruiterId }: JobsManagementProps) {
     })
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const { jobId, action } = confirmDialog
     const newStatus = action === "pause" ? "paused" : "closed"
-    handleStatusChange(jobId, newStatus)
+
+    // IMPORTANTE: Fechar o dialog ANTES de executar a ação async
     setConfirmDialog({ open: false, jobId: "", jobTitle: "", action: "pause" })
+
+    // Aguardar o desmonte do dialog
+    await new Promise((r) => setTimeout(r, 0))
+
+    // Agora sim executar a ação
+    handleStatusChange(jobId, newStatus)
   }
 
   if (loading) {
@@ -328,11 +335,21 @@ function JobCard({
 
                 {job.status === "active" && (
                   <>
-                    <DropdownMenuItem onClick={() => onConfirmAction(job.id, job.title, "pause")}>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        onConfirmAction(job.id, job.title, "pause")
+                      }}
+                    >
                       <Pause className="w-4 h-4 mr-2" />
                       Pausar
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onConfirmAction(job.id, job.title, "close")}>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        onConfirmAction(job.id, job.title, "close")
+                      }}
+                    >
                       <X className="w-4 h-4 mr-2" />
                       Encerrar
                     </DropdownMenuItem>
@@ -341,11 +358,21 @@ function JobCard({
 
                 {job.status === "paused" && (
                   <>
-                    <DropdownMenuItem onClick={() => onStatusChange(job.id, "active")}>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        onStatusChange(job.id, "active")
+                      }}
+                    >
                       <Play className="w-4 h-4 mr-2" />
                       Reativar
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onConfirmAction(job.id, job.title, "close")}>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        onConfirmAction(job.id, job.title, "close")
+                      }}
+                    >
                       <X className="w-4 h-4 mr-2" />
                       Encerrar
                     </DropdownMenuItem>
