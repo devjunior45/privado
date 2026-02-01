@@ -8,7 +8,7 @@ const supabase = createClient(
 module.exports = async function handler(req, res) {
   try {
     let output = [];
-    output.push("🚀 Iniciando execução do script...");
+    output.push("Iniciando execucao do script...");
 
     // Buscar recrutadores verificados
     const { data: recruiters, error: recruiterError } = await supabase
@@ -19,14 +19,14 @@ module.exports = async function handler(req, res) {
 
     if (recruiterError) throw recruiterError;
 
-    output.push(`👥 Recrutadores verificados encontrados: ${recruiters.length}`);
+    output.push(`Recrutadores verificados encontrados: ${recruiters.length}`);
 
     // Loop dos recrutadores
     for (const recruiter of recruiters) {
-      output.push(`\n📌 Recrutador: ${recruiter.full_name} (${recruiter.id})`);
+      output.push(`\nRecrutador: ${recruiter.full_name} (${recruiter.id})`);
 
       if (!recruiter.whatsapp) {
-        output.push("⚠️ Nenhum número de WhatsApp — pulando.");
+        output.push("Nenhum numero de WhatsApp - pulando.");
         continue;
       }
 
@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
 
       if (jobError) throw jobError;
 
-      output.push(`📄 Vagas ativas encontradas: ${jobPosts.length}`);
+      output.push(`Vagas ativas encontradas: ${jobPosts.length}`);
 
       // Calcular novas candidaturas
       let newApplications = 0;
@@ -61,10 +61,10 @@ module.exports = async function handler(req, res) {
         if (appError) throw appError;
 
         newApplications = count || 0;
-        output.push(`🧾 Novas candidaturas nas últimas 24h: ${newApplications}`);
+        output.push(`Novas candidaturas nas ultimas 24h: ${newApplications}`);
       }
 
-      // ⚠️ **CRIAR/ATUALIZAR SESSÃO DO BOT**
+      // CRIAR/ATUALIZAR SESSAO DO BOT
       const { data: existingSession } = await supabase
         .from("bot_sessions")
         .select("*")
@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
           last_vacancies: null,
           updated_at: new Date().toISOString(),
         });
-        output.push("🆕 Sessão criada.");
+        output.push("Sessao criada.");
       } else {
         await supabase
           .from("bot_sessions")
@@ -90,11 +90,11 @@ module.exports = async function handler(req, res) {
           })
           .eq("id", existingSession.id);
 
-        output.push("🔄 Sessão atualizada.");
+        output.push("Sessao atualizada.");
       }
 
       // Texto da mensagem automática
-      const text = `👋 Olá ${recruiter.full_name}!\n\n📊 Vagas ativas: ${jobPosts.length}\n👤 Novas candidaturas nas últimas 24h: ${newApplications}\n\nO que deseja fazer agora?`;
+      const text = `Ola ${recruiter.full_name}!\n\nVagas ativas: ${jobPosts.length}\nNovas candidaturas nas ultimas 24h: ${newApplications}\n\nO que deseja fazer agora?`;
 
       // Botões compatíveis com código 2
       const buttons = [
@@ -124,16 +124,16 @@ module.exports = async function handler(req, res) {
         }
       );
 
-      output.push(`🧪 Mensagem enviada para ${phoneNumber}`);
-      output.push(`📋 Corpo: ${JSON.stringify({ text, buttons }, null, 2)}`);
+      output.push(`Mensagem enviada para ${phoneNumber}`);
+      output.push(`Corpo: ${JSON.stringify({ text, buttons }, null, 2)}`);
     }
 
-    output.push("\n🏁 Execução concluída.");
+    output.push("\nExecucao concluida.");
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.status(200).send(output.join("\n"));
 
   } catch (error) {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.status(500).send("💥 Erro ao executar script:\n" + error.message);
+    res.status(500).send("Erro ao executar script:\n" + error.message);
   }
 };

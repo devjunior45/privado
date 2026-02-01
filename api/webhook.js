@@ -583,4 +583,3 @@ async function sendWhatsApp(body) {
     console.error("Exception WhatsApp:", e);
   }
 }
-
