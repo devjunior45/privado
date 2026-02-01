@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export function CreateJobHeader() {
+interface CreateJobHeaderProps {
+  title?: string
+}
+
+export function CreateJobHeader({ title = "Nova Vaga" }: CreateJobHeaderProps) {
   const router = useRouter()
 
   return (
@@ -14,7 +18,7 @@ export function CreateJobHeader() {
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-2">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-semibold">Nova Vaga</h1>
+          <h1 className="text-xl font-semibold">{title}</h1>
         </div>
       </div>
     </div>

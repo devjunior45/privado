@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Search, MoreVertical, Eye, Users, Play, Pause, X, ExternalLink } from "lucide-react"
+import { Search, MoreVertical, Eye, Users, Play, Pause, X, ExternalLink, Pencil } from "lucide-react"
 import Link from "next/link"
 import { getRecruiterJobs, updateJobStatus } from "@/app/actions/dashboard"
 import { CityDisplay } from "@/components/ui/city-display"
@@ -332,6 +332,15 @@ function JobCard({
                     Ver Candidatos ({job.applications_count || 0})
                   </Link>
                 </DropdownMenuItem>
+
+                {job.status !== "closed" && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/edit-job/${job.id}`}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Editar Vaga
+                    </Link>
+                  </DropdownMenuItem>
+                )}
 
                 {job.status === "active" && (
                   <>
