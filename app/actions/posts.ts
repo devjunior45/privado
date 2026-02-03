@@ -170,6 +170,120 @@ export async function updateJobStatus(jobId: string, status: "active" | "paused"
   return { success: true }
 }
 
+export async function getJobById(jobId: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return null
+  }
+
+  const { data: job, error } = await supabase
+    .from("job_posts")
+    .select("*")
+    .eq("id", jobId)
+    .eq("author_id", user.id)
+    .single()
+
+  if (error) {
+    console.error("Erro ao buscar vaga:", error)
+    return null
+  }
+
+  return job
+}
+
+export async function updateJobPost(jobId: string, formData: FormData) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/auth")
+  }
+
+  // Verificar se a vaga pertence ao usuário
+  const { data: existingJob } = await supabase
+    .from("job_posts")
+    .select("id, author_id, status")
+    .eq("id", jobId)
+    .eq("author_id", user.id)
+    .single()
+
+  if (!existingJob) {
+    throw new Error("Vaga não encontrada ou você não tem permissão para editá-la")
+  }
+
+  if (existingJob.status === "closed") {
+    throw new Error("Não é possível editar uma vaga encerrada")
+  }
+
+  const title = formData.get("title") as string
+  const company = formData.get("company") as string
+  const cityId = Number.parseInt(formData.get("cityId") as string) || null
+  const salary = formData.get("salary") as string
+  const description = formData.get("description") as string
+  const backgroundColor = formData.get("backgroundColor") as string
+  const allowPlatformApplications = formData.get("allowPlatformApplications") === "true"
+  const imageFile = formData.get("image") as File
+  const removeImage = formData.get("removeImage") === "true"
+  const sectorIds = JSON.parse((formData.get("sector_ids") as string) || "[]")
+
+  // Validar cidade
+  if (!cityId) {
+    throw new Error("Cidade é obrigatória")
+  }
+
+  let imageUrl = formData.get("currentImageUrl") as string | null
+
+  // Se marcou para remover imagem
+  if (removeImage) {
+    imageUrl = null
+  }
+
+  // Upload da nova imagem se fornecida
+  if (imageFile && imageFile.size > 0) {
+    const blob = await put(`job-images/${Date.now()}-${imageFile.name}`, imageFile, {
+      access: "public",
+    })
+    imageUrl = blob.url
+  }
+
+  // Buscar informações da cidade para o campo location (para compatibilidade)
+  const { data: city } = await supabase.from("cities").select("name, state").eq("id", cityId).single()
+  const location = city ? `${city.name}, ${city.state}` : ""
+
+  const { error } = await supabase
+    .from("job_posts")
+    .update({
+      title,
+      company,
+      city_id: cityId,
+      location,
+      salary: salary || null,
+      description,
+      image_url: imageUrl,
+      background_color: backgroundColor || "#3b82f6",
+      allow_platform_applications: allowPlatformApplications,
+      sector_ids: sectorIds,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", jobId)
+    .eq("author_id", user.id)
+
+  if (error) {
+    throw new Error("Erro ao atualizar vaga: " + error.message)
+  }
+
+  revalidatePath("/")
+  revalidatePath("/feed")
+  revalidatePath("/dashboard")
+  revalidatePath(`/post/${jobId}`)
+}
+
 export async function incrementJobViews(jobId: string) {
   const supabase = await createClient()
 
