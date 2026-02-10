@@ -518,7 +518,7 @@ export function EditJobForm({ job }: EditJobFormProps) {
             </Card>
           )}
 
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t md:relative md:border-0 md:p-0 md:mt-6">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t md:relative md:border-0 md:p-0 md:mt-6 z-50">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
