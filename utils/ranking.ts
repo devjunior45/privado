@@ -1,4 +1,9 @@
-export function calculateJobImportance(likes: number, createdAt: string): number {
+export function calculateJobImportance(likes: number, createdAt: string, isPremium?: boolean): number {
+  // Vagas premium sempre têm score máximo
+  if (isPremium) {
+    return Number.MAX_SAFE_INTEGER
+  }
+
   const now = new Date()
   const postDate = new Date(createdAt)
   const hoursSincePost = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60)
@@ -18,10 +23,13 @@ export function calculateJobImportance(likes: number, createdAt: string): number
   return importance
 }
 
-export function sortJobsByImportance<T extends { likes_count: number; created_at: string }>(jobs: T[]): T[] {
+export function sortJobsByImportance<T extends { likes_count: number; created_at: string; premium?: number | boolean }>(jobs: T[]): T[] {
   return [...jobs].sort((a, b) => {
-    const importanceA = calculateJobImportance(a.likes_count || 0, a.created_at)
-    const importanceB = calculateJobImportance(b.likes_count || 0, b.created_at)
+    const isPremiumA = a.premium === 1 || a.premium === true
+    const isPremiumB = b.premium === 1 || b.premium === true
+    
+    const importanceA = calculateJobImportance(a.likes_count || 0, a.created_at, isPremiumA)
+    const importanceB = calculateJobImportance(b.likes_count || 0, b.created_at, isPremiumB)
     return importanceB - importanceA // Ordem decrescente (maior importância primeiro)
   })
 }
