@@ -39,6 +39,7 @@ interface JobPost {
   allow_platform_applications: boolean
   sector_ids: number[] | null
   status: string
+  premium?: number | boolean
 }
 
 interface EditJobFormProps {
@@ -61,6 +62,7 @@ export function EditJobForm({ job }: EditJobFormProps) {
     job.sector_ids?.map((id) => id.toString()) || []
   )
   const [removeImage, setRemoveImage] = useState(false)
+  const [isPremium, setIsPremium] = useState(job.premium === 1 || job.premium === true)
   const [errors, setErrors] = useState<{
     title?: string
     cityId?: string
@@ -173,6 +175,7 @@ export function EditJobForm({ job }: EditJobFormProps) {
     formData.append("company", companyName)
     formData.append("description", description)
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
+    formData.append("premium", isPremium ? "1" : "0")
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
     if (salary.trim()) formData.append("salary", salary)
     if (selectedSectors.length > 0) {
@@ -487,6 +490,27 @@ export function EditJobForm({ job }: EditJobFormProps) {
                   </div>
                 </div>
               )}
+
+              <div className="mt-4 flex items-start space-x-2 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+                <Checkbox
+                  id="premium"
+                  checked={isPremium}
+                  onCheckedChange={(checked) => setIsPremium(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="grid gap-1.5 leading-none flex-1">
+                  <Label
+                    htmlFor="premium"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
+                  >
+                    <span className="text-yellow-600 dark:text-yellow-400">⭐</span>
+                    Marcar como Premium
+                  </Label>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                    Vagas premium aparecem no topo do feed com destaque visual e selo especial
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

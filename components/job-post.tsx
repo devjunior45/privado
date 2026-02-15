@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   CheckCircle,
   AlertTriangle,
+  Star,
 } from "lucide-react"
 import type { JobPostWithProfile } from "@/types/database"
 import { toggleLike } from "@/app/actions/posts"
@@ -291,10 +292,12 @@ export function JobPost({
   const missingFields = isLoggedIn && isCandidate ? validateProfile() : []
   const hasProfileIssues = missingFields.length > 0
 
+  const isPremium = jobPost.premium === 1 || jobPost.premium === true
+
   return (
     <>
       <Card
-        className={`w-full ${isMobile ? "rounded-none shadow-none border-0" : "max-w-md mx-auto mb-6 border"} ${className || ""}`}
+        className={`w-full ${isMobile ? "rounded-none shadow-none border-0" : "max-w-md mx-auto mb-6 border"} ${isPremium ? "border-2 border-yellow-400 shadow-lg shadow-yellow-100" : ""} ${className || ""}`}
         ref={targetRef}
         id={id || `post-${jobPost.id}`}
         style={style}
@@ -312,7 +315,7 @@ export function JobPost({
           </div>
           <div className="flex-1 min-w-0">
             <Link href={`/profile/${postProfile.username}`} className="hover:underline">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className={`font-semibold truncate ${isMobile ? "text-xs" : "text-sm"}`}>
                   {postProfile.company_name || postProfile.full_name || postProfile.username}
                 </p>
@@ -322,6 +325,14 @@ export function JobPost({
                   >
                     <ShieldCheck className={`${isMobile ? "w-2 h-2 mr-0.5" : "w-2 h-2 mr-1"}`} />
                     {isMobile ? "✓" : "Verificada"}
+                  </Badge>
+                )}
+                {isPremium && (
+                  <Badge
+                    className={`bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-0 flex-shrink-0 ${isMobile ? "text-xs px-1.5 py-0.5" : "text-xs"}`}
+                  >
+                    <Star className={`${isMobile ? "w-2.5 h-2.5 mr-0.5" : "w-3 h-3 mr-1"} fill-white`} />
+                    Premium
                   </Badge>
                 )}
               </div>
