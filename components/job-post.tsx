@@ -31,7 +31,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Star,
-  Phone,
+  MessageSquareText,
 } from "lucide-react"
 import type { JobPostWithProfile } from "@/types/database"
 import { toggleLike } from "@/app/actions/posts"
@@ -412,7 +412,7 @@ export function JobPost({
                   ) : (
                     <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="flex-shrink-0">
+                        <Button size="sm" className="flex-shrink-0 min-w-[120px]">
                           <Send className="w-4 h-4 mr-2" />
                           Candidatar
                         </Button>
@@ -468,22 +468,19 @@ export function JobPost({
                   )}
                 </>
               )}
+              {jobPost.whatsapp_contact && !isOwnPost && (
+                <a
+                  href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Vi a vaga "${jobPost.title}" e gostaria de mais informações.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 min-w-[120px] py-1.5 px-3 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors flex-shrink-0 h-9"
+                >
+                  <MessageSquareText className="w-4 h-4" />
+                  WhatsApp
+                </a>
+              )}
             </div>
           </div>
-
-          {jobPost.whatsapp_contact && !isOwnPost && (
-            <div className="w-full">
-              <a
-                href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Vi a vaga "${jobPost.title}" e gostaria de mais informações.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                WhatsApp
-              </a>
-            </div>
-          )}
 
           <div className="w-full text-left min-w-0">
             <div className="space-y-2">
