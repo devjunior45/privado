@@ -389,16 +389,16 @@ export function JobPost({
               <Button variant="ghost" size="sm" onClick={handleComments} className="p-0 h-auto">
                 <MessageCircle className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleShare} className="p-0 h-auto">
-                <Share2 className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="ghost" size="sm" onClick={handleSave} className="p-0 h-auto">
                 <Bookmark
                   className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"} ${isSaved ? "fill-blue-500 text-blue-500" : ""}`}
                 />
               </Button>
+              <Button variant="ghost" size="sm" onClick={handleShare} className="p-0 h-auto">
+                <Share2 className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
               {(!isLoggedIn || (isLoggedIn && isCandidate)) && !isOwnPost && allowsPlatformApplications && (
                 <>
                   {hasApplied ? (
@@ -470,7 +470,7 @@ export function JobPost({
               )}
               {jobPost.whatsapp_contact && !isOwnPost && (
                 <a
-                  href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Vi a vaga "${jobPost.title}" e gostaria de mais informações.`)}`}
+                  href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá, vi a vaga "${jobPost.title}" no Busca Empregos e gostaria de mais informações.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 min-w-[120px] py-1.5 px-3 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors flex-shrink-0 h-9"
