@@ -27,4 +27,15 @@ export interface JobPostWithProfile extends JobPost {
   is_saved?: boolean
   has_applied?: boolean
   application_date?: string | null
+  whatsapp_contact?: string | null
+  premium?: number | boolean
+  likes_count?: number
+  city_id?: number | null
+  image_url?: string | null
+  background_color?: string | null
+  salary?: string | null
+  author_id?: string
+  allow_platform_applications?: boolean
+  status?: string
+  sector_ids?: number[] | null
 }

@@ -45,6 +45,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const [description, setDescription] = useState("")
   const [allowPlatformApplications, setAllowPlatformApplications] = useState(true)
   const [selectedSectors, setSelectedSectors] = useState<string[]>([])
+  const [whatsappContact, setWhatsappContact] = useState("")
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [errors, setErrors] = useState<{
     title?: string
@@ -196,6 +197,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
     if (salary.trim()) formData.append("salary", salary)
+    if (whatsappContact.trim()) formData.append("whatsappContact", whatsappContact.trim())
     if (selectedSectors.length > 0) {
       formData.append("sector_ids", JSON.stringify(selectedSectors.map(Number)))
     }
@@ -402,6 +404,23 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   placeholder={isLoadingSectors ? "Carregando..." : "Selecione um ou mais setores"}
                 />
                 {errors.sectors && <p className="text-xs text-red-500 mt-1">{errors.sectors}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="whatsappContact" className="text-sm">
+                  Contato via WhatsApp (Opcional)
+                </Label>
+                <Input
+                  id="whatsappContact"
+                  name="whatsappContact"
+                  value={whatsappContact}
+                  onChange={(e) => setWhatsappContact(e.target.value)}
+                  placeholder="Ex: 5511999999999"
+                  className="text-base h-9"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Caso preenchido, os candidatos poderao entrar em contato via WhatsApp
+                </p>
               </div>
             </CardContent>
           </Card>
