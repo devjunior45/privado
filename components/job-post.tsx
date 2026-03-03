@@ -470,7 +470,7 @@ export function JobPost({
               )}
               {jobPost.whatsapp_contact && !isOwnPost && (
                 <a
-                  href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Vi a vaga "${jobPost.title}" e gostaria de mais informações.`)}`}
+                  href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá, vi a vaga "${jobPost.title}" no Busca Empregos e gostaria de mais informações.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 min-w-[120px] py-1.5 px-3 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors flex-shrink-0 h-9"
