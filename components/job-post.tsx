@@ -389,16 +389,16 @@ export function JobPost({
               <Button variant="ghost" size="sm" onClick={handleComments} className="p-0 h-auto">
                 <MessageCircle className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleShare} className="p-0 h-auto">
-                <Share2 className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="ghost" size="sm" onClick={handleSave} className="p-0 h-auto">
                 <Bookmark
                   className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"} ${isSaved ? "fill-blue-500 text-blue-500" : ""}`}
                 />
               </Button>
+              <Button variant="ghost" size="sm" onClick={handleShare} className="p-0 h-auto">
+                <Share2 className={`${isMobile ? "w-7 h-7 stroke-2" : "w-6 h-6"}`} />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
               {(!isLoggedIn || (isLoggedIn && isCandidate)) && !isOwnPost && allowsPlatformApplications && (
                 <>
                   {hasApplied ? (
