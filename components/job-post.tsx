@@ -31,6 +31,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Star,
+  Phone,
 } from "lucide-react"
 import type { JobPostWithProfile } from "@/types/database"
 import { toggleLike } from "@/app/actions/posts"
@@ -469,6 +470,20 @@ export function JobPost({
               )}
             </div>
           </div>
+
+          {jobPost.whatsapp_contact && !isOwnPost && (
+            <div className="w-full">
+              <a
+                href={`https://wa.me/${jobPost.whatsapp_contact.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Vi a vaga "${jobPost.title}" e gostaria de mais informações.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                WhatsApp
+              </a>
+            </div>
+          )}
 
           <div className="w-full text-left min-w-0">
             <div className="space-y-2">

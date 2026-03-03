@@ -22,6 +22,7 @@ export async function createJobPost(formData: FormData) {
   const description = formData.get("description") as string
   const backgroundColor = formData.get("backgroundColor") as string
   const allowPlatformApplications = formData.get("allowPlatformApplications") === "true"
+  const whatsappContact = (formData.get("whatsappContact") as string) || null
   const imageFile = formData.get("image") as File
   const sectorIds = JSON.parse((formData.get("sector_ids") as string) || "[]")
 
@@ -54,6 +55,7 @@ export async function createJobPost(formData: FormData) {
     image_url: imageUrl,
     background_color: backgroundColor || "#3b82f6",
     allow_platform_applications: allowPlatformApplications,
+    whatsapp_contact: whatsappContact,
     author_id: user.id,
     status: "active", // Sempre ativa ao criar
     sector_ids: sectorIds,
@@ -228,6 +230,7 @@ export async function updateJobPost(jobId: string, formData: FormData) {
   const description = formData.get("description") as string
   const backgroundColor = formData.get("backgroundColor") as string
   const allowPlatformApplications = formData.get("allowPlatformApplications") === "true"
+  const whatsappContact = (formData.get("whatsappContact") as string) || null
   const imageFile = formData.get("image") as File
   const removeImage = formData.get("removeImage") === "true"
   const sectorIds = JSON.parse((formData.get("sector_ids") as string) || "[]")
@@ -268,6 +271,7 @@ export async function updateJobPost(jobId: string, formData: FormData) {
       image_url: imageUrl,
       background_color: backgroundColor || "#3b82f6",
       allow_platform_applications: allowPlatformApplications,
+      whatsapp_contact: whatsappContact,
       sector_ids: sectorIds,
       updated_at: new Date().toISOString(),
     })
