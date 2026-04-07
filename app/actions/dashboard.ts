@@ -402,3 +402,59 @@ export async function updateApplicationStatus(
 export async function getJobsWithStats(recruiterId: string) {
   return await getRecruiterJobs(recruiterId)
 }
+
+export async function deleteApplications(applicationIds: string[]) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  try {
+    // Verificar se todas as candidaturas pertencem a vagas do usuário
+    const { data: applications, error: fetchError } = await supabase
+      .from("job_applications")
+      .select(`
+        id,
+        job_id,
+        job_posts (
+          author_id
+        )
+      `)
+      .in("id", applicationIds)
+
+    if (fetchError) {
+      throw new Error("Erro ao verificar candidaturas")
+    }
+
+    // Verificar se todas as candidaturas pertencem ao recrutador
+    const unauthorized = applications?.find(
+      (app) => app.job_posts?.author_id !== user.id
+    )
+
+    if (unauthorized) {
+      throw new Error("Você não tem permissão para excluir uma ou mais candidaturas")
+    }
+
+    // Deletar as candidaturas
+    const { error: deleteError } = await supabase
+      .from("job_applications")
+      .delete()
+      .in("id", applicationIds)
+
+    if (deleteError) {
+      throw new Error("Erro ao excluir candidaturas")
+    }
+
+    revalidatePath("/dashboard")
+    revalidatePath("/job-candidates")
+    return { success: true, deletedCount: applicationIds.length }
+  } catch (error) {
+    console.error("Erro ao excluir candidaturas:", error)
+    throw error
+  }
+}

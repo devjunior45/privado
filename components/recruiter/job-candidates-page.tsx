@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
-import { getApplicationsWithCandidates } from "@/app/actions/dashboard"
+import { getApplicationsWithCandidates, deleteApplications } from "@/app/actions/dashboard"
 import { CityDisplay } from "@/components/ui/city-display"
-import { ArrowLeft, Phone, FileText, Search, Download, MapPin, Briefcase } from "lucide-react"
+import { ArrowLeft, Phone, FileText, Search, Download, MapPin, Briefcase, Trash2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 
@@ -24,7 +25,79 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
   const [filteredApplications, setFilteredApplications] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
   const { toast } = useToast()
+
+  const allSelected = filteredApplications.length > 0 && selectedIds.size === filteredApplications.length
+  const someSelected = selectedIds.size > 0
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredApplications.map((app) => app.id)))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return
+
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja excluir ${selectedIds.size} candidato(s)? Esta ação não pode ser desfeita.`
+    )
+
+    if (!confirmDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteApplications(Array.from(selectedIds))
+      
+      // Atualizar lista local
+      const newApplications = applications.filter((app) => !selectedIds.has(app.id))
+      setApplications(newApplications)
+      setFilteredApplications(newApplications.filter((app) => {
+        if (!searchTerm) return true
+        const searchLower = searchTerm.toLowerCase()
+        const profile = app.profiles
+        const nameMatch =
+          profile?.full_name?.toLowerCase().includes(searchLower) ||
+          profile?.username?.toLowerCase().includes(searchLower)
+        const skillsMatch = profile?.skills?.some((skill: string) => skill.toLowerCase().includes(searchLower))
+        const experienceMatch = profile?.experiences?.some(
+          (exp: any) =>
+            exp.position?.toLowerCase().includes(searchLower) ||
+            exp.company?.toLowerCase().includes(searchLower) ||
+            exp.activities?.toLowerCase().includes(searchLower),
+        )
+        return nameMatch || skillsMatch || experienceMatch
+      }))
+      setSelectedIds(new Set())
+
+      toast({
+        title: "Sucesso",
+        description: `${selectedIds.size} candidato(s) excluído(s) com sucesso`,
+      })
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir os candidatos",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -164,12 +237,45 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
             />
           </div>
 
-          {/* Contador */}
-          <div className="text-xs text-muted-foreground mt-2">
-            {filteredApplications.length} de {applications.length} candidato(s)
+          {/* Contador e Seleção */}
+          <div className="flex items-center justify-between mt-2">
+            <div className="text-xs text-muted-foreground">
+              {filteredApplications.length} de {applications.length} candidato(s)
+            </div>
+            {filteredApplications.length > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleSelectAll}
+                    className="h-4 w-4"
+                  />
+                  <span>Selecionar todos</span>
+                </label>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Barra de ação flutuante quando houver seleção */}
+      {someSelected && (
+        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-destructive text-destructive-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+            <span className="text-sm font-medium">{selectedIds.size} selecionado(s)</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+              className="h-8"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Lista de Candidatos */}
       <div className="p-4 space-y-3">
@@ -191,10 +297,20 @@ export function JobCandidatesPage({ jobId, jobTitle, jobCompany }: JobCandidates
                 const latestExperience = profile?.experiences?.[0]
 
                 return (
-                  <Card key={application.id} className="shadow-sm aspect-square flex flex-col">
+                  <Card 
+                    key={application.id} 
+                    className={`shadow-sm aspect-square flex flex-col transition-colors ${
+                      selectedIds.has(application.id) ? "ring-2 ring-primary bg-primary/5" : ""
+                    }`}
+                  >
                     <CardContent className="p-4 flex flex-col h-full">
                       {/* Header do Card */}
                       <div className="flex items-start gap-3 mb-3">
+                        <Checkbox
+                          checked={selectedIds.has(application.id)}
+                          onCheckedChange={() => toggleSelect(application.id)}
+                          className="h-4 w-4 mt-1 flex-shrink-0"
+                        />
                         <Avatar className="w-10 h-10 flex-shrink-0">
                           <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
                           <AvatarFallback className="text-xs">
