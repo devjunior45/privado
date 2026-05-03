@@ -47,6 +47,31 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const [selectedSectors, setSelectedSectors] = useState<string[]>([])
   const [whatsappContact, setWhatsappContact] = useState("")
   const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([])
+
+  const BENEFITS_OPTIONS = [
+    "Vale-transporte",
+    "Auxílio Combustível",
+    "Auxílio Educação",
+    "Plano de Saúde",
+    "Plano Odontológico",
+    "Estacionamento Privativo",
+    "Seguro de Vida",
+    "Refeitório Interno",
+    "Convênios Variados",
+  ]
+
+  const toggleBenefit = (benefit: string) => {
+    setSelectedBenefits((prev) =>
+      prev.includes(benefit) ? prev.filter((b) => b !== benefit) : [...prev, benefit]
+    )
+  }
+
+  const getDescriptionWithBenefits = () => {
+    if (selectedBenefits.length === 0) return description
+    const benefitsList = selectedBenefits.map((b) => `${b};`).join("\n")
+    return `${description}\n\n**Benefícios:**\n${benefitsList}`
+  }
   const [errors, setErrors] = useState<{
     title?: string
     cityId?: string
@@ -193,7 +218,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     const formData = new FormData()
     formData.append("title", title)
     formData.append("company", companyName)
-    formData.append("description", description)
+    formData.append("description", getDescriptionWithBenefits())
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
     if (salary.trim()) formData.append("salary", salary)
@@ -476,6 +501,46 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   • Use <code>**texto**</code> para negrito
                 </p>
                 <p>• Use emojis para destacar seções (📋 🎯 🎁)</p>
+              </div>
+
+              <div className="pt-4 border-t">
+                <Label className="text-sm font-medium">Benefícios:</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Selecione os benefícios oferecidos (opcional)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {BENEFITS_OPTIONS.map((benefit) => (
+                    <button
+                      key={benefit}
+                      type="button"
+                      onClick={() => toggleBenefit(benefit)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        selectedBenefits.includes(benefit)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-accent"
+                      }`}
+                    >
+                      {benefit}
+                    </button>
+                  ))}
+                </div>
+                {selectedBenefits.length > 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Os benefícios selecionados serão adicionados ao final da descrição:
+                    </p>
+                    <div className="text-xs">
+                      <strong>Benefícios:</strong>
+                      <br />
+                      {selectedBenefits.map((b, i) => (
+                        <span key={b}>
+                          {b};
+                          {i < selectedBenefits.length - 1 && <br />}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
