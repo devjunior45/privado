@@ -65,19 +65,13 @@ export default async function handler(req, res) {
 
     const recruiterPhone = `55${String(recruiter.whatsapp).replace(/\D/g, "")}`;
 
-    const message = 
-`📩 *Nova candidatura recebida!*
-
-👔 *Vaga:* ${job.title}
-👤 *Candidato:* ${candidate.full_name}
-📄 *Currículo:* ${resumeUrl}
-
-Abra o painel para ver todos os detalhes.`;
+    
 
     await sendTemplate(
   recruiterPhone,
   job.title,
-  candidate.full_name
+  candidate.full_name,
+  resumeUrl
 );
 
     return res.status(200).send("Notificação enviada");
@@ -87,13 +81,13 @@ Abra o painel para ver todos os detalhes.`;
   }
 }
 
-async function sendTemplate(to, jobTitle, candidateName) {
+async function sendTemplate(to, jobTitle, candidateName, curriculo) {
   const body = {
     messaging_product: "whatsapp",
     to,
     type: "template",
     template: {
-      name: "nova_candidatura",
+      name: "candidatura",
       language: {
         code: "pt_BR"
       },
@@ -108,6 +102,10 @@ async function sendTemplate(to, jobTitle, candidateName) {
             {
               type: "text",
               text: candidateName
+            }, 
+            { 
+              type: "text", 
+              text: curriculo
             }
           ]
         }
