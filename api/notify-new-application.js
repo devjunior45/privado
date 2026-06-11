@@ -74,7 +74,11 @@ export default async function handler(req, res) {
 
 Abra o painel para ver todos os detalhes.`;
 
-    await sendText(recruiterPhone, message);
+    await sendTemplate(
+  recruiterPhone,
+  job.title,
+  candidate.full_name
+);
 
     return res.status(200).send("Notificação enviada");
   } catch (e) {
@@ -83,11 +87,32 @@ Abra o painel para ver todos os detalhes.`;
   }
 }
 
-async function sendText(to, text) {
+async function sendTemplate(to, jobTitle, candidateName) {
   const body = {
     messaging_product: "whatsapp",
     to,
-    text: { body: text },
+    type: "template",
+    template: {
+      name: "nova_candidatura",
+      language: {
+        code: "pt_BR"
+      },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            {
+              type: "text",
+              text: jobTitle
+            },
+            {
+              type: "text",
+              text: candidateName
+            }
+          ]
+        }
+      ]
+    }
   };
 
   try {
@@ -104,12 +129,13 @@ async function sendText(to, text) {
     );
 
     const txt = await resp.text();
+
     if (!resp.ok) {
-      console.error("Erro ao enviar WhatsApp:", resp.status, txt);
+      console.error("Erro WhatsApp:", resp.status, txt);
     } else {
-      console.log("WhatsApp enviado:", txt);
+      console.log("Template enviado:", txt);
     }
   } catch (err) {
-    console.error("Exception sendText:", err);
+    console.error("Exception:", err);
   }
 }
