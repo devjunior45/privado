@@ -27,10 +27,12 @@ export default async function handler(req, res) {
     // Buscar dados da vaga + recrutador
     const { data: job, error: jobErr } = await supabase
       .from("job_posts")
-      .select("title, author_id")
+      .select("title, author_id, whatsapp_contact")
       .eq("id", jobId)
       .maybeSingle();
 
+
+    
     if (jobErr || !job) {
       console.error("Erro ao buscar job:", jobErr);
       return res.status(200).send("Erro job");
@@ -63,7 +65,64 @@ export default async function handler(req, res) {
       return res.status(200).send("Erro candidato");
     }
 
-    const recruiterPhone = `55${String(recruiter.whatsapp).replace(/\D/g, "")}`;
+   function normalizePhoneBR(raw) {
+  if (!raw) return null;
+
+  let digits = String(raw).replace(/\D/g, "");
+
+  // remove prefixo de discagem internacional tipo 0055
+  if (digits.startsWith("0055")) {
+    digits = digits.slice(4);
+  }
+
+  // caso venha com 55 duplicado (ex: 5555999999999)
+  while (digits.startsWith("5555")) {
+    digits = digits.slice(2);
+  }
+
+  switch (digits.length) {
+    case 13:
+      // já está completo: 55 + DDD(2) + 9 + numero(8)
+      if (digits.startsWith("55")) return digits;
+      break;
+
+    case 12:
+      // 55 + DDD + numero(8), falta o 9
+      if (digits.startsWith("55")) {
+        return digits.slice(0, 4) + "9" + digits.slice(4);
+      }
+      // DDD + 9 + numero, sem o 55 -> não deveria ter 12 dígitos nesse caso, mas por garantia:
+      break;
+
+    case 11:
+      // DDD + 9 + numero(8), falta o 55
+      return "55" + digits;
+
+    case 10:
+      // DDD + numero(8), falta o 55 e o 9 -> caso ambíguo (celular sem 9 ou fixo)
+      // assumindo celular, já que a coluna é whatsapp_contact
+      return "55" + digits.slice(0, 2) + "9" + digits.slice(2);
+
+    case 9:
+      // 9 + numero(8), falta DDI e DDD -- não dá pra recuperar o DDD sozinho
+      console.warn(`Número sem DDD, não é possível normalizar: ${raw}`);
+      return null;
+
+    case 8:
+      // só o numero, falta DDI, DDD e 9 -- mesmo problema
+      console.warn(`Número sem DDD, não é possível normalizar: ${raw}`);
+      return null;
+
+    default:
+      console.warn(`Formato de número inesperado (${digits.length} dígitos): ${raw}`);
+      return null;
+  }
+
+  console.warn(`Não foi possível normalizar: ${raw}`);
+  return null;
+}
+
+const recruiterPhone = normalizePhoneBR(job.whatsapp_contact);
 
     
 
