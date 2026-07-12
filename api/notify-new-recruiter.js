@@ -64,6 +64,7 @@ function formatPhoneDisplay(raw) {
   return digits || "Não informado";
 }
 
+
 async function sendTemplate(to, recruiterName, recruiterEmail, recruiterPhone) {
   const body = {
     messaging_product: "whatsapp",
@@ -78,9 +79,9 @@ async function sendTemplate(to, recruiterName, recruiterEmail, recruiterPhone) {
         {
           type: "body",
           parameters: [
-            { type: "text", text: recruiterName },
-            { type: "text", text: recruiterEmail },
-            { type: "text", text: recruiterPhone },
+            { type: "text", parameter_name: "nome", text: recruiterName },
+            { type: "text", parameter_name: "email", text: recruiterEmail },
+            { type: "text", parameter_name: "telefone", text: recruiterPhone },
           ],
         },
       ],
