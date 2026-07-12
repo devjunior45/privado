@@ -5,8 +5,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// Número fixo que vai receber a notificação (você, admin)
-const ADMIN_WHATSAPP_NUMBER = process.env.ADMIN_WHATSAPP_NUMBER; // ex: "5511999999999"
+const ADMIN_WHATSAPP_NUMBER = process.env.ADMIN_WHATSAPP_NUMBER;
 
 export default async function handler(req, res) {
   try {
@@ -17,21 +16,32 @@ export default async function handler(req, res) {
     console.log("📩 Webhook Supabase recebido:", req.body);
 
     const newRow = req.body?.record;
+    const oldRow = req.body?.old_record; // só vem preenchido em updates
+    const eventType = req.body?.type; // "INSERT" ou "UPDATE"
+
     if (!newRow) {
       console.log("⚠️ Nenhuma record recebida");
       return res.status(200).send("Sem record");
     }
 
-    // Só notifica se o cadastro novo for de um recrutador
-    if (newRow.user_type !== "recruiter") {
-      console.log("ℹ️ Novo profile não é recrutador, ignorando.");
-      return res.status(200).send("Não é recrutador");
+    const isRecruiter = newRow.user_type === "recruiter";
+    const wasRecruiterBefore = oldRow?.user_type === "recruiter";
+
+    // Notifica apenas quando o perfil VIROU recrutador agora:
+    // - INSERT já nascendo como recruiter (caso raro, mas cobre)
+    // - UPDATE que mudou de outro tipo PARA recruiter (o caso comum, completar perfil)
+    const shouldNotify =
+      (eventType === "INSERT" && isRecruiter) ||
+      (eventType === "UPDATE" && isRecruiter && !wasRecruiterBefore);
+
+    if (!shouldNotify) {
+      console.log("ℹ️ Não é um novo cadastro de recrutador, ignorando.");
+      return res.status(200).send("Ignorado");
     }
 
     const recruiterName = newRow.full_name || "Nome não informado";
     const recruiterEmail = newRow.email || "Email não informado";
     const recruiterPhoneRaw = newRow.whatsapp || null;
-
     const recruiterPhoneFormatted = formatPhoneDisplay(recruiterPhoneRaw);
 
     await sendTemplate(
@@ -48,8 +58,6 @@ export default async function handler(req, res) {
   }
 }
 
-// Só pra exibir o telefone do recrutador de forma legível na mensagem pro admin
-// (não precisa normalizar pra formato de envio, já que quem RECEBE é o admin)
 function formatPhoneDisplay(raw) {
   if (!raw) return "Não informado";
   const digits = String(raw).replace(/\D/g, "");
@@ -62,7 +70,7 @@ async function sendTemplate(to, recruiterName, recruiterEmail, recruiterPhone) {
     to,
     type: "template",
     template: {
-      name: "novo_recrutador", // precisa criar esse template no WhatsApp Business Manager
+      name: "novo_recrutador",
       language: {
         code: "pt_BR",
       },
