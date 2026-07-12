@@ -188,7 +188,12 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }
+  } 
+
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onlyNumbers = e.target.value.replace(/\D/g, "") // remove tudo que não é número
+  setWhatsappContact(onlyNumbers)
+}
 
   const validateForm = () => {
     const newErrors: typeof errors = {}
@@ -435,14 +440,16 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                 <Label htmlFor="whatsappContact" className="text-sm">
                   Contato via WhatsApp (Opcional)
                 </Label>
-                <Input
-                  id="whatsappContact"
-                  name="whatsappContact"
-                  value={whatsappContact}
-                  onChange={(e) => setWhatsappContact(e.target.value)}
-                  placeholder="Ex: 5511999999999"
-                  className="text-base h-9"
-                />
+                    <Input
+                    id="whatsappContact"
+                    name="whatsappContact"
+                    value={whatsappContact}
+                    onChange={handleWhatsappChange}
+                    placeholder="Ex: 5511999999999"
+                    className="text-base h-9"
+                    inputMode="numeric"
+                    maxLength={15}
+                          />
                 <p className="text-xs text-muted-foreground mt-1">
                   Caso preenchido, os candidatos poderao entrar em contato via WhatsApp
                 </p>
