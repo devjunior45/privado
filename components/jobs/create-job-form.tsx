@@ -37,6 +37,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageVisible, setImageVisible] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
   const [title, setTitle] = useState("")
@@ -149,8 +150,9 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Cria o ObjectURL de forma síncrona para garantir repaint imediato no primeiro paint
+    // Cria o ObjectURL de forma síncrona; imageVisible fica false até o onLoad do <img> disparar
     const objectUrl = URL.createObjectURL(file)
+    setImageVisible(false)
     setImagePreview(objectUrl)
     setSelectedImage(file)
 
@@ -170,6 +172,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     }
     setSelectedImage(null)
     setImagePreview(null)
+    setImageVisible(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -291,10 +294,16 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   </div>
                 ) : (
                   <div className="relative">
+                    {/* Skeleton exibido enquanto a imagem ainda não disparou onLoad */}
+                    {!imageVisible && (
+                      <div className="w-full h-40 rounded-lg bg-muted animate-pulse" />
+                    )}
                     <img
-                      src={imagePreview || "/placeholder.svg"}
+                      src={imagePreview}
                       alt="Preview da vaga"
                       className="w-full h-40 object-cover rounded-lg"
+                      style={{ visibility: imageVisible ? "visible" : "hidden", position: imageVisible ? "static" : "absolute" }}
+                      onLoad={() => setImageVisible(true)}
                     />
                     <Button
                       type="button"
