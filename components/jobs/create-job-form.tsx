@@ -33,6 +33,42 @@ interface CreateJobFormProps {
   canCreateJob: boolean
 }
 
+/**
+ * Correção do bug de paint do Chromium: conteúdo recém-inserido dentro de um
+ * container com `overflow: auto/scroll` (aqui, o <main> do layout desktop) nem
+ * sempre é repintado até ocorrer um scroll ou resize da janela. Como o preview
+ * da imagem só aparecia após abrir o DevTools ou redimensionar a janela, o alvo
+ * correto da invalidação é o container de SCROLL ancestral — não o próprio <img>.
+ *
+ * Esta função sobe o DOM a partir do preview, encontra cada ancestral scrollável
+ * e aplica um "nudge" de scroll (1px e volta) dentro de requestAnimationFrame,
+ * forçando o Chrome a invalidar e repintar a camada de composição — o mesmo efeito
+ * que um resize da janela produz. Como fallback, dispara também um evento de resize.
+ */
+function forceScrollAncestorRepaint(node: HTMLElement | null) {
+  if (!node || typeof window === "undefined") return
+
+  const scrollables: HTMLElement[] = []
+  let el: HTMLElement | null = node
+  while (el && el !== document.body && el !== document.documentElement) {
+    const style = window.getComputedStyle(el)
+    if (/(auto|scroll)/.test(style.overflowY + style.overflow)) {
+      scrollables.push(el)
+    }
+    el = el.parentElement
+  }
+
+  requestAnimationFrame(() => {
+    for (const container of scrollables) {
+      const top = container.scrollTop
+      container.scrollTop = top + 1
+      container.scrollTop = top
+    }
+    // Fallback: alguns cenários só invalidam com um resize real.
+    window.dispatchEvent(new Event("resize"))
+  })
+}
+
 export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -83,6 +119,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const { sectors, isLoading: isLoadingSectors } = useSectors()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
+  const imagePreviewRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Guarda o ObjectURL atual para poder revogá-lo (evita memory leak)
   const objectUrlRef = useRef<string | null>(null)
@@ -306,15 +343,23 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
                     <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <div className="space-y-2">
-                      <Label htmlFor="image" className="cursor-pointer">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm">
-                          <Upload className="w-4 h-4" />
-                          Escolher Imagem
-                        </div>
-                      </Label>
-                      <Input
+                      {/*
+                        Não usamos <Label htmlFor="image"> porque o layout renderiza este
+                        formulário duas vezes (mobile + desktop), gerando ids duplicados.
+                        O htmlFor resolveria sempre para o PRIMEIRO input do DOM (instância
+                        mobile, oculta), fazendo a seleção cair na instância errada.
+                        Disparamos o clique diretamente no input DESTA instância via ref.
+                      */}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm cursor-pointer"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Escolher Imagem
+                      </button>
+                      <input
                         ref={fileInputRef}
-                        id="image"
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
@@ -324,21 +369,14 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2" ref={imagePreviewRef}>
                     <div className="relative">
                       <img
                         key={imagePreview}
                         src={imagePreview || "/placeholder.svg"}
                         alt="Preview da vaga"
                         className="w-full h-40 object-cover rounded-lg"
-                        onLoad={(e) => {
-                          // Reforço: nudge de repaint garantindo a pintura no 1º frame.
-                          const el = e.currentTarget
-                          el.style.transform = "translateZ(0)"
-                          requestAnimationFrame(() => {
-                            el.style.transform = ""
-                          })
-                        }}
+                        onLoad={() => forceScrollAncestorRepaint(imagePreviewRef.current)}
                       />
                       <Button
                         type="button"
