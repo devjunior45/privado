@@ -149,40 +149,25 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     const file = e.target.files?.[0]
     if (!file) return
 
-    console.log("[v0] Arquivo selecionado:", file.name, file.size)
+    // Cria o ObjectURL de forma síncrona para garantir repaint imediato no primeiro paint
+    const objectUrl = URL.createObjectURL(file)
+    setImagePreview(objectUrl)
+    setSelectedImage(file)
 
+    // Comprime em background e atualiza apenas o File para envio (sem alterar o preview)
     try {
       const compressedFile = await compressImage(file, 400)
-      console.log("[v0] Imagem comprimida:", compressedFile.size)
-
-      const reader = new FileReader()
-      reader.onloadstart = () => {
-        console.log("[v0] Iniciando leitura do arquivo...")
-      }
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        console.log("[v0] Preview carregado, tamanho:", result?.length)
-        setImagePreview(result)
-        setSelectedImage(compressedFile)
-      }
-      reader.onerror = (error) => {
-        console.error("[v0] Erro ao ler arquivo:", error)
-      }
-      reader.readAsDataURL(compressedFile)
-    } catch (error) {
-      console.error("[v0] Erro ao comprimir imagem:", error)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        console.log("[v0] Preview (original) carregado")
-        setImagePreview(result)
-        setSelectedImage(file)
-      }
-      reader.readAsDataURL(file)
+      setSelectedImage(compressedFile)
+    } catch {
+      // Mantém o arquivo original se a compressão falhar
     }
   }
 
   const removeImage = () => {
+    // Revoga o ObjectURL para liberar memória
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview)
+    }
     setSelectedImage(null)
     setImagePreview(null)
     if (fileInputRef.current) {
