@@ -158,6 +158,10 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   }, [description])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Defesa contra o bug do Radix: restaura pointer-events do body caso este
+    // form seja usado dentro de um Dialog e o picker nativo o tenha travado.
+    document.body.style.pointerEvents = ""
+
     const file = e.target.files?.[0]
     if (!file) return
 
