@@ -37,6 +37,7 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
   const [title, setTitle] = useState("")
@@ -83,6 +84,17 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Guarda o ObjectURL atual para poder revogá-lo (evita memory leak)
+  const objectUrlRef = useRef<string | null>(null)
+
+  // Revoga o ObjectURL quando o componente desmonta
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -145,46 +157,49 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     adjustTextareaHeight()
   }, [description])
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    console.log("[v0] Arquivo selecionado:", file.name, file.size)
+    // --- CORREÇÃO DO BUG DE REPAINT ---
+    // Tudo abaixo roda de forma SÍNCRONA dentro do evento onChange do React.
+    // Assim o React commita e o browser pinta no ciclo de evento normal,
+    // sem depender de um callback assíncrono (FileReader/Promise) que resolveria
+    // depois que o diálogo de arquivo devolve o foco — cenário que causava o paint-skip.
 
-    try {
-      const compressedFile = await compressImage(file, 400)
-      console.log("[v0] Imagem comprimida:", compressedFile.size)
-
-      const reader = new FileReader()
-      reader.onloadstart = () => {
-        console.log("[v0] Iniciando leitura do arquivo...")
-      }
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        console.log("[v0] Preview carregado, tamanho:", result?.length)
-        setImagePreview(result)
-        setSelectedImage(compressedFile)
-      }
-      reader.onerror = (error) => {
-        console.error("[v0] Erro ao ler arquivo:", error)
-      }
-      reader.readAsDataURL(compressedFile)
-    } catch (error) {
-      console.error("[v0] Erro ao comprimir imagem:", error)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        console.log("[v0] Preview (original) carregado")
-        setImagePreview(result)
-        setSelectedImage(file)
-      }
-      reader.readAsDataURL(file)
+    // Revoga o ObjectURL anterior, se houver.
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
     }
+
+    // createObjectURL é instantâneo (não faz encode base64, não bloqueia a thread).
+    const objectUrl = URL.createObjectURL(file)
+    objectUrlRef.current = objectUrl
+
+    // Estado atualizado de forma síncrona no handler do evento: preview + nome aparecem já no 1º paint.
+    setImagePreview(objectUrl)
+    setFileName(file.name)
+    setSelectedImage(file)
+
+    // A compressão (trabalho pesado) roda DEPOIS, sem bloquear nem gatear o preview.
+    // Só substitui o arquivo usado no upload quando terminar.
+    compressImage(file, 400)
+      .then((compressedFile) => {
+        setSelectedImage(compressedFile)
+      })
+      .catch(() => {
+        // Mantém o arquivo original se a compressão falhar.
+      })
   }
 
   const removeImage = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+    }
     setSelectedImage(null)
     setImagePreview(null)
+    setFileName(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -300,21 +315,29 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <img
-                      src={imagePreview || "/placeholder.svg"}
-                      alt="Preview da vaga"
-                      className="w-full h-40 object-cover rounded-lg"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={removeImage}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={imagePreview || "/placeholder.svg"}
+                        alt="Preview da vaga"
+                        className="w-full h-40 object-cover rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {fileName && (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{fileName}</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
