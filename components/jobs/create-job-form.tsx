@@ -34,20 +34,33 @@ interface CreateJobFormProps {
 }
 
 /**
- * Correção do bug de paint do Chromium: conteúdo recém-inserido dentro de um
- * container com `overflow: auto/scroll` (aqui, o <main> do layout desktop) nem
- * sempre é repintado até ocorrer um scroll ou resize da janela. Como o preview
- * da imagem só aparecia após abrir o DevTools ou redimensionar a janela, o alvo
- * correto da invalidação é o container de SCROLL ancestral — não o próprio <img>.
+ * Força um reflow/repaint manual sempre que a imagem carrega.
  *
- * Esta função sobe o DOM a partir do preview, encontra cada ancestral scrollável
- * e aplica um "nudge" de scroll (1px e volta) dentro de requestAnimationFrame,
- * forçando o Chrome a invalidar e repintar a camada de composição — o mesmo efeito
- * que um resize da janela produz. Como fallback, dispara também um evento de resize.
+ * O bug do Chromium faz o preview só aparecer após um evento externo (abrir
+ * DevTools ou redimensionar a janela). Esta função reproduz esse "empurrão"
+ * manualmente, em três camadas, para garantir a pintura no primeiro carregamento:
+ *
+ *  1. Reflow SÍNCRONO no próprio elemento: alteramos uma propriedade que invalida
+ *     o layout, LEMOS `offsetHeight` (o que obriga o navegador a recalcular o
+ *     layout na hora) e revertemos — o clássico "force reflow".
+ *  2. Nudge de scroll em cada ancestral scrollável (o <main overflow-y-auto> do
+ *     layout desktop), invalidando a camada de composição da GPU.
+ *  3. Fallback: dispara um evento de `resize`, o mesmo gatilho que "conserta"
+ *     o preview manualmente.
  */
-function forceScrollAncestorRepaint(node: HTMLElement | null) {
+function forceReflow(node: HTMLElement | null) {
   if (!node || typeof window === "undefined") return
 
+  // (1) Reflow síncrono forçado no próprio elemento da imagem.
+  const prevDisplay = node.style.display
+  node.style.display = "none"
+  // Ler offsetHeight com display:none e depois restaurar força o recálculo de layout.
+  void node.offsetHeight
+  node.style.display = prevDisplay
+  // Segunda leitura garante o flush do layout após restaurar o display.
+  void node.offsetHeight
+
+  // (2) Nudge de scroll nos ancestrais scrolláveis.
   const scrollables: HTMLElement[] = []
   let el: HTMLElement | null = node
   while (el && el !== document.body && el !== document.documentElement) {
@@ -57,15 +70,16 @@ function forceScrollAncestorRepaint(node: HTMLElement | null) {
     }
     el = el.parentElement
   }
+  for (const container of scrollables) {
+    const top = container.scrollTop
+    container.scrollTop = top + 1
+    container.scrollTop = top
+  }
 
+  // (3) Fallback assíncrono: resize + novo reflow no frame seguinte.
   requestAnimationFrame(() => {
-    for (const container of scrollables) {
-      const top = container.scrollTop
-      container.scrollTop = top + 1
-      container.scrollTop = top
-    }
-    // Fallback: alguns cenários só invalidam com um resize real.
     window.dispatchEvent(new Event("resize"))
+    void node.offsetHeight
   })
 }
 
@@ -119,7 +133,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const { sectors, isLoading: isLoadingSectors } = useSectors()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
-  const imagePreviewRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Guarda o ObjectURL atual para poder revogá-lo (evita memory leak)
   const objectUrlRef = useRef<string | null>(null)
@@ -369,14 +382,14 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2" ref={imagePreviewRef}>
+                  <div className="space-y-2">
                     <div className="relative">
                       <img
                         key={imagePreview}
                         src={imagePreview || "/placeholder.svg"}
                         alt="Preview da vaga"
                         className="w-full h-40 object-cover rounded-lg"
-                        onLoad={() => forceScrollAncestorRepaint(imagePreviewRef.current)}
+                        onLoad={(e) => forceReflow(e.currentTarget)}
                       />
                       <Button
                         type="button"
