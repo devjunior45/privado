@@ -33,6 +33,56 @@ interface CreateJobFormProps {
   canCreateJob: boolean
 }
 
+/**
+ * Força um reflow/repaint manual sempre que a imagem carrega.
+ *
+ * O bug do Chromium faz o preview só aparecer após um evento externo (abrir
+ * DevTools ou redimensionar a janela). Esta função reproduz esse "empurrão"
+ * manualmente, em três camadas, para garantir a pintura no primeiro carregamento:
+ *
+ *  1. Reflow SÍNCRONO no próprio elemento: alteramos uma propriedade que invalida
+ *     o layout, LEMOS `offsetHeight` (o que obriga o navegador a recalcular o
+ *     layout na hora) e revertemos — o clássico "force reflow".
+ *  2. Nudge de scroll em cada ancestral scrollável (o <main overflow-y-auto> do
+ *     layout desktop), invalidando a camada de composição da GPU.
+ *  3. Fallback: dispara um evento de `resize`, o mesmo gatilho que "conserta"
+ *     o preview manualmente.
+ */
+function forceReflow(node: HTMLElement | null) {
+  if (!node || typeof window === "undefined") return
+
+  // (1) Reflow síncrono forçado no próprio elemento da imagem.
+  const prevDisplay = node.style.display
+  node.style.display = "none"
+  // Ler offsetHeight com display:none e depois restaurar força o recálculo de layout.
+  void node.offsetHeight
+  node.style.display = prevDisplay
+  // Segunda leitura garante o flush do layout após restaurar o display.
+  void node.offsetHeight
+
+  // (2) Nudge de scroll nos ancestrais scrolláveis.
+  const scrollables: HTMLElement[] = []
+  let el: HTMLElement | null = node
+  while (el && el !== document.body && el !== document.documentElement) {
+    const style = window.getComputedStyle(el)
+    if (/(auto|scroll)/.test(style.overflowY + style.overflow)) {
+      scrollables.push(el)
+    }
+    el = el.parentElement
+  }
+  for (const container of scrollables) {
+    const top = container.scrollTop
+    container.scrollTop = top + 1
+    container.scrollTop = top
+  }
+
+  // (3) Fallback assíncrono: resize + novo reflow no frame seguinte.
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event("resize"))
+    void node.offsetHeight
+  })
+}
+
 export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -158,35 +208,40 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   }, [description])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Defesa contra o bug do Radix: restaura pointer-events do body caso este
-    // form seja usado dentro de um Dialog e o picker nativo o tenha travado.
-    document.body.style.pointerEvents = ""
-
     const file = e.target.files?.[0]
     if (!file) return
 
-    // --- CORREÇÃO DO BUG DE REPAINT ---
-    // Tudo abaixo roda de forma SÍNCRONA dentro do evento onChange do React.
-    // Assim o React commita e o browser pinta no ciclo de evento normal,
-    // sem depender de um callback assíncrono (FileReader/Promise) que resolveria
-    // depois que o diálogo de arquivo devolve o foco — cenário que causava o paint-skip.
-
-    // Revoga o ObjectURL anterior, se houver.
+    // Revoga o ObjectURL anterior, se houver (evita memory leak).
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current)
     }
 
-    // createObjectURL é instantâneo (não faz encode base64, não bloqueia a thread).
+    // createObjectURL é instantâneo e não bloqueia a thread.
     const objectUrl = URL.createObjectURL(file)
     objectUrlRef.current = objectUrl
 
-    // Estado atualizado de forma síncrona no handler do evento: preview + nome aparecem já no 1º paint.
-    setImagePreview(objectUrl)
+    // Nome e arquivo podem ser setados de imediato (confirmação instantânea da seleção).
     setFileName(file.name)
     setSelectedImage(file)
 
-    // A compressão (trabalho pesado) roda DEPOIS, sem bloquear nem gatear o preview.
-    // Só substitui o arquivo usado no upload quando terminar.
+    // --- CORREÇÃO DEFINITIVA DO BUG DE REPAINT (Chromium) ---
+    // O bug ocorre porque o DECODE do bitmap da imagem é assíncrono: quando o React
+    // monta o <img> com o src, o Chrome ainda precisa decodificar a imagem e, ao trocar
+    // um subtree inteiro no mesmo commit, às vezes não agenda o paint (só repinta após
+    // um reflow externo, como abrir o DevTools).
+    // Solução: decodificamos a imagem FORA do DOM primeiro. Quando decode() resolve, o
+    // bitmap já está pronto, então ao setar o state e montar o <img> ele pinta na hora.
+    const preloader = new Image()
+    preloader.src = objectUrl
+    const reveal = () => setImagePreview(objectUrl)
+    if (typeof preloader.decode === "function") {
+      preloader.decode().then(reveal).catch(reveal)
+    } else {
+      preloader.onload = reveal
+      preloader.onerror = reveal
+    }
+
+    // A compressão (trabalho pesado) roda em segundo plano, sem gatear o preview.
     compressImage(file, 400)
       .then((compressedFile) => {
         setSelectedImage(compressedFile)
@@ -301,15 +356,23 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
                     <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <div className="space-y-2">
-                      <Label htmlFor="image" className="cursor-pointer">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm">
-                          <Upload className="w-4 h-4" />
-                          Escolher Imagem
-                        </div>
-                      </Label>
-                      <Input
+                      {/*
+                        Não usamos <Label htmlFor="image"> porque o layout renderiza este
+                        formulário duas vezes (mobile + desktop), gerando ids duplicados.
+                        O htmlFor resolveria sempre para o PRIMEIRO input do DOM (instância
+                        mobile, oculta), fazendo a seleção cair na instância errada.
+                        Disparamos o clique diretamente no input DESTA instância via ref.
+                      */}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm cursor-pointer"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Escolher Imagem
+                      </button>
+                      <input
                         ref={fileInputRef}
-                        id="image"
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
@@ -322,9 +385,11 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   <div className="space-y-2">
                     <div className="relative">
                       <img
+                        key={imagePreview}
                         src={imagePreview || "/placeholder.svg"}
                         alt="Preview da vaga"
                         className="w-full h-40 object-cover rounded-lg"
+                        onLoad={(e) => forceReflow(e.currentTarget)}
                       />
                       <Button
                         type="button"
