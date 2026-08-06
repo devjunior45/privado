@@ -293,27 +293,35 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">
-                    {/* Skeleton exibido enquanto a imagem ainda não disparou onLoad */}
-                    {!imageVisible && (
-                      <div className="w-full h-40 rounded-lg bg-muted animate-pulse" />
+                  <div className="space-y-2">
+                    <div className="relative">
+                      {/* Skeleton exibido enquanto a imagem ainda não disparou onLoad */}
+                      {!imageVisible && (
+                        <div className="w-full h-40 rounded-lg bg-muted animate-pulse" />
+                      )}
+                      <img
+                        src={imagePreview}
+                        alt="Preview da vaga"
+                        className="w-full h-40 object-cover rounded-lg"
+                        style={{ visibility: imageVisible ? "visible" : "hidden", position: imageVisible ? "static" : "absolute" }}
+                        onLoad={() => setImageVisible(true)}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {selectedImage && (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                        <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{selectedImage.name}</span>
+                      </p>
                     )}
-                    <img
-                      src={imagePreview}
-                      alt="Preview da vaga"
-                      className="w-full h-40 object-cover rounded-lg"
-                      style={{ visibility: imageVisible ? "visible" : "hidden", position: imageVisible ? "static" : "absolute" }}
-                      onLoad={() => setImageVisible(true)}
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={removeImage}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
                   </div>
                 )}
               </div>
