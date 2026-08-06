@@ -146,23 +146,29 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     adjustTextareaHeight()
   }, [description])
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Cria o ObjectURL de forma síncrona; imageVisible fica false até o onLoad do <img> disparar
+    // Atualiza o estado de forma síncrona e imediata — o React vai commitar e o browser
+    // vai pintar o frame ANTES de qualquer trabalho pesado acontecer.
     const objectUrl = URL.createObjectURL(file)
     setImageVisible(false)
     setImagePreview(objectUrl)
     setSelectedImage(file)
 
-    // Comprime em background e atualiza apenas o File para envio (sem alterar o preview)
-    try {
-      const compressedFile = await compressImage(file, 400)
-      setSelectedImage(compressedFile)
-    } catch {
-      // Mantém o arquivo original se a compressão falhar
-    }
+    // Adia a compressão (FileReader + canvas + toBlob) para APÓS o browser ter pintado
+    // o frame com o preview e o nome do arquivo. Sem isso, o trabalho pesado do canvas
+    // bloqueia a thread principal antes do primeiro paint, causando o bug de repaint.
+    setTimeout(() => {
+      compressImage(file, 400)
+        .then((compressedFile) => {
+          setSelectedImage(compressedFile)
+        })
+        .catch(() => {
+          // Mantém o arquivo original se a compressão falhar
+        })
+    }, 0)
   }
 
   const removeImage = () => {
