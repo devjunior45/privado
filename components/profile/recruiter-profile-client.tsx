@@ -142,7 +142,16 @@ export function RecruiterProfileClient({ profile, showVerificationButton = false
           <form action={handleProfileSubmit} className="space-y-4">
             <div>
               <Label htmlFor="avatar">Logo da Empresa</Label>
-              <Input id="avatar" name="avatar" type="file" accept="image/*" />
+              <Input
+                id="avatar"
+                name="avatar"
+                type="file"
+                accept="image/*"
+                onChange={() => {
+                  // Workaround do bug do Radix: restaura pointer-events do body após o picker nativo.
+                  document.body.style.pointerEvents = ""
+                }}
+              />
               {profile.avatar_url && (
                 <p className="text-xs text-muted-foreground mt-1">Selecione uma nova imagem para substituir a atual</p>
               )}

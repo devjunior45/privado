@@ -88,7 +88,18 @@ export function CreateJobPost() {
 
           <div>
             <Label htmlFor="image">Imagem (opcional)</Label>
-            <Input id="image" name="image" type="file" accept="image/*" />
+            <Input
+              id="image"
+              name="image"
+              type="file"
+              accept="image/*"
+              onChange={() => {
+                // Workaround do bug do Radix: após o picker nativo fechar, o <body>
+                // pode ficar com pointer-events:none preso enquanto o Dialog segue aberto.
+                // Restaurar aqui garante que a UI atualize/repinte na primeira seleção.
+                document.body.style.pointerEvents = ""
+              }}
+            />
           </div>
 
           <div>

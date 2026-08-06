@@ -836,7 +836,16 @@ export function ProfileView({ profile, isOwnProfile = false }: ProfileViewProps)
           <form action={handleProfileSubmit} className="space-y-4">
             <div>
               <Label htmlFor="avatar">Foto de Perfil</Label>
-              <Input id="avatar" name="avatar" type="file" accept="image/*" />
+              <Input
+                id="avatar"
+                name="avatar"
+                type="file"
+                accept="image/*"
+                onChange={() => {
+                  // Workaround do bug do Radix: restaura pointer-events do body após o picker nativo.
+                  document.body.style.pointerEvents = ""
+                }}
+              />
               {profileData.avatar_url && (
                 <p className="text-xs text-muted-foreground mt-1">Selecione uma nova imagem para substituir a atual</p>
               )}

@@ -114,6 +114,9 @@ export function EditJobForm({ job }: EditJobFormProps) {
   }, [description])
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Workaround do bug do Radix: restaura pointer-events do body após o picker nativo.
+    document.body.style.pointerEvents = ""
+
     const file = e.target.files?.[0]
     if (!file) return
 
