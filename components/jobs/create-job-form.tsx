@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, ImageIcon } from "lucide-react"
+import { Loader2, Upload, X, ImageIcon } from "lucide-react"
 import { createJobPost } from "@/app/actions/posts"
 import { useRouter } from "next/navigation"
 import { CitySelect } from "@/components/ui/city-select"
@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useSectors } from "@/hooks/use-sectors"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { VerificationModal } from "@/components/jobs/verification-modal"
-import { ImageUpload } from "@/components/jobs/image-upload"
+import { compressImage } from "@/utils/compress-image"
 
 const DARK_COLORS = [
   { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
@@ -36,6 +36,8 @@ interface CreateJobFormProps {
 export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
   const [title, setTitle] = useState("")
@@ -81,6 +83,18 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const { sectors, isLoading: isLoadingSectors } = useSectors()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Guarda o ObjectURL atual para poder revogá-lo (evita memory leak)
+  const objectUrlRef = useRef<string | null>(null)
+
+  // Revoga o ObjectURL quando o componente desmonta
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -142,6 +156,58 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   useEffect(() => {
     adjustTextareaHeight()
   }, [description])
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Defesa contra o bug do Radix: restaura pointer-events do body caso este
+    // form seja usado dentro de um Dialog e o picker nativo o tenha travado.
+    document.body.style.pointerEvents = ""
+
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // --- CORREÇÃO DO BUG DE REPAINT ---
+    // Tudo abaixo roda de forma SÍNCRONA dentro do evento onChange do React.
+    // Assim o React commita e o browser pinta no ciclo de evento normal,
+    // sem depender de um callback assíncrono (FileReader/Promise) que resolveria
+    // depois que o diálogo de arquivo devolve o foco — cenário que causava o paint-skip.
+
+    // Revoga o ObjectURL anterior, se houver.
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+    }
+
+    // createObjectURL é instantâneo (não faz encode base64, não bloqueia a thread).
+    const objectUrl = URL.createObjectURL(file)
+    objectUrlRef.current = objectUrl
+
+    // Estado atualizado de forma síncrona no handler do evento: preview + nome aparecem já no 1º paint.
+    setImagePreview(objectUrl)
+    setFileName(file.name)
+    setSelectedImage(file)
+
+    // A compressão (trabalho pesado) roda DEPOIS, sem bloquear nem gatear o preview.
+    // Só substitui o arquivo usado no upload quando terminar.
+    compressImage(file, 400)
+      .then((compressedFile) => {
+        setSelectedImage(compressedFile)
+      })
+      .catch(() => {
+        // Mantém o arquivo original se a compressão falhar.
+      })
+  }
+
+  const removeImage = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+    }
+    setSelectedImage(null)
+    setImagePreview(null)
+    setFileName(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
 
   const validateForm = () => {
     const newErrors: typeof errors = {}
@@ -230,7 +296,55 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ImageUpload onFileChange={setSelectedImage} />
+              <div className="space-y-4">
+                {!imagePreview ? (
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                    <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <div className="space-y-2">
+                      <Label htmlFor="image" className="cursor-pointer">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm">
+                          <Upload className="w-4 h-4" />
+                          Escolher Imagem
+                        </div>
+                      </Label>
+                      <Input
+                        ref={fileInputRef}
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      <p className="text-xs text-muted-foreground">PNG, JPG até 5MB - Torna sua vaga mais atrativa</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={imagePreview || "/placeholder.svg"}
+                        alt="Preview da vaga"
+                        className="w-full h-40 object-cover rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {fileName && (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{fileName}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
