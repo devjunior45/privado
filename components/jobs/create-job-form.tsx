@@ -37,7 +37,6 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [imageVisible, setImageVisible] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
   const [selectedColor, setSelectedColor] = useState(DARK_COLORS[0].value)
   const [title, setTitle] = useState("")
@@ -146,48 +145,50 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     adjustTextareaHeight()
   }, [description])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Atualiza o estado de forma síncrona e imediata — o React vai commitar e o browser
-    // vai pintar o frame ANTES de qualquer trabalho pesado acontecer.
-    const objectUrl = URL.createObjectURL(file)
-    setImageVisible(false)
-    setImagePreview(objectUrl)
-    setSelectedImage(file)
+    console.log("[v0] Arquivo selecionado:", file.name, file.size)
 
-    // Adia a compressão (FileReader + canvas + toBlob) para APÓS o browser ter pintado
-    // o frame com o preview e o nome do arquivo. Sem isso, o trabalho pesado do canvas
-    // bloqueia a thread principal antes do primeiro paint, causando o bug de repaint.
-    setTimeout(() => {
-      compressImage(file, 400)
-        .then((compressedFile) => {
-          setSelectedImage(compressedFile)
-        })
-        .catch(() => {
-          // Mantém o arquivo original se a compressão falhar
-        })
-    }, 0)
+    try {
+      const compressedFile = await compressImage(file, 400)
+      console.log("[v0] Imagem comprimida:", compressedFile.size)
+
+      const reader = new FileReader()
+      reader.onloadstart = () => {
+        console.log("[v0] Iniciando leitura do arquivo...")
+      }
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        console.log("[v0] Preview carregado, tamanho:", result?.length)
+        setImagePreview(result)
+        setSelectedImage(compressedFile)
+      }
+      reader.onerror = (error) => {
+        console.error("[v0] Erro ao ler arquivo:", error)
+      }
+      reader.readAsDataURL(compressedFile)
+    } catch (error) {
+      console.error("[v0] Erro ao comprimir imagem:", error)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        console.log("[v0] Preview (original) carregado")
+        setImagePreview(result)
+        setSelectedImage(file)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const removeImage = () => {
-    // Revoga o ObjectURL para liberar memória
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview)
-    }
     setSelectedImage(null)
     setImagePreview(null)
-    setImageVisible(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  } 
-
-  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const onlyNumbers = e.target.value.replace(/\D/g, "") // remove tudo que não é número
-  setWhatsappContact(onlyNumbers)
-}
+  }
 
   const validateForm = () => {
     const newErrors: typeof errors = {}
@@ -299,35 +300,21 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      {/* Skeleton exibido enquanto a imagem ainda não disparou onLoad */}
-                      {!imageVisible && (
-                        <div className="w-full h-40 rounded-lg bg-muted animate-pulse" />
-                      )}
-                      <img
-                        src={imagePreview}
-                        alt="Preview da vaga"
-                        className="w-full h-40 object-cover rounded-lg"
-                        style={{ visibility: imageVisible ? "visible" : "hidden", position: imageVisible ? "static" : "absolute" }}
-                        onLoad={() => setImageVisible(true)}
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={removeImage}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {selectedImage && (
-                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
-                        <ImageIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{selectedImage.name}</span>
-                      </p>
-                    )}
+                  <div className="relative">
+                    <img
+                      src={imagePreview || "/placeholder.svg"}
+                      alt="Preview da vaga"
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={removeImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -448,16 +435,14 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                 <Label htmlFor="whatsappContact" className="text-sm">
                   Contato via WhatsApp (Opcional)
                 </Label>
-                    <Input
-                    id="whatsappContact"
-                    name="whatsappContact"
-                    value={whatsappContact}
-                    onChange={handleWhatsappChange}
-                    placeholder="Ex: 5511999999999"
-                    className="text-base h-9"
-                    inputMode="numeric"
-                    maxLength={15}
-                          />
+                <Input
+                  id="whatsappContact"
+                  name="whatsappContact"
+                  value={whatsappContact}
+                  onChange={(e) => setWhatsappContact(e.target.value)}
+                  placeholder="Ex: 5511999999999"
+                  className="text-base h-9"
+                />
                 <p className="text-xs text-muted-foreground mt-1">
                   Caso preenchido, os candidatos poderao entrar em contato via WhatsApp
                 </p>
