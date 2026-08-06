@@ -158,35 +158,40 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   }, [description])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Defesa contra o bug do Radix: restaura pointer-events do body caso este
-    // form seja usado dentro de um Dialog e o picker nativo o tenha travado.
-    document.body.style.pointerEvents = ""
-
     const file = e.target.files?.[0]
     if (!file) return
 
-    // --- CORREÇÃO DO BUG DE REPAINT ---
-    // Tudo abaixo roda de forma SÍNCRONA dentro do evento onChange do React.
-    // Assim o React commita e o browser pinta no ciclo de evento normal,
-    // sem depender de um callback assíncrono (FileReader/Promise) que resolveria
-    // depois que o diálogo de arquivo devolve o foco — cenário que causava o paint-skip.
-
-    // Revoga o ObjectURL anterior, se houver.
+    // Revoga o ObjectURL anterior, se houver (evita memory leak).
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current)
     }
 
-    // createObjectURL é instantâneo (não faz encode base64, não bloqueia a thread).
+    // createObjectURL é instantâneo e não bloqueia a thread.
     const objectUrl = URL.createObjectURL(file)
     objectUrlRef.current = objectUrl
 
-    // Estado atualizado de forma síncrona no handler do evento: preview + nome aparecem já no 1º paint.
-    setImagePreview(objectUrl)
+    // Nome e arquivo podem ser setados de imediato (confirmação instantânea da seleção).
     setFileName(file.name)
     setSelectedImage(file)
 
-    // A compressão (trabalho pesado) roda DEPOIS, sem bloquear nem gatear o preview.
-    // Só substitui o arquivo usado no upload quando terminar.
+    // --- CORREÇÃO DEFINITIVA DO BUG DE REPAINT (Chromium) ---
+    // O bug ocorre porque o DECODE do bitmap da imagem é assíncrono: quando o React
+    // monta o <img> com o src, o Chrome ainda precisa decodificar a imagem e, ao trocar
+    // um subtree inteiro no mesmo commit, às vezes não agenda o paint (só repinta após
+    // um reflow externo, como abrir o DevTools).
+    // Solução: decodificamos a imagem FORA do DOM primeiro. Quando decode() resolve, o
+    // bitmap já está pronto, então ao setar o state e montar o <img> ele pinta na hora.
+    const preloader = new Image()
+    preloader.src = objectUrl
+    const reveal = () => setImagePreview(objectUrl)
+    if (typeof preloader.decode === "function") {
+      preloader.decode().then(reveal).catch(reveal)
+    } else {
+      preloader.onload = reveal
+      preloader.onerror = reveal
+    }
+
+    // A compressão (trabalho pesado) roda em segundo plano, sem gatear o preview.
     compressImage(file, 400)
       .then((compressedFile) => {
         setSelectedImage(compressedFile)
@@ -322,9 +327,18 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
                   <div className="space-y-2">
                     <div className="relative">
                       <img
+                        key={imagePreview}
                         src={imagePreview || "/placeholder.svg"}
                         alt="Preview da vaga"
                         className="w-full h-40 object-cover rounded-lg"
+                        onLoad={(e) => {
+                          // Reforço: nudge de repaint garantindo a pintura no 1º frame.
+                          const el = e.currentTarget
+                          el.style.transform = "translateZ(0)"
+                          requestAnimationFrame(() => {
+                            el.style.transform = ""
+                          })
+                        }}
                       />
                       <Button
                         type="button"
