@@ -18,6 +18,7 @@ import { useSectors } from "@/hooks/use-sectors"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { VerificationModal } from "@/components/jobs/verification-modal"
 import { compressImage } from "@/utils/compress-image"
+import { BENEFITS_OPTIONS, buildDescriptionWithBenefits } from "@/utils/job-benefits"
 
 const DARK_COLORS = [
   { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
@@ -100,28 +101,10 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [selectedBenefits, setSelectedBenefits] = useState<string[]>([])
 
-  const BENEFITS_OPTIONS = [
-    "Vale-transporte",
-    "Auxílio Combustível",
-    "Auxílio Educação",
-    "Plano de Saúde",
-    "Plano Odontológico",
-    "Estacionamento Privativo",
-    "Seguro de Vida",
-    "Refeitório Interno",
-    "Convênios Variados",
-  ]
-
   const toggleBenefit = (benefit: string) => {
     setSelectedBenefits((prev) =>
       prev.includes(benefit) ? prev.filter((b) => b !== benefit) : [...prev, benefit]
     )
-  }
-
-  const getDescriptionWithBenefits = () => {
-    if (selectedBenefits.length === 0) return description
-    const benefitsList = selectedBenefits.map((b) => `${b};`).join("\n")
-    return `${description}\n\n**Benefícios:**\n${benefitsList}`
   }
   const [errors, setErrors] = useState<{
     title?: string
@@ -292,7 +275,8 @@ export function CreateJobForm({ isVerified, canCreateJob }: CreateJobFormProps) 
     const formData = new FormData()
     formData.append("title", title)
     formData.append("company", companyName)
-    formData.append("description", getDescriptionWithBenefits())
+    formData.append("description", buildDescriptionWithBenefits(description, selectedBenefits))
+    formData.append("benefits", JSON.stringify(selectedBenefits))
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
     if (salary.trim()) formData.append("salary", salary)
