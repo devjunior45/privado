@@ -2,17 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-
-export const REPORT_REASONS = [
-  "Linguagem ofensiva",
-  "Dados desatualizados",
-  "Redirecionamento suspeito",
-  "Vaga inexistente",
-  "Uso de identidade falsa",
-  "Outro",
-] as const
-
-export type ReportReason = (typeof REPORT_REASONS)[number]
+import { REPORT_REASONS, type ReportReason } from "@/utils/job-report-reasons"
 
 interface ReportJobResult {
   success: boolean

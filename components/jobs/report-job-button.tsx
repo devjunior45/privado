@@ -16,7 +16,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/toast"
-import { reportJob, REPORT_REASONS, type ReportReason } from "@/app/actions/reports"
+import { reportJob } from "@/app/actions/reports"
+import { REPORT_REASONS, type ReportReason } from "@/utils/job-report-reasons"
 
 const DESCRIPTION_MAX_LENGTH = 80
 
