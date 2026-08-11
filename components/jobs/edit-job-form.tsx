@@ -16,6 +16,12 @@ import { useToast } from "@/components/ui/toast"
 import { useSectors } from "@/hooks/use-sectors"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { compressImage } from "@/utils/compress-image"
+import {
+  BENEFITS_OPTIONS,
+  buildDescriptionWithBenefits,
+  stripBenefitsFromDescription,
+  parseBenefitsFromDescription,
+} from "@/utils/job-benefits"
 
 const DARK_COLORS = [
   { name: "Preto", value: "#1F2937", class: "bg-gray-800" },
@@ -40,6 +46,7 @@ interface JobPost {
   sector_ids: number[] | null
   status: string
   whatsapp_contact?: string | null
+  benefits?: string[] | null
 }
 
 interface EditJobFormProps {
@@ -56,7 +63,16 @@ export function EditJobForm({ job }: EditJobFormProps) {
   const [title, setTitle] = useState(job.title)
   const [companyName, setCompanyName] = useState(job.company)
   const [salary, setSalary] = useState(job.salary || "")
-  const [description, setDescription] = useState(job.description || "")
+  // A descrição no textarea mostra apenas o texto base, sem o bloco auto-gerado
+  // de benefícios (que é reconstruído no submit a partir dos botões selecionados).
+  const [description, setDescription] = useState(stripBenefitsFromDescription(job.description || ""))
+  // Pré-seleciona os benefícios: usa o campo `benefits` salvo; se estiver vazio
+  // (vagas antigas), extrai do bloco de benefícios presente na descrição.
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>(
+    job.benefits && job.benefits.length > 0
+      ? job.benefits
+      : parseBenefitsFromDescription(job.description || "")
+  )
   const [allowPlatformApplications, setAllowPlatformApplications] = useState(job.allow_platform_applications)
   const [selectedSectors, setSelectedSectors] = useState<string[]>(
     job.sector_ids?.map((id) => id.toString()) || []
@@ -153,6 +169,12 @@ export function EditJobForm({ job }: EditJobFormProps) {
     }
   }
 
+  const toggleBenefit = (benefit: string) => {
+    setSelectedBenefits((prev) =>
+      prev.includes(benefit) ? prev.filter((b) => b !== benefit) : [...prev, benefit]
+    )
+  }
+
   const validateForm = () => {
     const newErrors: typeof errors = {}
     if (!title.trim()) newErrors.title = "O titulo da vaga e obrigatorio."
@@ -176,7 +198,8 @@ export function EditJobForm({ job }: EditJobFormProps) {
     const formData = new FormData()
     formData.append("title", title)
     formData.append("company", companyName)
-    formData.append("description", description)
+    formData.append("description", buildDescriptionWithBenefits(description, selectedBenefits))
+    formData.append("benefits", JSON.stringify(selectedBenefits))
     formData.append("allowPlatformApplications", allowPlatformApplications.toString())
     if (selectedCityId) formData.append("cityId", selectedCityId.toString())
     if (salary.trim()) formData.append("salary", salary)
@@ -467,6 +490,46 @@ export function EditJobForm({ job }: EditJobFormProps) {
                   Use <code>**texto**</code> para negrito
                 </p>
                 <p>Use emojis para destacar secoes</p>
+              </div>
+
+              <div className="pt-4 border-t">
+                <Label className="text-sm font-medium">Beneficios:</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Selecione os beneficios oferecidos (opcional)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {BENEFITS_OPTIONS.map((benefit) => (
+                    <button
+                      key={benefit}
+                      type="button"
+                      onClick={() => toggleBenefit(benefit)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        selectedBenefits.includes(benefit)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-accent"
+                      }`}
+                    >
+                      {benefit}
+                    </button>
+                  ))}
+                </div>
+                {selectedBenefits.length > 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Os beneficios selecionados serao adicionados ao final da descricao:
+                    </p>
+                    <div className="text-xs">
+                      <strong>Beneficios:</strong>
+                      <br />
+                      {selectedBenefits.map((b, i) => (
+                        <span key={b}>
+                          {b};
+                          {i < selectedBenefits.length - 1 && <br />}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -25,6 +25,7 @@ export async function createJobPost(formData: FormData) {
   const whatsappContact = (formData.get("whatsappContact") as string) || null
   const imageFile = formData.get("image") as File
   const sectorIds = JSON.parse((formData.get("sector_ids") as string) || "[]")
+  const benefits = JSON.parse((formData.get("benefits") as string) || "[]")
 
   // Validar cidade
   if (!cityId) {
@@ -59,6 +60,7 @@ export async function createJobPost(formData: FormData) {
     author_id: user.id,
     status: "active", // Sempre ativa ao criar
     sector_ids: sectorIds,
+    benefits,
   })
 
   if (error) {
@@ -234,6 +236,7 @@ export async function updateJobPost(jobId: string, formData: FormData) {
   const imageFile = formData.get("image") as File
   const removeImage = formData.get("removeImage") === "true"
   const sectorIds = JSON.parse((formData.get("sector_ids") as string) || "[]")
+  const benefits = JSON.parse((formData.get("benefits") as string) || "[]")
 
   // Validar cidade
   if (!cityId) {
@@ -273,6 +276,7 @@ export async function updateJobPost(jobId: string, formData: FormData) {
       allow_platform_applications: allowPlatformApplications,
       whatsapp_contact: whatsappContact,
       sector_ids: sectorIds,
+      benefits,
       updated_at: new Date().toISOString(),
     })
     .eq("id", jobId)
