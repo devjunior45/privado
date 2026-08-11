@@ -27,6 +27,7 @@ export default function FeedPage() {
   const [allPosts, setAllPosts] = useState<
     (JobPostWithProfile & {
       is_saved?: boolean
+      is_reported?: boolean
       has_applied?: boolean
       application_date?: string | null
       sector_ids?: number[]
@@ -35,6 +36,7 @@ export default function FeedPage() {
   const [filteredPosts, setFilteredPosts] = useState<
     (JobPostWithProfile & {
       is_saved?: boolean
+      is_reported?: boolean
       has_applied?: boolean
       application_date?: string | null
       sector_ids?: number[]
@@ -93,17 +95,20 @@ export default function FeedPage() {
 
       let likedPostIds = new Set<string>()
       let savedPostIds = new Set<string>()
+      let reportedPostIds = new Set<string>()
       const applicationData = new Map<string, { has_applied: boolean; application_date: string }>()
 
       if (loggedIn && user) {
-        const [likesResult, savedResult, applicationsResult] = await Promise.all([
+        const [likesResult, savedResult, applicationsResult, reportsResult] = await Promise.all([
           supabase.from("post_likes").select("post_id").eq("user_id", user.id),
           supabase.from("saved_jobs").select("post_id").eq("user_id", user.id),
           supabase.from("job_applications").select("job_id, created_at").eq("user_id", user.id),
+          supabase.from("denuncias_vagas").select("vaga_id").eq("usuario_id", user.id),
         ])
 
         likedPostIds = new Set(likesResult.data?.map((like) => like.post_id) || [])
         savedPostIds = new Set(savedResult.data?.map((saved) => saved.post_id) || [])
+        reportedPostIds = new Set(reportsResult.data?.map((report) => report.vaga_id) || [])
         applicationsResult.data?.forEach((app: any) => {
           if (app.job_id) {
             applicationData.set(app.job_id, { has_applied: true, application_date: app.created_at })
@@ -116,6 +121,7 @@ export default function FeedPage() {
           ...post,
           is_liked: likedPostIds.has(post.id),
           is_saved: savedPostIds.has(post.id),
+          is_reported: reportedPostIds.has(post.id),
           has_applied: applicationData.get(post.id)?.has_applied || false,
           application_date: applicationData.get(post.id)?.application_date || null,
         })) || []

@@ -41,6 +41,7 @@ import { trackJobView } from "@/app/actions/dashboard"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CommentsSheet } from "@/components/comments/comments-sheet"
+import { ReportJobButton } from "@/components/jobs/report-job-button"
 import { CityDisplay } from "@/components/ui/city-display"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
@@ -50,6 +51,7 @@ import { getRelativeDate } from "@/utils/date-utils"
 interface JobPostProps {
   jobPost: JobPostWithProfile & {
     is_saved?: boolean
+    is_reported?: boolean
     has_applied?: boolean
     application_date?: string | null
     allow_platform_applications?: boolean
@@ -88,6 +90,7 @@ interface JobPostProps {
   isLoggedIn: boolean
   isLikedInitially?: boolean
   isSavedInitially?: boolean
+  isReportedInitially?: boolean
   hasAppliedInitially?: boolean
   applicationDate?: string | null
   className?: string
@@ -117,6 +120,7 @@ export function JobPost({
   isLoggedIn,
   isLikedInitially,
   isSavedInitially,
+  isReportedInitially,
   hasAppliedInitially,
   applicationDate: initialApplicationDate,
   className,
@@ -493,10 +497,17 @@ export function JobPost({
                 )}
               </div>
 
-              {/* Data relativa */}
-              <p className={`text-muted-foreground ${isMobile ? "text-xs" : "text-xs"}`}>
-                {getRelativeDate(jobPost.created_at)}
-              </p>
+              {/* Data relativa + botão de denúncia */}
+              <div className="flex items-center justify-between">
+                <p className={`text-muted-foreground ${isMobile ? "text-xs" : "text-xs"}`}>
+                  {getRelativeDate(jobPost.created_at)}
+                </p>
+                <ReportJobButton
+                  jobId={jobPost.id}
+                  isLoggedIn={isLoggedIn}
+                  isReportedInitially={isReportedInitially || jobPost?.is_reported || false}
+                />
+              </div>
 
               {showFullInfo && (
                 <div className="space-y-2">

@@ -31,6 +31,7 @@ export default async function PostPage({ params }: PageProps) {
   let userProfile = null
   let isLiked = false
   let isSaved = false
+  let isReported = false
   let hasApplied = false
   let applicationDate = null
 
@@ -39,15 +40,17 @@ export default async function PostPage({ params }: PageProps) {
     const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
     userProfile = profile
 
-    // Verificar se curtiu, salvou ou se candidatou
-    const [likesResult, savedResult, applicationResult] = await Promise.all([
+    // Verificar se curtiu, salvou, denunciou ou se candidatou
+    const [likesResult, savedResult, reportResult, applicationResult] = await Promise.all([
       supabase.from("post_likes").select("id").eq("post_id", params.id).eq("user_id", user.id).single(),
       supabase.from("saved_jobs").select("id").eq("post_id", params.id).eq("user_id", user.id).single(),
+      supabase.from("denuncias_vagas").select("id").eq("vaga_id", params.id).eq("usuario_id", user.id).single(),
       supabase.from("job_applications").select("created_at").eq("job_id", params.id).eq("user_id", user.id).single(),
     ])
 
     isLiked = !!likesResult.data
     isSaved = !!savedResult.data
+    isReported = !!reportResult.data
     hasApplied = !!applicationResult.data
     applicationDate = applicationResult.data?.created_at || null
   }
@@ -56,6 +59,7 @@ export default async function PostPage({ params }: PageProps) {
     ...post,
     is_liked: isLiked,
     is_saved: isSaved,
+    is_reported: isReported,
     has_applied: hasApplied,
     application_date: applicationDate,
   }
@@ -74,6 +78,7 @@ export default async function PostPage({ params }: PageProps) {
           isLoggedIn={!!user}
           isLikedInitially={isLiked}
           isSavedInitially={isSaved}
+          isReportedInitially={isReported}
           hasAppliedInitially={hasApplied}
           applicationDate={applicationDate}
         />

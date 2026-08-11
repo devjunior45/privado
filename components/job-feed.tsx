@@ -11,6 +11,7 @@ interface JobFeedProps {
   initialPosts: (JobPostWithProfile & {
     is_liked?: boolean
     is_saved?: boolean
+    is_reported?: boolean
     has_applied?: boolean
     application_date?: string | null
   })[]
@@ -176,6 +177,7 @@ export function JobFeed({
             userProfile={userProfile}
             isLikedInitially={post.is_liked}
             isSavedInitially={post.is_saved}
+            isReportedInitially={post.is_reported}
             hasAppliedInitially={post.has_applied}
             applicationDate={post.application_date}
             className={`animate-fadeInUp ${highlightedPostId === post.id ? "post-highlight" : ""}`}
